@@ -9,9 +9,8 @@ namespace Microsoft.ServiceFabric.Actors.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors;
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using FluentAssertions;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using Xunit;
 
     public interface IMockActor : IActor
@@ -32,6 +31,16 @@ namespace Microsoft.ServiceFabric.Actors.Tests
         {
         }
 
+        public Task ActorMethodA()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task VerifyActorStateMockabilityAsync()
         {
             // Try to cover all code path for ActorStateManager to ensure they are mockable.
@@ -40,7 +49,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             (await this.StateManager.GetStateAsync<int>("State1")).Should().Be(10, "10 was added for State1 using AddStateAsync");
 
             await this.StateManager.GetOrAddStateAsync("State2", 10);
-            (await this.StateManager.GetOrAddStateAsync("State2", 20)).Should().Be(10, "New value of State2 should not be added by GetOrAddStateAsync as it exists already");
+            (await this.StateManager.GetOrAddStateAsync("State2", 20)).Should().Be(
+                10,
+                "New value of State2 should not be added by GetOrAddStateAsync as it exists already");
 
             await this.StateManager.AddOrUpdateStateAsync("State3", 10, (s, i) => 20);
             (await this.StateManager.GetStateAsync<int>("State3")).Should().Be(10, "10 was added for State3 using AddOrUpdateStateAsync(add).");
@@ -60,7 +71,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             Action action = () => this.StateManager.RemoveStateAsync("State1").GetAwaiter().GetResult();
             action.ShouldThrow<KeyNotFoundException>("State1 was removed using RemoveStateAsync (RemoveStateAsync verification)");
 
-            action = ()=> this.StateManager.GetStateAsync<int>("State1").GetAwaiter().GetResult();
+            action = () => this.StateManager.GetStateAsync<int>("State1").GetAwaiter().GetResult();
             action.ShouldThrow<KeyNotFoundException>("State1 was removed using RemoveStateAsync (GetStateAsync verification)");
 
             (await this.StateManager.ContainsStateAsync("State1")).Should().BeFalse("State1 has been removed (ContainsStateAsync(State2) verification)");
@@ -82,11 +93,11 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 
         public async Task VerifyRemiderMockabilityAsync()
         {
-            Action action = ()=> this.GetReminder("NonExistingReminder");
+            Action action = () => this.GetReminder("NonExistingReminder");
             action.ShouldThrow<ReminderNotFoundException>("reminder doesn't exist.");
 
             await this.RegisterReminderAsync("MockReminder", null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
-            var reminder = this.GetReminder("MockReminder");
+            IActorReminder reminder = this.GetReminder("MockReminder");
             reminder.Name.Should().Be("MockReminder", " Reminder was registered with this name");
             reminder.State.Should().BeNull("Reminder was registered will null state");
             reminder.DueTime.Should().Be(TimeSpan.FromSeconds(2), "Reminder was registered with this due time");
@@ -100,11 +111,11 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 
         public void VerifyTimerMockability()
         {
-            var actorTimer = TestMocksRepository.GetMockActorTimer();
+            IActorTimer actorTimer = TestMocksRepository.GetMockActorTimer();
             Action action = () => this.UnregisterTimer(actorTimer);
             action.ShouldNotThrow("unregistering a timer that doesn't exist shouldn't throw.");
 
-            this.RegisterTimer((obj) => Task.FromResult(true), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+            this.RegisterTimer(obj => Task.FromResult(true), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
             action = () => this.UnregisterTimer(actorTimer);
             action.ShouldNotThrow("unregistering an existing timer shouldn't throw");
         }
@@ -121,16 +132,6 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             action = () => actorEvent.MockActorEventB(this.Id);
             action.ShouldNotThrow("actorEvent.MockActorEventB() verification");
         }
-
-        public Task ActorMethodA()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
-        {
-            throw new NotImplementedException();
-        }
     }
 
     public class DependencyInjectionTests
@@ -138,10 +139,10 @@ namespace Microsoft.ServiceFabric.Actors.Tests
         [Fact]
         public void VerifyActorMockability()
         {
-            var mockActorId = ActorId.CreateRandom();
+            ActorId mockActorId = ActorId.CreateRandom();
 
             ConsoleLogHelper.LogInfo("Creating Mock Actor Service...");
-            var mockActorService = TestMocksRepository.GetActorService<MockActor>();
+            ActorService mockActorService = TestMocksRepository.GetActorService<MockActor>();
 
             ConsoleLogHelper.LogInfo("Creating Mock Actor...");
             var mockActor = new MockActor(mockActorService, mockActorId);
@@ -149,9 +150,15 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             ConsoleLogHelper.LogInfo("Verifying Public Actor Members...");
 
             mockActor.Id.Should().Be(mockActorId, "Id from Actor should be what was passed while creating the actor");
-            mockActor.ActorService.GetHashCode().Should().Be(mockActorService.GetHashCode(), "ActorService from actor should be what was passed while creating Actor.");
-            mockActor.ApplicationName.Should().Be(mockActorService.Context.CodePackageActivationContext.ApplicationName, "Application Name from Actor should be same as what is coming form service's CodePackageActiviationContext");
-            mockActor.ServiceUri.Should().Be(mockActorService.Context.ServiceName, "ServiceUri from Actor should be same as what is coming form ServiceContext");
+            mockActor.ActorService.GetHashCode().Should().Be(
+                mockActorService.GetHashCode(),
+                "ActorService from actor should be what was passed while creating Actor.");
+            mockActor.ApplicationName.Should().Be(
+                mockActorService.Context.CodePackageActivationContext.ApplicationName,
+                "Application Name from Actor should be same as what is coming form service's CodePackageActiviationContext");
+            mockActor.ServiceUri.Should().Be(
+                mockActorService.Context.ServiceName,
+                "ServiceUri from Actor should be same as what is coming form ServiceContext");
 
             ConsoleLogHelper.LogInfo("Verifying Actor State Mockability...");
             mockActor.VerifyActorStateMockabilityAsync().GetAwaiter().GetResult();

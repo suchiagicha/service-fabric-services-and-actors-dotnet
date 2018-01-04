@@ -14,10 +14,10 @@ namespace Microsoft.ServiceFabric.Services.Tests
         public void GetServiceNameFormat_NoServiceNameProvided_ReturnEndpointName()
         {
             // Arrange
-            string serviceName = "ObjectServiceEndpoint";
+            var serviceName = "ObjectServiceEndpoint";
 
             // Act
-            var result = ServiceNameFormat.GetEndpointName(typeof(object));
+            string result = ServiceNameFormat.GetEndpointName(typeof(object));
 
             // Assert
             result.Should().Be(serviceName);

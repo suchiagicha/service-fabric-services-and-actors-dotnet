@@ -17,10 +17,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Tests
         {
             // Arrange
             var expectedLength = 944;
-            Exception exception = new Exception("Test Exception");
+            var exception = new Exception("Test Exception");
 
             // Act
-            var result = RemoteExceptionInformation.FromException(exception);
+            RemoteExceptionInformation result = RemoteExceptionInformation.FromException(exception);
 
             // Assert
             result.Data.Length.Should().Be(expectedLength);

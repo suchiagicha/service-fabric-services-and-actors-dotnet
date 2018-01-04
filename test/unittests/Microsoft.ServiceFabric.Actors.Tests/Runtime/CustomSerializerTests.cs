@@ -7,12 +7,10 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
-    using Microsoft.ServiceFabric.Actors;
+    using FluentAssertions;
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Xunit;
-    using FluentAssertions;
 
     public class CustomSerializerTests
     {
@@ -23,9 +21,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
                 .Should()
                 .BeNull("ActorReminderData is null");
 
-            foreach (var data in GetActorReminderList())
+            foreach (ActorReminderData data in GetActorReminderList())
             {
-                var deserializedData = 
+                ActorReminderData deserializedData =
                     ActorReminderDataSerializer.Deserialize(ActorReminderDataSerializer.Serialize(data));
 
                 deserializedData.ActorId.Should().Be(data.ActorId);
@@ -56,7 +54,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
                 .BeNull("Null ReminderCompletedDataSerializer serialization");
 
             var data = new ReminderCompletedData(TimeSpan.MinValue, DateTime.MaxValue);
-            var deserializedData = ReminderCompletedDataSerializer.Deserialize(ReminderCompletedDataSerializer.Serialize(data));
+            ReminderCompletedData deserializedData = ReminderCompletedDataSerializer.Deserialize(ReminderCompletedDataSerializer.Serialize(data));
 
             deserializedData.LogicalTime.Should().Be(data.LogicalTime, "ReminderCompletedData.LogicalTime.");
             deserializedData.UtcTime.Should().Be(data.UtcTime, "ReminderCompletedData.UtcTime.");
@@ -66,29 +64,29 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
         public void VerifyLogicalTimestampSerialization()
         {
             LogicalTimestampSerializer.Deserialize(
-                LogicalTimestampSerializer.Serialize(null))
-                    .Should()
-                    .BeNull("Null LogicalTimestampSerializer serialization");
+                    LogicalTimestampSerializer.Serialize(null))
+                .Should()
+                .BeNull("Null LogicalTimestampSerializer serialization");
 
             var data = new LogicalTimestamp(TimeSpan.MaxValue);
-            var deserializedData = LogicalTimestampSerializer.Deserialize(LogicalTimestampSerializer.Serialize(data));
+            LogicalTimestamp deserializedData = LogicalTimestampSerializer.Deserialize(LogicalTimestampSerializer.Serialize(data));
 
             deserializedData.Timestamp.Should().Be(data.Timestamp, "LogicalTimestamp.Timestamp serialization.");
         }
 
-        static List<ActorReminderData> GetActorReminderList()
+        private static List<ActorReminderData> GetActorReminderList()
         {
-            var actorIds = new List<ActorId> { null, new ActorId(Guid.NewGuid()), ActorId.CreateRandom(), new ActorId(Guid.NewGuid().ToString()) };
-            var reminderNames = new List<string> { null, string.Empty, Guid.NewGuid().ToString() };
-            var reminderStates = new List<byte[]> { null, new byte[0], new byte[16] };
+            var actorIds = new List<ActorId> {null, new ActorId(Guid.NewGuid()), ActorId.CreateRandom(), new ActorId(Guid.NewGuid().ToString())};
+            var reminderNames = new List<string> {null, string.Empty, Guid.NewGuid().ToString()};
+            var reminderStates = new List<byte[]> {null, new byte[0], new byte[16]};
 
             var actorReminderDataList = new List<ActorReminderData>();
 
-            foreach (var actorId in actorIds)
+            foreach (ActorId actorId in actorIds)
             {
-                foreach (var reminderName in reminderNames)
+                foreach (string reminderName in reminderNames)
                 {
-                    foreach (var reminderState in reminderStates)
+                    foreach (byte[] reminderState in reminderStates)
                     {
                         actorReminderDataList.Add(
                             new ActorReminderData(actorId, reminderName, TimeSpan.MaxValue, TimeSpan.MinValue, reminderState, TimeSpan.Zero));
@@ -97,6 +95,6 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             }
 
             return actorReminderDataList;
-        } 
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             TestCase("### CurrentLogicalTimeTest ###");
 
             var snapshotHandler = new SnapshotHandler();
-            var snapshotInterval = UpperBoundBuffer;
+            double snapshotInterval = UpperBoundBuffer;
             var timeManager = new VolatileLogicalTimeManager(snapshotHandler, GetTimestamp(snapshotInterval));
 
             VerifyCurrentTime(timeManager, 0);
@@ -68,7 +68,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             TestCase("### SnapshotTest ###");
 
             var snapshotHandler = new SnapshotHandler();
-            var snapshotInterval = UpperBoundBuffer * 2;
+            double snapshotInterval = UpperBoundBuffer * 2;
             var timeManager = new VolatileLogicalTimeManager(snapshotHandler, GetTimestamp(snapshotInterval));
 
             VerifySnapshotTime(timeManager, 0);
@@ -112,9 +112,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             VolatileLogicalTimeManager timeManager,
             double lowerBound)
         {
-            var current = timeManager.CurrentLogicalTime;
-            var lower = GetTimestamp(lowerBound - LowerBoundBuffer);
-            var upper = GetTimestamp(lowerBound + UpperBoundBuffer);
+            TimeSpan current = timeManager.CurrentLogicalTime;
+            TimeSpan lower = GetTimestamp(lowerBound - LowerBoundBuffer);
+            TimeSpan upper = GetTimestamp(lowerBound + UpperBoundBuffer);
 
             FailTestIf(current < lower, "current={0} < lower={1}", current, lower);
             FailTestIf(current > upper, "current={0} > upper={1}", current, upper);
@@ -124,9 +124,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             VolatileLogicalTimeManager timeManager,
             double lowerBound)
         {
-            var snapshot = timeManager.Test_GetCurrentSnapshot();
-            var lower = GetTimestamp(lowerBound - LowerBoundBuffer);
-            var upper = GetTimestamp(lowerBound + UpperBoundBuffer);
+            TimeSpan snapshot = timeManager.Test_GetCurrentSnapshot();
+            TimeSpan lower = GetTimestamp(lowerBound - LowerBoundBuffer);
+            TimeSpan upper = GetTimestamp(lowerBound + UpperBoundBuffer);
 
             FailTestIf(snapshot < lower, "snapshot={0} < lower={1}", snapshot, lower);
             FailTestIf(snapshot > upper, "snapshot={0} > upper={1}", snapshot, upper);
@@ -151,19 +151,17 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 {
                     break;
                 }
-                else
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                }
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
             }
 
             stopwatch.Stop();
-            
+
             FailTestIf(
-                count != expectedCount, 
-                "WaitForSnapshotCount(): count={0} expected={1} break={2} timeout={3}", 
-                count, 
-                expectedCount, 
+                count != expectedCount,
+                "WaitForSnapshotCount(): count={0} expected={1} break={2} timeout={3}",
+                count,
+                expectedCount,
                 breakOnMatch,
                 timeout);
         }
@@ -172,7 +170,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             SnapshotHandler handler,
             double expectedCont)
         {
-            var count = handler.SnapshotCount;
+            int count = handler.SnapshotCount;
 
             FailTestIf(count != expectedCont, "count={0} expected={1}", count, expectedCont);
         }
@@ -182,30 +180,30 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             return TimeSpan.FromSeconds(seconds);
         }
 
-        private class SnapshotHandler : VolatileLogicalTimeManager.ISnapshotHandler
-        {
-            public int SnapshotCount { get; private set; }
-
-            public SnapshotHandler()
-            {
-                this.SnapshotCount = 0;
-            }
-
-            async Task VolatileLogicalTimeManager.ISnapshotHandler.OnSnapshotAsync(TimeSpan currentLogicalTime)
-            {
-                TimeManagerTest.TestLog("OnSnapshotAsync({0})", currentLogicalTime);
-
-                this.SnapshotCount++;
-
-                await TimeManagerTest.CreateCompletedTask();
-            }
-        }
-
         private static Task CreateCompletedTask()
         {
             var tcs = new TaskCompletionSource<object>();
             tcs.SetResult(null);
             return tcs.Task;
+        }
+
+        private class SnapshotHandler : VolatileLogicalTimeManager.ISnapshotHandler
+        {
+            public SnapshotHandler()
+            {
+                this.SnapshotCount = 0;
+            }
+
+            public int SnapshotCount { get; private set; }
+
+            async Task VolatileLogicalTimeManager.ISnapshotHandler.OnSnapshotAsync(TimeSpan currentLogicalTime)
+            {
+                TestLog("OnSnapshotAsync({0})", currentLogicalTime);
+
+                this.SnapshotCount++;
+
+                await CreateCompletedTask();
+            }
         }
     }
 }

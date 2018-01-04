@@ -12,20 +12,20 @@ namespace Microsoft.ServiceFabric.Services.Tests
     {
         public static bool IsRunAsyncUnhandledExceptionHealthInformation(HealthInformation hInfo)
         {
-            return (hInfo.RemoveWhenExpired &&
-                hInfo.HealthState == HealthState.Warning &&
-                hInfo.TimeToLive == TimeSpan.FromMinutes(5) &&
-                hInfo.SourceId == "RunAsync" &&
-                hInfo.Property == "RunAsyncUnhandledException");
+            return hInfo.RemoveWhenExpired &&
+                   hInfo.HealthState == HealthState.Warning &&
+                   hInfo.TimeToLive == TimeSpan.FromMinutes(5) &&
+                   hInfo.SourceId == "RunAsync" &&
+                   hInfo.Property == "RunAsyncUnhandledException";
         }
 
         public static bool IsRunAsyncSlowCancellationHealthInformation(HealthInformation hInfo)
         {
-            return (hInfo.RemoveWhenExpired &&
-                hInfo.HealthState == HealthState.Warning &&
-                hInfo.TimeToLive == TimeSpan.FromMinutes(5) &&
-                hInfo.SourceId == "RunAsync" &&
-                hInfo.Property == "RunAsyncSlowCancellation");
+            return hInfo.RemoveWhenExpired &&
+                   hInfo.HealthState == HealthState.Warning &&
+                   hInfo.TimeToLive == TimeSpan.FromMinutes(5) &&
+                   hInfo.SourceId == "RunAsync" &&
+                   hInfo.Property == "RunAsyncSlowCancellation";
         }
     }
 }

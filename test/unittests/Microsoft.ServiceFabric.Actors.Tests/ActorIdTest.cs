@@ -7,30 +7,28 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 {
     using System;
     using System.Globalization;
-    using Microsoft.ServiceFabric.Actors;
     using Xunit;
 
     public class ActorIdTest
     {
-
         [Fact]
         public void TestBothNullEquality()
         {
             ActorId x = null;
             ActorId y = null;
-            
-            Assert.True((x == y), "Verify null == null is true");
-            Assert.False((x != y), "Verify null != null is false");
+
+            Assert.True(x == y, "Verify null == null is true");
+            Assert.False(x != y, "Verify null != null is false");
         }
 
         [Fact]
         public void TestNullEquality()
         {
             ActorId x = null;
-            ActorId y = new ActorId(1);
+            var y = new ActorId(1);
 
-            Assert.False((x == y), "Verify null == ActorId(1) is false");
-            Assert.True((x != y), "Verify null != ActorId(1) is false");
+            Assert.False(x == y, "Verify null == ActorId(1) is false");
+            Assert.True(x != y, "Verify null != ActorId(1) is false");
 
             Assert.False(y.Equals(x), "Verify ActorId(1).Equals(null) is false");
             Assert.True(y.CompareTo(x) != 0, "Verify ActorId(1).CompareTo(null) is not zero");
@@ -43,17 +41,18 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             TestEqualityLong(long.MaxValue, long.MaxValue);
             TestEqualityLong(long.MinValue, long.MinValue);
 
-            var g = Guid.NewGuid();
+            Guid g = Guid.NewGuid();
             TestEqualityGuid(g, new Guid(g.ToByteArray()));
 
             TestEqualityString(string.Empty, string.Empty);
             try
             {
-                TestEqualityString((string)null, (string)null);
+                TestEqualityString(null, null);
             }
-            catch(ArgumentNullException)
+            catch (ArgumentNullException)
             {
             }
+
             TestEqualityString("Id1", "Id1");
             TestEqualityString("0", "0");
         }
@@ -87,7 +86,6 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             TestCompareTo(new ActorId("0"), new ActorId("-234"), ExpectedComparisionResult.More);
 
             TestCompareTo(new ActorId(Guid.Empty), new ActorId(Guid.Empty.ToString()), ExpectedComparisionResult.Less);
-
         }
 
         private static void TestEqualityLong(long lx, long ly)
@@ -123,7 +121,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
         private static void TestEquality(ActorId x, ActorId y)
         {
             Assert.True(
-                (x == y),
+                x == y,
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "Verify {0} == {1} is true",
@@ -131,7 +129,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
                     ToStringWithKind(y)));
 
             Assert.False(
-                (x != y),
+                x != y,
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "Verify {0} != {1} is false",
@@ -146,14 +144,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests
                     ToStringWithKind(x),
                     ToStringWithKind(y)));
 
-            object z = y as object;
+            var z = y as object;
             Assert.True(
-               x.Equals(z),
-               string.Format(
-                   CultureInfo.InvariantCulture,
-                   "Verify {0} Equals {1} as object is true",
-                   ToStringWithKind(x),
-                   z.ToString()));
+                x.Equals(z),
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Verify {0} Equals {1} as object is true",
+                    ToStringWithKind(x),
+                    z.ToString()));
 
             Assert.True(
                 x.CompareTo(y) == 0,
@@ -167,7 +165,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
         private static void TestInEquality(ActorId x, ActorId y)
         {
             Assert.False(
-                (x == y),
+                x == y,
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "Verify {0} == {1} is false",
@@ -175,7 +173,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
                     ToStringWithKind(y)));
 
             Assert.True(
-                (x != y),
+                x != y,
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "Verify {0} != {1} is true",
@@ -190,14 +188,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests
                     ToStringWithKind(x),
                     ToStringWithKind(y)));
 
-            object z = y as object;
+            var z = y as object;
             Assert.False(
-               x.Equals(z),
-               string.Format(
-                   CultureInfo.InvariantCulture,
-                   "Verify {0} Equals {1} as object is false",
-                   ToStringWithKind(x),
-                   z.ToString()));
+                x.Equals(z),
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Verify {0} Equals {1} as object is false",
+                    ToStringWithKind(x),
+                    z.ToString()));
 
             Assert.False(
                 x.CompareTo(y) == 0,
@@ -213,7 +211,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             if (expected == ExpectedComparisionResult.Equals)
             {
                 Assert.True(
-                    (x == y),
+                    x == y,
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Verify {0} == {1} is true",
@@ -232,7 +230,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             if (expected == ExpectedComparisionResult.Less)
             {
                 Assert.True(
-                    (x != y),
+                    x != y,
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Verify {0} != {1} is true",
@@ -251,7 +249,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             if (expected == ExpectedComparisionResult.More)
             {
                 Assert.True(
-                    (x != y),
+                    x != y,
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Verify {0} != {1} is true",

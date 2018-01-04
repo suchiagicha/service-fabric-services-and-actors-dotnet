@@ -3,37 +3,75 @@
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-using Microsoft.ServiceFabric.Actors.Runtime;
-
 namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using ActorStateTable = VolatileActorStateTable<
-        VolatileActorStateProvider.ActorStateType,
+    using Microsoft.ServiceFabric.Actors.Runtime;
+    using ActorStateTable = Microsoft.ServiceFabric.Actors.Runtime.VolatileActorStateTable<
+        Actors.Runtime.VolatileActorStateProvider.ActorStateType,
         string,
-        VolatileActorStateProvider.ActorStateData>;
-
-    using ActorStateDataWrapper = VolatileActorStateTable<
-        VolatileActorStateProvider.ActorStateType,
-        string,
-        VolatileActorStateProvider.ActorStateData>.ActorStateDataWrapper;
-
-    using ActorStateType = VolatileActorStateProvider.ActorStateType;
-    using ActorStateData = VolatileActorStateProvider.ActorStateData;
+        Actors.Runtime.VolatileActorStateProvider.ActorStateData>;
+    using ActorStateDataWrapper =
+        Actors.Runtime.VolatileActorStateTable<Actors.Runtime.VolatileActorStateProvider.ActorStateType, string,
+            Actors.Runtime.VolatileActorStateProvider.ActorStateData>.ActorStateDataWrapper;
 
     public class VolatileStateProviderTestBase
     {
+        private static readonly object consoleLock = new object();
+
+        public static void TestCase(string format, params object[] args)
+        {
+            TestLog("\n");
+            TestLog(ConsoleColor.Green, format, args);
+            TestLog("\n");
+        }
+
+        public static void TestLog(string format, params object[] args)
+        {
+            TestLog(ConsoleColor.Gray, format, args);
+        }
+
+        public static void TestLog(ConsoleColor color, string format, params object[] args)
+        {
+            lock (consoleLock)
+            {
+                Console.ForegroundColor = color;
+                Console.WriteLine(format, args);
+                Console.ResetColor();
+            }
+        }
+
+        protected static void FailTestIf(bool condition, string format, params object[] args)
+        {
+            string conditionMessage = string.Format(CultureInfo.InvariantCulture, format, args);
+
+            if (condition)
+            {
+                var failedFormat = "Failed condition: {0}";
+
+                TestLog(ConsoleColor.Red, failedFormat, conditionMessage);
+
+                throw new InvalidOperationException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        failedFormat,
+                        conditionMessage));
+            }
+
+            TestLog(ConsoleColor.DarkGray, "Passed condition: {0}", conditionMessage);
+        }
+
         internal static void TestPrepareUpdate(ActorStateTable stateTable, ReplicationUnit replicationUnit)
         {
-            foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+            foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
             {
                 TestLog(
-                    "PrepareUpdate(SequenceNumber: {0}, Type: {1} Key: {2}, IsDelete: {3})", 
+                    "PrepareUpdate(SequenceNumber: {0}, Type: {1} Key: {2}, IsDelete: {3})",
                     replicationUnit.SequenceNumber,
                     actorStateDataWrapper.Type.ToString(),
-                    actorStateDataWrapper.Key, 
+                    actorStateDataWrapper.Key,
                     actorStateDataWrapper.IsDelete);
             }
 
@@ -51,12 +89,12 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
         {
             if (testLog)
             {
-                foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+                foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
                 {
                     TestLog(
-                        "Apply(SequenceNumber: {0}, Key: {1}, IsDelete: {2})", 
-                        replicationUnit.SequenceNumber, 
-                        actorStateDataWrapper.Key, 
+                        "Apply(SequenceNumber: {0}, Key: {1}, IsDelete: {2})",
+                        replicationUnit.SequenceNumber,
+                        actorStateDataWrapper.Key,
                         actorStateDataWrapper.IsDelete);
                 }
             }
@@ -67,7 +105,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
         }
 
         /// <summary>
-        /// The replicationUnitList should enumerate the replicationUnit in increasing order of sequence number.
+        ///     The replicationUnitList should enumerate the replicationUnit in increasing order of sequence number.
         /// </summary>
         internal static List<List<ActorStateDataWrapper>> TestApplyBatch(
             ActorStateTable stateTable,
@@ -76,16 +114,17 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             var replicationData = new List<List<ActorStateDataWrapper>>();
             var batch = new List<ActorStateDataWrapper>();
 
-            foreach (var replicationUnit in replicationUnitList)
+            foreach (ReplicationUnit replicationUnit in replicationUnitList)
             {
                 replicationUnit.UpdateSequenceNumber();
 
                 replicationData.Add(replicationUnit.ActorStateDataWrapperList);
                 batch.AddRange(replicationUnit.ActorStateDataWrapperList);
 
-                TestLog("ApplyBatch({0}, {1}, {2})", 
-                    replicationUnit.SequenceNumber, 
-                    replicationUnit.StateType, 
+                TestLog(
+                    "ApplyBatch({0}, {1}, {2})",
+                    replicationUnit.SequenceNumber,
+                    replicationUnit.StateType,
                     replicationUnit.GetKeyString());
             }
 
@@ -93,11 +132,11 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
 
             return replicationData;
         }
-        
+
         internal static void VerifyReads(
             ActorStateTable stateTable,
             ReplicationUnit replicationUnit,
-            Dictionary<ActorStateType, int> statesPerReplication,
+            Dictionary<VolatileActorStateProvider.ActorStateType, int> statesPerReplication,
             bool expectedResult,
             long expectedLength,
             long expectedCommittedSequenceNumber,
@@ -118,7 +157,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
         internal static void VerifyReads(
             ActorStateTable stateTable,
             ReplicationUnit replicationUnit,
-            Dictionary<ActorStateType, int> statesPerReplication,
+            Dictionary<VolatileActorStateProvider.ActorStateType, int> statesPerReplication,
             bool expectedResult,
             TimeSpan timeStamp,
             long expectedCommittedSequenceNumber,
@@ -139,7 +178,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
         internal static void VerifyReads(
             ActorStateTable stateTable,
             ReplicationUnit replicationUnit,
-            Dictionary<ActorStateType, int> statesPerReplication,
+            Dictionary<VolatileActorStateProvider.ActorStateType, int> statesPerReplication,
             bool expectedResult,
             string reminderName,
             long expectedCommittedSequenceNumber,
@@ -163,7 +202,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             long expectedLength)
         {
-            foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+            foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
             {
                 TryReadAndVerify(
                     stateTable,
@@ -179,13 +218,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             long expectedLength)
         {
-            ActorStateData data;
-            var actualResult = TryGetActorStateData(stateTable, ActorStateType.Actor, key, expectedResult, out data);
+            VolatileActorStateProvider.ActorStateData data;
+            bool actualResult = TryGetActorStateData(stateTable, VolatileActorStateProvider.ActorStateType.Actor, key, expectedResult, out data);
 
             if (actualResult)
             {
-                var resultBuffer = data.ActorState;
-                FailTestIf(expectedLength != resultBuffer.Length,
+                byte[] resultBuffer = data.ActorState;
+                FailTestIf(
+                    expectedLength != resultBuffer.Length,
                     "DataLength({0}): expected={1} actual={2}",
                     key,
                     expectedLength,
@@ -199,7 +239,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             TimeSpan expectedTimestamp)
         {
-            foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+            foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
             {
                 TryReadAndVerify(
                     stateTable,
@@ -215,13 +255,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             TimeSpan expectedTimestamp)
         {
-            ActorStateData data;
-            var actualResult = TryGetActorStateData(stateTable, ActorStateType.LogicalTimestamp, key, expectedResult, out data);
+            VolatileActorStateProvider.ActorStateData data;
+            bool actualResult = TryGetActorStateData(stateTable, VolatileActorStateProvider.ActorStateType.LogicalTimestamp, key, expectedResult, out data);
 
             if (actualResult)
             {
-                var resultTimestamp = data.LogicalTimestamp.Value;
-                FailTestIf(expectedTimestamp != resultTimestamp,
+                TimeSpan resultTimestamp = data.LogicalTimestamp.Value;
+                FailTestIf(
+                    expectedTimestamp != resultTimestamp,
                     "Data({0}): expected={1} actual={2}",
                     key,
                     expectedTimestamp,
@@ -235,7 +276,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             string expectedReminderName)
         {
-            foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+            foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
             {
                 TryReadAndVerify(
                     stateTable,
@@ -251,13 +292,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             bool expectedResult,
             string expectedReminderName)
         {
-            ActorStateData data;
-            var actualResult = TryGetActorStateData(stateTable, ActorStateType.Reminder, key, expectedResult, out data);
+            VolatileActorStateProvider.ActorStateData data;
+            bool actualResult = TryGetActorStateData(stateTable, VolatileActorStateProvider.ActorStateType.Reminder, key, expectedResult, out data);
 
             if (actualResult)
             {
-                var resultReminder = data.ActorReminderData;
-                FailTestIf(expectedReminderName != resultReminder.Name,
+                ActorReminderData resultReminder = data.ActorReminderData;
+                FailTestIf(
+                    expectedReminderName != resultReminder.Name,
                     "Data({0}): expected={1} actual={2}",
                     key,
                     expectedReminderName,
@@ -265,35 +307,15 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             }
         }
 
-        private static bool TryGetActorStateData(
-            ActorStateTable stateTable,
-            ActorStateType type,
-            string key,
-            bool expectedResult,
-            out ActorStateData data)
-        {
-            data = null;
-            bool actualResult = stateTable.TryGetValue(type, key, out data);
-
-            FailTestIf(expectedResult != actualResult,
-                "TryGetValue({0}, {1}): expected={2} actual={3}",
-                type,
-                key,
-                expectedResult,
-                actualResult);
-
-            return actualResult;
-        }
-
         internal static void VerifyStateTableSnapshot(
             ActorStateTable stateTable,
-            Dictionary<ActorStateType, int> statesPerReplication,
+            Dictionary<VolatileActorStateProvider.ActorStateType, int> statesPerReplication,
             long maxSequenceNumber,
             long expectedCommittedSequenceNumber,
             long expectedKnownSequenceNumber,
             long expectedCount)
         {
-            var enumerator = stateTable.GetShallowCopiesEnumerator(maxSequenceNumber);
+            ActorStateTable.ActorStateEnumerator enumerator = stateTable.GetShallowCopiesEnumerator(maxSequenceNumber);
 
             VerifyStateTableSnapshot(
                 stateTable,
@@ -305,19 +327,19 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
         }
 
         /// <summary>
-        /// This function verifies snapshot when the replication units are uniform
-        /// i.e. they either contain update entries or delete entries.
+        ///     This function verifies snapshot when the replication units are uniform
+        ///     i.e. they either contain update entries or delete entries.
         /// </summary>
         internal static void VerifyStateTableSnapshot(
             ActorStateTable stateTable,
-            Dictionary<ActorStateType, int> statesPerReplication,
+            Dictionary<VolatileActorStateProvider.ActorStateType, int> statesPerReplication,
             ActorStateTable.ActorStateEnumerator enumerator,
             long expectedCommittedSequenceNumber,
             long expectedKnownSequenceNumber,
             long expectedCount)
         {
-            var actualCommittedSequenceNumber = stateTable.GetHighestCommittedSequenceNumber();
-            var actualKnownSequenceNumber = stateTable.GetHighestKnownSequenceNumber();
+            long actualCommittedSequenceNumber = stateTable.GetHighestCommittedSequenceNumber();
+            long actualKnownSequenceNumber = stateTable.GetHighestKnownSequenceNumber();
 
             TestLog(
                 "ActorStateTable committed:{0} known:{1}",
@@ -337,33 +359,33 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 actualKnownSequenceNumber);
 
             // Group the actor state by replication unit
-            var replicationUnits = GroupByRelicationUnit(enumerator);
+            List<ReplicationUnit> replicationUnits = GroupByRelicationUnit(enumerator);
 
             long actualCount = 0;
             long lastSequenceNumber = 0;
 
-            foreach (var replicationUnit in replicationUnits)
+            foreach (ReplicationUnit replicationUnit in replicationUnits)
             {
                 TestLog(
-                "[{0}] '{1}' {2}",
-                replicationUnit.SequenceNumber,
-                replicationUnit.StateType,
-                replicationUnit.GetKeyString());
+                    "[{0}] '{1}' {2}",
+                    replicationUnit.SequenceNumber,
+                    replicationUnit.StateType,
+                    replicationUnit.GetKeyString());
 
                 FailTestIf(
-                replicationUnit.SequenceNumber <= lastSequenceNumber,
-                "Sequence number: previous:{0} current:{1}",
-                lastSequenceNumber,
-                replicationUnit.SequenceNumber);
+                    replicationUnit.SequenceNumber <= lastSequenceNumber,
+                    "Sequence number: previous:{0} current:{1}",
+                    lastSequenceNumber,
+                    replicationUnit.SequenceNumber);
 
-                if ((replicationUnit.SequenceNumber == actualCommittedSequenceNumber) &&
+                if (replicationUnit.SequenceNumber == actualCommittedSequenceNumber &&
                     replicationUnit.IsLastActorStateDelete)
                 {
                     FailTestIf(
-                            replicationUnit.ActorStateCount != 1,
-                            "States in replication unit at end of committed entry list: IsDelete:{0} ActualStateCount:{1} ExpectedStateCount:1",
-                            replicationUnit.IsLastActorStateDelete,
-                            replicationUnit.ActorStateCount);
+                        replicationUnit.ActorStateCount != 1,
+                        "States in replication unit at end of committed entry list: IsDelete:{0} ActualStateCount:{1} ExpectedStateCount:1",
+                        replicationUnit.IsLastActorStateDelete,
+                        replicationUnit.ActorStateCount);
                 }
                 else if (replicationUnit.SequenceNumber <= actualCommittedSequenceNumber)
                 {
@@ -415,8 +437,8 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                             statesPerReplication[replicationUnit.StateType]);
                     }
                 }
-                
-                foreach (var actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
+
+                foreach (ActorStateDataWrapper actorStateDataWrapper in replicationUnit.ActorStateDataWrapperList)
                 {
                     string dataString = GetDataString(actorStateDataWrapper);
 
@@ -445,7 +467,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 lastSequenceNumber = replicationUnit.SequenceNumber;
                 actualCount += replicationUnit.ActorStateDataWrapperList.Count;
             }
-            
+
             FailTestIf(
                 expectedCount != actualCount,
                 "Total: expected:{0} actual:{1}\n",
@@ -494,64 +516,27 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 lastSequenceNumber,
                 stateData.SequenceNumber);
         }
-        
-        private static object consoleLock = new object();
 
-        protected static void FailTestIf(bool condition, string format, params object[] args)
-        {
-            var conditionMessage = string.Format(CultureInfo.InvariantCulture, format, args);
-
-            if (condition)
-            {
-                var failedFormat = "Failed condition: {0}";
-
-                TestLog(ConsoleColor.Red, failedFormat, conditionMessage);
-
-                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
-                    failedFormat, conditionMessage));
-            }
-            else
-            {
-                TestLog(ConsoleColor.DarkGray, "Passed condition: {0}", conditionMessage);
-            }
-        }
-
-        public static void TestCase(string format, params object[] args)
-        {
-            TestLog("\n");
-            TestLog(ConsoleColor.Green, format, args);
-            TestLog("\n");
-        }
-
-        public static void TestLog(string format, params object[] args)
-        {
-            TestLog(ConsoleColor.Gray, format, args);
-        }
-
-        public static void TestLog(ConsoleColor color, string format, params object[] args)
-        {
-            lock (consoleLock)
-            {
-                Console.ForegroundColor = color;
-                Console.WriteLine(format, args);
-                Console.ResetColor();
-            }
-        }
-        
         internal static ActorStateDataWrapper CreateActorStateDataWrapper(string key, long dataLength)
         {
             var bytes = new byte[dataLength];
             for (var ix = 0; ix < dataLength; ++ix)
             {
-                bytes[ix] = (byte)ix;
+                bytes[ix] = (byte) ix;
             }
 
-            return ActorStateDataWrapper.CreateForUpdate(ActorStateType.Actor, key, new ActorStateData(bytes));
+            return ActorStateDataWrapper.CreateForUpdate(
+                VolatileActorStateProvider.ActorStateType.Actor,
+                key,
+                new VolatileActorStateProvider.ActorStateData(bytes));
         }
 
         internal static ActorStateDataWrapper CreateActorStateDataWrapper(string key, TimeSpan timestamp)
         {
-            return ActorStateDataWrapper.CreateForUpdate(ActorStateType.LogicalTimestamp, key, new ActorStateData(timestamp));
+            return ActorStateDataWrapper.CreateForUpdate(
+                VolatileActorStateProvider.ActorStateType.LogicalTimestamp,
+                key,
+                new VolatileActorStateProvider.ActorStateData(timestamp));
         }
 
         internal static ActorStateDataWrapper CreateActorStateDataWrapper(string key, string reminderName)
@@ -561,10 +546,13 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 new MockReminder(reminderName),
                 TimeSpan.FromSeconds(reminderName.Length));
 
-            return ActorStateDataWrapper.CreateForUpdate(ActorStateType.Reminder, key, new ActorStateData(reminder));
+            return ActorStateDataWrapper.CreateForUpdate(
+                VolatileActorStateProvider.ActorStateType.Reminder,
+                key,
+                new VolatileActorStateProvider.ActorStateData(reminder));
         }
 
-        internal static ActorStateDataWrapper CreateActorStateDataWrapperForDelete(ActorStateType type, string key)
+        internal static ActorStateDataWrapper CreateActorStateDataWrapperForDelete(VolatileActorStateProvider.ActorStateType type, string key)
         {
             return ActorStateDataWrapper.CreateForDelete(type, key);
         }
@@ -575,15 +563,14 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
 
             while (enumerator.PeekNext() != null)
             {
-                var peek = enumerator.PeekNext();
+                ActorStateDataWrapper peek = enumerator.PeekNext();
                 var replicationUnit = new ReplicationUnit(peek.SequenceNumber, peek.Type);
 
                 do
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(enumerator.GetNext());
                     peek = enumerator.PeekNext();
-                }
-                while (peek != null && peek.SequenceNumber == replicationUnit.SequenceNumber);
+                } while (peek != null && peek.SequenceNumber == replicationUnit.SequenceNumber);
 
                 replicationUnits.Add(replicationUnit);
             }
@@ -591,81 +578,70 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             return replicationUnits;
         }
 
-        internal static Dictionary<ActorStateType, int> GetStatesPerReplication(
+        internal static Dictionary<VolatileActorStateProvider.ActorStateType, int> GetStatesPerReplication(
             int actorstatesPerReplication = 1,
             int timeStampstatesPerReplication = 1,
             int reminderStatesPerReplication = 1)
         {
-            var statesPerReplication = new Dictionary<ActorStateType, int>();
+            var statesPerReplication = new Dictionary<VolatileActorStateProvider.ActorStateType, int>();
 
-            statesPerReplication[ActorStateType.Actor] = actorstatesPerReplication;
-            statesPerReplication[ActorStateType.LogicalTimestamp] = timeStampstatesPerReplication;
-            statesPerReplication[ActorStateType.Reminder] = reminderStatesPerReplication;
+            statesPerReplication[VolatileActorStateProvider.ActorStateType.Actor] = actorstatesPerReplication;
+            statesPerReplication[VolatileActorStateProvider.ActorStateType.LogicalTimestamp] = timeStampstatesPerReplication;
+            statesPerReplication[VolatileActorStateProvider.ActorStateType.Reminder] = reminderStatesPerReplication;
 
             return statesPerReplication;
         }
 
-        protected class MockReminder : IActorReminder
+        private static bool TryGetActorStateData(
+            ActorStateTable stateTable,
+            VolatileActorStateProvider.ActorStateType type,
+            string key,
+            bool expectedResult,
+            out VolatileActorStateProvider.ActorStateData data)
         {
-            TimeSpan IActorReminder.DueTime
-            {
-                get { return TimeSpan.MaxValue; }
-            }
+            data = null;
+            bool actualResult = stateTable.TryGetValue(type, key, out data);
 
-            private readonly string _name;
-            string IActorReminder.Name
-            {
-                get { return _name; }
-            }
+            FailTestIf(
+                expectedResult != actualResult,
+                "TryGetValue({0}, {1}): expected={2} actual={3}",
+                type,
+                key,
+                expectedResult,
+                actualResult);
 
-            TimeSpan IActorReminder.Period
-            {
-                get { return TimeSpan.MaxValue; }
-            }
-
-            byte[] IActorReminder.State
-            {
-                get { return null; }
-            }
-
-            public MockReminder(string reminderName)
-            {
-                _name = reminderName;
-            }
+            return actualResult;
         }
 
-        internal protected class ReplicationUnit
+        protected internal class ReplicationUnit
         {
-            internal ReplicationUnit(long sequenceNumber, ActorStateType stateType)
+            internal ReplicationUnit(long sequenceNumber, VolatileActorStateProvider.ActorStateType stateType)
             {
                 this.SequenceNumber = sequenceNumber;
                 this.StateType = stateType;
                 this.ActorStateDataWrapperList = new List<ActorStateDataWrapper>();
             }
 
-            internal long SequenceNumber { get; private set; }
+            internal long SequenceNumber { get; }
 
-            internal List<ActorStateDataWrapper> ActorStateDataWrapperList { get; private set; }
+            internal List<ActorStateDataWrapper> ActorStateDataWrapperList { get; }
 
-            internal ActorStateType StateType { get; private set; }
+            internal VolatileActorStateProvider.ActorStateType StateType { get; }
 
             internal int ActorStateCount
             {
-                get
-                {
-                    return this.ActorStateDataWrapperList.Count;
-                }
+                get { return this.ActorStateDataWrapperList.Count; }
             }
 
             internal int ActorStateUpdateCount
             {
                 get
                 {
-                    int count = 0;
+                    var count = 0;
 
-                    foreach(var actorStateDataWrapper in this.ActorStateDataWrapperList)
+                    foreach (ActorStateDataWrapper actorStateDataWrapper in this.ActorStateDataWrapperList)
                     {
-                        if(!actorStateDataWrapper.IsDelete)
+                        if (!actorStateDataWrapper.IsDelete)
                         {
                             count++;
                         }
@@ -677,15 +653,12 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
 
             internal bool IsLastActorStateDelete
             {
-                get
-                {
-                    return this.ActorStateDataWrapperList[this.ActorStateCount - 1].IsDelete;
-                }
+                get { return this.ActorStateDataWrapperList[this.ActorStateCount - 1].IsDelete; }
             }
 
             internal void UpdateSequenceNumber()
             {
-                foreach (var actorStateDataWrapper in this.ActorStateDataWrapperList)
+                foreach (ActorStateDataWrapper actorStateDataWrapper in this.ActorStateDataWrapperList)
                 {
                     actorStateDataWrapper.UpdateSequenceNumber(this.SequenceNumber);
                 }
@@ -695,7 +668,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
             {
                 var keysString = "[ ";
 
-                foreach (var actorStateDataWrapper in this.ActorStateDataWrapperList)
+                foreach (ActorStateDataWrapper actorStateDataWrapper in this.ActorStateDataWrapperList)
                 {
                     keysString += actorStateDataWrapper.Key + " ";
                 }
@@ -711,9 +684,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 int statesPerReplication,
                 long dataLength)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.Actor);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.Actor);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(CreateActorStateDataWrapper(keyPrefix + i, dataLength));
                 }
@@ -726,12 +699,12 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 string keyPrefix,
                 int statesPerReplication)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.Actor);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.Actor);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(
-                        CreateActorStateDataWrapperForDelete(ActorStateType.Actor, keyPrefix + i));
+                        CreateActorStateDataWrapperForDelete(VolatileActorStateProvider.ActorStateType.Actor, keyPrefix + i));
                 }
 
                 return replicationUnit;
@@ -743,9 +716,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 int statesPerReplication,
                 TimeSpan timeStamp)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.LogicalTimestamp);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.LogicalTimestamp);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(CreateActorStateDataWrapper(keyPrefix + i, timeStamp));
                 }
@@ -758,12 +731,12 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 string keyPrefix,
                 int statesPerReplication)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.LogicalTimestamp);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.LogicalTimestamp);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(
-                        CreateActorStateDataWrapperForDelete(ActorStateType.LogicalTimestamp, keyPrefix + i));
+                        CreateActorStateDataWrapperForDelete(VolatileActorStateProvider.ActorStateType.LogicalTimestamp, keyPrefix + i));
                 }
 
                 return replicationUnit;
@@ -775,9 +748,9 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 int statesPerReplication,
                 string reminderName)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.Reminder);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.Reminder);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(CreateActorStateDataWrapper(keyPrefix + i, reminderName));
                 }
@@ -790,15 +763,45 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime.Volatile
                 string keyPrefix,
                 int statesPerReplication)
             {
-                var replicationUnit = new ReplicationUnit(sequenceNumber, ActorStateType.Reminder);
+                var replicationUnit = new ReplicationUnit(sequenceNumber, VolatileActorStateProvider.ActorStateType.Reminder);
 
-                for (int i = 1; i <= statesPerReplication; i++)
+                for (var i = 1; i <= statesPerReplication; i++)
                 {
                     replicationUnit.ActorStateDataWrapperList.Add(
-                        CreateActorStateDataWrapperForDelete(ActorStateType.Reminder, keyPrefix + i));
+                        CreateActorStateDataWrapperForDelete(VolatileActorStateProvider.ActorStateType.Reminder, keyPrefix + i));
                 }
 
                 return replicationUnit;
+            }
+        }
+
+        protected class MockReminder : IActorReminder
+        {
+            private readonly string _name;
+
+            public MockReminder(string reminderName)
+            {
+                this._name = reminderName;
+            }
+
+            TimeSpan IActorReminder.DueTime
+            {
+                get { return TimeSpan.MaxValue; }
+            }
+
+            string IActorReminder.Name
+            {
+                get { return this._name; }
+            }
+
+            TimeSpan IActorReminder.Period
+            {
+                get { return TimeSpan.MaxValue; }
+            }
+
+            byte[] IActorReminder.State
+            {
+                get { return null; }
             }
         }
     }

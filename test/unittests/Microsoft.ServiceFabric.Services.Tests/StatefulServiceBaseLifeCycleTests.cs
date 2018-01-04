@@ -6,53 +6,28 @@
 namespace Microsoft.ServiceFabric.Services.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.Fabric;
     using System.Fabric.Health;
     using System.Linq;
-    using System.Numerics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Services.Runtime;
     using FluentAssertions;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Runtime;
     using Moq;
     using Xunit;
 
     /// <summary>
-    /// State manager tests.
+    ///     State manager tests.
     /// </summary>
     public class StatefulServiceLifeCycleTests
     {
-        class RunAsyncBlockingCallTestService : StatefulBaseTestService
-        {
-            public RunAsyncBlockingCallTestService(StatefulServiceContext context)
-                : base(context)
-            {
-                this.RunAsyncInvoked = false;
-            }
-
-            public bool RunAsyncInvoked { get; private set; }
-
-            protected override Task RunAsync(CancellationToken cancellationToken)
-            {
-                this.RunAsyncInvoked = true;
-                
-                long i = 0;
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    i++;
-                }
-
-                return Task.FromResult(i);
-            }
-        }
-
         [Fact]
         public void RunAsyncBlockingCall()
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: RunAsyncBlockingCall()");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new RunAsyncBlockingCallTestService(serviceContext);
             IStatefulServiceReplica testServiceReplica = new StatefulServiceReplicaAdapter(serviceContext, testService);
@@ -63,9 +38,9 @@ namespace Microsoft.ServiceFabric.Services.Tests
             testServiceReplica.OpenAsync(ReplicaOpenMode.New, partition.Object, CancellationToken.None).GetAwaiter().GetResult();
 
             Console.WriteLine(@"// U -> P");
-            var changeRoleTask = testServiceReplica.ChangeRoleAsync(ReplicaRole.Primary, CancellationToken.None);
+            Task<string> changeRoleTask = testServiceReplica.ChangeRoleAsync(ReplicaRole.Primary, CancellationToken.None);
 
-            CancellationTokenSource source = new CancellationTokenSource(10000);
+            var source = new CancellationTokenSource(10000);
             while (!testService.RunAsyncInvoked)
             {
                 Task.Delay(100, source.Token).GetAwaiter().GetResult();
@@ -73,7 +48,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
 
             Assert.True(changeRoleTask.IsCompleted && !changeRoleTask.IsCanceled && !changeRoleTask.IsFaulted);
             ((StatefulServiceReplicaAdapter) testServiceReplica).Test_IsRunAsyncTaskRunning().Should().BeTrue();
-            
+
             testServiceReplica.CloseAsync(CancellationToken.None).GetAwaiter().GetResult();
         }
 
@@ -82,7 +57,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: CancellationDuringWriteStatus()");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             IStatefulServiceReplica testServiceReplica =
                 new StatefulServiceReplicaAdapter(serviceContext, new StatefulBaseTestService(serviceContext));
@@ -105,34 +80,12 @@ namespace Microsoft.ServiceFabric.Services.Tests
             partition.Verify(p => p.ReportFault(It.IsAny<FaultType>()), Times.Never());
         }
 
-        class RunAsyncCancellationTestService : StatefulBaseTestService
-        {
-            private const int ToWait = 100;
-
-            public bool StartedWaiting = false;
-
-            public RunAsyncCancellationTestService(StatefulServiceContext context)
-                : base(context)
-            {
-            }
-
-            protected override async Task RunAsync(CancellationToken cancellationToken)
-            {
-                this.StartedWaiting = true;
-                while (true)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await Task.Delay(ToWait, cancellationToken);
-                }
-            }
-        }
-
         [Fact]
         public void RunAsyncCancellation()
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: RunAsyncCancellation()");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new RunAsyncCancellationTestService(serviceContext);
             IStatefulServiceReplica testServiceReplica = new StatefulServiceReplicaAdapter(serviceContext, testService);
@@ -144,7 +97,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
             Console.WriteLine(@"// U -> P");
             testServiceReplica.ChangeRoleAsync(ReplicaRole.Primary, CancellationToken.None).GetAwaiter().GetResult();
 
-            CancellationTokenSource source = new CancellationTokenSource(10000);
+            var source = new CancellationTokenSource(10000);
             while (!testService.StartedWaiting)
             {
                 Task.Delay(100, source.Token).GetAwaiter().GetResult();
@@ -158,29 +111,12 @@ namespace Microsoft.ServiceFabric.Services.Tests
             partition.Verify(p => p.ReportFault(It.IsAny<FaultType>()), Times.Never());
         }
 
-        class RunAsyncSlowCancellationTestService : StatefulBaseTestService
-        {
-            public RunAsyncSlowCancellationTestService(StatefulServiceContext context)
-                : base(context)
-            {
-                this.RunAsyncInvoked = false;
-            }
-
-            public bool RunAsyncInvoked { get; private set; }
-
-            protected override async Task RunAsync(CancellationToken cancellationToken)
-            {
-                this.RunAsyncInvoked = true;
-                await Task.Delay(TimeSpan.FromSeconds(30), CancellationToken.None);
-            }
-        }
-
         [Fact]
         public void RunAsyncSlowCancellation()
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: RunAsyncSlowCancellation()");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new RunAsyncSlowCancellationTestService(serviceContext);
             IStatefulServiceReplica testServiceReplica = new StatefulServiceReplicaAdapter(serviceContext, testService);
@@ -194,30 +130,19 @@ namespace Microsoft.ServiceFabric.Services.Tests
             Console.WriteLine(@"// U -> P");
             testServiceReplica.ChangeRoleAsync(ReplicaRole.Primary, CancellationToken.None).GetAwaiter().GetResult();
 
-            CancellationTokenSource source = new CancellationTokenSource(10000);
+            var source = new CancellationTokenSource(10000);
             while (!testService.RunAsyncInvoked)
             {
                 Task.Delay(100, source.Token).GetAwaiter().GetResult();
             }
-            
+
             Console.WriteLine(@"// P -> S");
             testServiceReplica.ChangeRoleAsync(ReplicaRole.ActiveSecondary, CancellationToken.None).GetAwaiter().GetResult();
 
             partition.Verify(p => p.ReportFault(It.IsAny<FaultType>()), Times.Never());
-            partition.Verify(p => p.ReportPartitionHealth(It.Is<HealthInformation>(hinfo => Utility.IsRunAsyncSlowCancellationHealthInformation(hinfo))), Times.AtLeastOnce);
-        }
-
-        class RunAsyncFailTestService : StatefulBaseTestService
-        {
-            public RunAsyncFailTestService(StatefulServiceContext context)
-                : base(context)
-            {
-            }
-
-            protected override Task RunAsync(CancellationToken cancellationToken)
-            {
-                return Task.Run(() => { throw new FabricException(); }, CancellationToken.None);
-            }
+            partition.Verify(
+                p => p.ReportPartitionHealth(It.Is<HealthInformation>(hinfo => Utility.IsRunAsyncSlowCancellationHealthInformation(hinfo))),
+                Times.AtLeastOnce);
         }
 
         [Fact]
@@ -225,7 +150,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: RunAsyncFail()");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             IStatefulServiceReplica testServiceReplica = new StatefulServiceReplicaAdapter(serviceContext, new RunAsyncFailTestService(serviceContext));
 
@@ -233,10 +158,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
             var partition = new Mock<IStatefulServicePartition>();
             partition.SetupGet(p => p.WriteStatus).Returns(PartitionAccessStatus.Granted);
             partition.Setup(p => p.ReportFault(It.IsAny<FaultType>())).Callback(
-                () =>
-                {
-                    tcs.SetResult(true);
-                });
+                () => { tcs.SetResult(true); });
 
             partition.Setup(p => p.ReportPartitionHealth(It.IsAny<HealthInformation>()));
 
@@ -260,15 +182,17 @@ namespace Microsoft.ServiceFabric.Services.Tests
 
             partition.Verify(p => p.ReportFault(It.IsNotIn(FaultType.Transient)), Times.Never());
             partition.Verify(p => p.ReportFault(FaultType.Transient), Times.Once());
-            partition.Verify(p => p.ReportPartitionHealth(It.Is<HealthInformation>(hinfo => Utility.IsRunAsyncUnhandledExceptionHealthInformation(hinfo))), Times.Once());
+            partition.Verify(
+                p => p.ReportPartitionHealth(It.Is<HealthInformation>(hinfo => Utility.IsRunAsyncUnhandledExceptionHealthInformation(hinfo))),
+                Times.Once());
         }
-        
+
         [Fact]
         public void CommunicationListenerLifeCycle_P_S_P_N_NoListenOnSecondary()
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: CommunicationListenerLifeCycle_P_S_P_N_NoListenOnSecondary");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new StatefulBaseTestService(serviceContext)
             {
@@ -287,7 +211,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 int actualCount = testService.Listeners.Count;
                 actualCount.Should().Be(expectedCount, "listener has been opened only once(U->P)");
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
-                ((StatefulServiceReplicaAdapter)testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
+                ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
 
                 testService.CurrentListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 testService.CurrentListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Never());
@@ -315,9 +239,9 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 int actualCount = testService.Listeners.Count;
                 actualCount.Should().Be(expectedCount, "listener has been opened twice(U->P->S->P)");
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
-                ((StatefulServiceReplicaAdapter)testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
+                ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
 
-                var firstListener = testService.Listeners.First();
+                Mock<ICommunicationListener> firstListener = testService.Listeners.First();
                 firstListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.Abort(), Times.Never());
@@ -336,7 +260,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
                 ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.Should().BeNull();
 
-                var firstListener = testService.Listeners.First();
+                Mock<ICommunicationListener> firstListener = testService.Listeners.First();
 
                 firstListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
@@ -355,7 +279,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: CommunicationListenerLifeCycle_P_S_P_N_ListenOnSecondary");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new StatefulBaseTestService(serviceContext)
             {
@@ -374,7 +298,7 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 int actualCount = testService.Listeners.Count;
                 actualCount.Should().Be(expectedCount, "listener has been opened only once(U->P)");
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
-                ((StatefulServiceReplicaAdapter)testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
+                ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
 
                 testService.CurrentListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 testService.CurrentListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Never());
@@ -388,9 +312,9 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 int actualCount = testService.Listeners.Count;
                 actualCount.Should().Be(expectedCount, "listener has been opened twice(U->P->S)");
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
-                ((StatefulServiceReplicaAdapter)testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
+                ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
 
-                var firstListener = testService.Listeners[0];
+                Mock<ICommunicationListener> firstListener = testService.Listeners[0];
                 firstListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.Abort(), Times.Never());
@@ -407,14 +331,14 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 int actualCount = testService.Listeners.Count;
                 actualCount.Should().Be(expectedCount, "listener has been opened three times(U->P->S->P)");
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
-                ((StatefulServiceReplicaAdapter)testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
+                ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.First().Should().Be(testService.CurrentListener.Object);
 
-                var firstListener = testService.Listeners[0];
+                Mock<ICommunicationListener> firstListener = testService.Listeners[0];
                 firstListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.Abort(), Times.Never());
 
-                var secondListener = testService.Listeners[1];
+                Mock<ICommunicationListener> secondListener = testService.Listeners[1];
                 secondListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 secondListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 secondListener.Verify(l => l.Abort(), Times.Never());
@@ -433,12 +357,12 @@ namespace Microsoft.ServiceFabric.Services.Tests
                 testService.Listeners.Last().Should().Be(testService.CurrentListener);
                 ((StatefulServiceReplicaAdapter) testServiceReplica).Test_CommunicationListeners.Should().BeNull();
 
-                var firstListener = testService.Listeners[0];
+                Mock<ICommunicationListener> firstListener = testService.Listeners[0];
                 firstListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 firstListener.Verify(l => l.Abort(), Times.Never());
 
-                var secondListener = testService.Listeners[1];
+                Mock<ICommunicationListener> secondListener = testService.Listeners[1];
                 secondListener.Verify(l => l.OpenAsync(It.IsAny<CancellationToken>()), Times.Once());
                 secondListener.Verify(l => l.CloseAsync(It.IsAny<CancellationToken>()), Times.Once());
                 secondListener.Verify(l => l.Abort(), Times.Never());
@@ -450,13 +374,13 @@ namespace Microsoft.ServiceFabric.Services.Tests
 
             partition.Verify(p => p.ReportFault(It.IsAny<FaultType>()), Times.Never());
         }
-        
+
         [Fact]
         public void ListenerExceptionOnAbort()
         {
             Console.WriteLine("StatefulServiceLifeCycleTests - Test Method: ListenerExceptionOnAbort");
 
-            var serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
+            StatefulServiceContext serviceContext = TestMocksRepository.GetMockStatefulServiceContext();
 
             var testService = new StatefulBaseTestService(serviceContext)
             {
@@ -471,6 +395,82 @@ namespace Microsoft.ServiceFabric.Services.Tests
             testServiceReplica.ChangeRoleAsync(ReplicaRole.Primary, CancellationToken.None).GetAwaiter().GetResult();
 
             testServiceReplica.Abort();
+        }
+
+        private class RunAsyncBlockingCallTestService : StatefulBaseTestService
+        {
+            public RunAsyncBlockingCallTestService(StatefulServiceContext context)
+                : base(context)
+            {
+                this.RunAsyncInvoked = false;
+            }
+
+            public bool RunAsyncInvoked { get; private set; }
+
+            protected override Task RunAsync(CancellationToken cancellationToken)
+            {
+                this.RunAsyncInvoked = true;
+
+                long i = 0;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    i++;
+                }
+
+                return Task.FromResult(i);
+            }
+        }
+
+        private class RunAsyncCancellationTestService : StatefulBaseTestService
+        {
+            private const int ToWait = 100;
+
+            public bool StartedWaiting;
+
+            public RunAsyncCancellationTestService(StatefulServiceContext context)
+                : base(context)
+            {
+            }
+
+            protected override async Task RunAsync(CancellationToken cancellationToken)
+            {
+                this.StartedWaiting = true;
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await Task.Delay(ToWait, cancellationToken);
+                }
+            }
+        }
+
+        private class RunAsyncSlowCancellationTestService : StatefulBaseTestService
+        {
+            public RunAsyncSlowCancellationTestService(StatefulServiceContext context)
+                : base(context)
+            {
+                this.RunAsyncInvoked = false;
+            }
+
+            public bool RunAsyncInvoked { get; private set; }
+
+            protected override async Task RunAsync(CancellationToken cancellationToken)
+            {
+                this.RunAsyncInvoked = true;
+                await Task.Delay(TimeSpan.FromSeconds(30), CancellationToken.None);
+            }
+        }
+
+        private class RunAsyncFailTestService : StatefulBaseTestService
+        {
+            public RunAsyncFailTestService(StatefulServiceContext context)
+                : base(context)
+            {
+            }
+
+            protected override Task RunAsync(CancellationToken cancellationToken)
+            {
+                return Task.Run(() => { throw new FabricException(); }, CancellationToken.None);
+            }
         }
     }
 }

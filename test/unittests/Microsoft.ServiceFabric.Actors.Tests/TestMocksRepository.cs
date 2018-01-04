@@ -7,15 +7,15 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Numerics;
     using System.Fabric;
+    using System.Numerics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Moq;
 
     /// <summary>
-    /// Contains mocks needed by Aspnet core listener unit tests.
+    ///     Contains mocks needed by Aspnet core listener unit tests.
     /// </summary>
     internal static class TestMocksRepository
     {
@@ -42,7 +42,8 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 
         internal static StatefulServiceContext GetMockStatefulServiceContext()
         {
-            return new StatefulServiceContext(GetNodeContext(),
+            return new StatefulServiceContext(
+                GetNodeContext(),
                 GetCodePackageActivationContext(),
                 MockServiceTypeName,
                 MockServiceUri,
@@ -53,7 +54,8 @@ namespace Microsoft.ServiceFabric.Actors.Tests
 
         internal static StatelessServiceContext GetMockStatelessServiceContext()
         {
-            return new StatelessServiceContext(GetNodeContext(),
+            return new StatelessServiceContext(
+                GetNodeContext(),
                 GetCodePackageActivationContext(),
                 MockServiceTypeName,
                 MockServiceUri,
@@ -62,7 +64,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
                 MockReplicaOrInstanceID);
         }
 
-        internal static ActorService GetActorService<T>() where T: Actor
+        internal static ActorService GetActorService<T>() where T : Actor
         {
             return new ActorService(
                 GetMockStatefulServiceContext(),
@@ -80,9 +82,58 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             return mockTimer.Object;
         }
 
+        internal static IActorStateProvider GetMockActorStateProvider()
+        {
+            // Create mock StateProvider and setup required things needed by tests.
+            var mockStateProvider = new Mock<IActorStateProvider>();
+            mockStateProvider.SetupAllProperties();
+
+            // for IActorStateProvider
+            mockStateProvider.Setup(
+                x =>
+                    x.SaveStateAsync(
+                        It.IsAny<ActorId>(),
+                        It.IsAny<IReadOnlyCollection<ActorStateChange>>(),
+                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
+
+            mockStateProvider.Setup(
+                x =>
+                    x.ContainsStateAsync(
+                        It.IsAny<ActorId>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(false));
+
+            mockStateProvider.Setup(
+                    x =>
+                        x.RemoveActorAsync(It.IsAny<ActorId>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(true));
+
+            mockStateProvider.Setup(
+                x =>
+                    x.SaveReminderAsync(
+                        It.IsAny<ActorId>(),
+                        It.IsAny<IActorReminder>(),
+                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
+
+            mockStateProvider.Setup(
+                x =>
+                    x.DeleteReminderAsync(
+                        It.IsAny<ActorId>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
+
+            mockStateProvider.Setup(
+                    x =>
+                        x.EnumerateStateNamesAsync(It.IsAny<ActorId>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<string>() as IEnumerable<string>));
+
+            return mockStateProvider.Object;
+        }
+
         private static NodeContext GetNodeContext()
         {
-            return new NodeContext(MockNodeName,
+            return new NodeContext(
+                MockNodeName,
                 new NodeId(BigInteger.Zero, BigInteger.Zero),
                 BigInteger.Zero,
                 MockNodeType,
@@ -90,7 +141,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests
         }
 
         private static ICodePackageActivationContext GetCodePackageActivationContext()
-        {   
+        {
             // Create mock Context and setup required things needed by tests.
             var mockContext = new Mock<ICodePackageActivationContext>();
             mockContext.SetupAllProperties();
@@ -103,46 +154,6 @@ namespace Microsoft.ServiceFabric.Actors.Tests
             mockContext.Setup(x => x.ApplicationName).Returns(MockApplciationName);
             mockContext.Setup(x => x.ApplicationTypeName).Returns(MockApplicationTypeName);
             return mockContext.Object;
-        }
-
-        internal static IActorStateProvider GetMockActorStateProvider()
-        {
-            // Create mock StateProvider and setup required things needed by tests.
-            var mockStateProvider = new Mock<IActorStateProvider>();
-            mockStateProvider.SetupAllProperties();
-
-            // for IActorStateProvider
-            mockStateProvider.Setup(
-                x =>
-                    x.SaveStateAsync(It.IsAny<ActorId>(), It.IsAny<IReadOnlyCollection<ActorStateChange>>(),
-                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
-
-            mockStateProvider.Setup(
-                x =>
-                    x.ContainsStateAsync(It.IsAny<ActorId>(), It.IsAny<string>(),
-                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(false));
-
-            mockStateProvider.Setup(
-                x =>
-                    x.RemoveActorAsync(It.IsAny<ActorId>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(true));
-
-            mockStateProvider.Setup(
-                x =>
-                    x.SaveReminderAsync(It.IsAny<ActorId>(), It.IsAny<IActorReminder>(),
-                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
-
-            mockStateProvider.Setup(
-                x =>
-                    x.DeleteReminderAsync(It.IsAny<ActorId>(), It.IsAny<string>(),
-                        It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
-
-            mockStateProvider.Setup(
-                x =>
-                    x.EnumerateStateNamesAsync(It.IsAny<ActorId>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<string>() as IEnumerable<string>));
-
-            return mockStateProvider.Object;
         }
     }
 }

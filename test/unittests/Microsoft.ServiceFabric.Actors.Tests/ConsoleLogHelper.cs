@@ -6,9 +6,6 @@
 namespace Microsoft.ServiceFabric.Actors.Tests
 {
     using System;
-    using System.Fabric;
-    using System.Numerics;
-    using Microsoft.ServiceFabric.Actors.Runtime;
 
     internal class ConsoleLogHelper
     {

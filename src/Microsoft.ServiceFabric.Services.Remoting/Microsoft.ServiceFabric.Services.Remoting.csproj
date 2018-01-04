@@ -195,13 +195,11 @@
     <Compile Include="V2\Messaging\Allocator.cs" />
     <Compile Include="V2\Messaging\BufferPoolManager.cs" />
     <Compile Include="V2\Messaging\IBufferPoolManager.cs" />
-    <Compile Include="V2\Messaging\IMessage.cs" />
     <Compile Include="V2\Messaging\IMessageBody.cs" />
     <Compile Include="V2\Messaging\IMessageHeader.cs" />
     <Compile Include="V2\Messaging\IncomingMessageBody.cs" />
     <Compile Include="V2\Messaging\IncomingMessageHeader.cs" />
     <Compile Include="V2\Messaging\IPooledBuffer.cs" />
-    <Compile Include="V2\Messaging\Message.cs" />
     <Compile Include="V2\Messaging\OutgoingMessageBody.cs" />
     <Compile Include="V2\Messaging\OutgoingMessageHeaders.cs" />
     <Compile Include="V2\Messaging\PooledBuffer.cs" />

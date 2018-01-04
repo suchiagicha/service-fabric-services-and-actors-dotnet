@@ -6,17 +6,12 @@
 namespace Microsoft.ServiceFabric.Services.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Numerics;
     using System.Fabric;
-    using System.Fabric.Description;
-    using System.Text;
-    using System.Threading.Tasks;
+    using System.Numerics;
     using Moq;
 
     /// <summary>
-    /// Contains mocks needed by tests for Microsoft.ServiceFabric.Services
+    ///     Contains mocks needed by tests for Microsoft.ServiceFabric.Services
     /// </summary>
     internal static class TestMocksRepository
     {
@@ -26,30 +21,10 @@ namespace Microsoft.ServiceFabric.Services.Tests
         internal static string MockServiceTypeName = "MockServiceTypeName";
         internal static Uri MockServiceUri = new Uri("fabric:/MockServiceName");
 
-        internal static StatefulServiceContext GetMockStatefulServiceContext()
-        {
-            return new StatefulServiceContext(GetNodeContext(),
-                GetCodePackageActivationContext(),
-                MockServiceTypeName,
-                MockServiceUri,
-                null,
-                MockPartitionID,
-                MockReplicaOrInstanceID);
-        }
-
-        internal static StatelessServiceContext GetMockStatelessServiceContext()
-        {
-            return new StatelessServiceContext(GetNodeContext(),
-                GetCodePackageActivationContext(),
-                MockServiceTypeName,
-                MockServiceUri,
-                null,
-                MockPartitionID,
-                MockReplicaOrInstanceID);
-        }
         public static NodeContext GetNodeContext()
         {
-            return new NodeContext("MockNode",
+            return new NodeContext(
+                "MockNode",
                 new NodeId(BigInteger.Zero, BigInteger.Zero),
                 BigInteger.Zero,
                 "MockNodeType",
@@ -61,6 +36,30 @@ namespace Microsoft.ServiceFabric.Services.Tests
             // Create mock Context and setup required things needed by tests.
             var mockContext = new Mock<ICodePackageActivationContext>();
             return mockContext.Object;
+        }
+
+        internal static StatefulServiceContext GetMockStatefulServiceContext()
+        {
+            return new StatefulServiceContext(
+                GetNodeContext(),
+                GetCodePackageActivationContext(),
+                MockServiceTypeName,
+                MockServiceUri,
+                null,
+                MockPartitionID,
+                MockReplicaOrInstanceID);
+        }
+
+        internal static StatelessServiceContext GetMockStatelessServiceContext()
+        {
+            return new StatelessServiceContext(
+                GetNodeContext(),
+                GetCodePackageActivationContext(),
+                MockServiceTypeName,
+                MockServiceUri,
+                null,
+                MockPartitionID,
+                MockReplicaOrInstanceID);
         }
     }
 }

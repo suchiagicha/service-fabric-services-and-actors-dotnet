@@ -5,24 +5,21 @@
 
 namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
 {
-    using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using FluentAssertions;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using Xunit;
 
     public class IdleObjectGcHandleTests
     {
         /// <summary>
-        /// Verifies basic usage of IdleObjectGcHandle.
+        ///     Verifies basic usage of IdleObjectGcHandle.
         /// </summary>
         [Fact]
         public void VerifyBasicUsage()
         {
-            IdleObjectGcHandle gchandle = new IdleObjectGcHandle(1);
+            var gchandle = new IdleObjectGcHandle(1);
             gchandle.TryUse(false).Should().BeTrue();
             gchandle.TryUse(true).Should().BeTrue();
             gchandle.TryCollect().Should().BeFalse();
@@ -41,7 +38,6 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
         [InlineData(2)]
         [InlineData(5)]
         [InlineData(10)]
-
         public void VerifyUseUnuseCollect(int N)
         {
             // 1. Set MaxIdleCount for IdleObjectGcHandle to N.
@@ -53,11 +49,11 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             // 7. Final call to TryCollect must return true.
 
 
-            IdleObjectGcHandle gchandle = new IdleObjectGcHandle(N);
+            var gchandle = new IdleObjectGcHandle(N);
             gchandle.TryUse(false).Should().BeTrue();
-            List<Task> tasks = new List<Task>();
+            var tasks = new List<Task>();
 
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => Assert.True(gchandle.TryUse(false))));
                 tasks.Add(Task.Run(() => Assert.False(gchandle.TryCollect())));
@@ -66,7 +62,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             Task.WaitAll(tasks.ToArray());
             tasks.Clear();
 
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => gchandle.Unuse(false)));
                 tasks.Add(Task.Run(() => Assert.False(gchandle.TryCollect())));
@@ -76,7 +72,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             tasks.Clear();
 
             gchandle.Unuse(false);
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => Assert.False(gchandle.TryCollect())));
             }
@@ -105,11 +101,11 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             // 11. Final call to TryCollect must return true.
 
 
-            IdleObjectGcHandle gchandle = new IdleObjectGcHandle(N);
+            var gchandle = new IdleObjectGcHandle(N);
             gchandle.TryUse(false).Should().BeTrue();
-            List<Task> tasks = new List<Task>();
+            var tasks = new List<Task>();
 
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => Assert.True(gchandle.TryUse(false))));
                 tasks.Add(Task.Run(() => Assert.True(gchandle.TryUse(true))));
@@ -119,7 +115,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             Task.WaitAll(tasks.ToArray());
             tasks.Clear();
 
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => gchandle.Unuse(false)));
                 tasks.Add(Task.Run(() => gchandle.Unuse(true)));
@@ -131,7 +127,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
 
             gchandle.Unuse(false);
 
-            for (int i = 0; i < N - 1; i++)
+            for (var i = 0; i < N - 1; i++)
             {
                 tasks.Add(Task.Run(() => Assert.False(gchandle.TryCollect())));
             }
@@ -140,7 +136,7 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Runtime
             tasks.Clear();
             gchandle.TryUse(true).Should().BeTrue();
 
-            for (int i = 0; i < N; i++)
+            for (var i = 0; i < N; i++)
             {
                 tasks.Add(Task.Run(() => Assert.False(gchandle.TryCollect())));
             }

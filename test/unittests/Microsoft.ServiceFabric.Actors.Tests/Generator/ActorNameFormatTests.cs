@@ -5,8 +5,8 @@
 
 namespace Microsoft.ServiceFabric.Actors.Tests.Generator
 {
-    using Microsoft.ServiceFabric.Actors.Generator;
     using FluentAssertions;
+    using Microsoft.ServiceFabric.Actors.Generator;
     using Xunit;
 
     public class ActorNameFormatTests
@@ -15,10 +15,10 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Generator
         public void GetFabricService_NoServiceNameProvided_ReturnServiceName()
         {
             // Arrange
-            string serviceName = "ObjectActorService";
+            var serviceName = "ObjectActorService";
 
             // Act
-            var result = ActorNameFormat.GetFabricServiceName(typeof(object));
+            string result = ActorNameFormat.GetFabricServiceName(typeof(object));
 
             // Assert
             result.Should().Be(serviceName);
@@ -28,10 +28,10 @@ namespace Microsoft.ServiceFabric.Actors.Tests.Generator
         public void GetFabricService_PassServiceName_ReturnServiceName()
         {
             // Arrange
-            string serviceName = "serviceName";
+            var serviceName = "serviceName";
 
             // Act
-            var result = ActorNameFormat.GetFabricServiceName(typeof(object), serviceName);
+            string result = ActorNameFormat.GetFabricServiceName(typeof(object), serviceName);
 
             // Assert
             result.Should().Be(serviceName);
