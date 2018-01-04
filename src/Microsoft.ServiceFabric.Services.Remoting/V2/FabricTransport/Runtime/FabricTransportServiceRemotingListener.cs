@@ -23,9 +23,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
     {
         private static readonly string DefaultV2ListenerEndpointResourceName = "ServiceEndpointV2";
         private readonly FabricTransportMessageHandler transportMessageHandler;
-        private FabricTransportListener fabricTransportlistener;
         private readonly string listenAddress;
         private readonly string publishAddress;
+        private FabricTransportListener fabricTransportlistener;
 
 
         /// <summary>

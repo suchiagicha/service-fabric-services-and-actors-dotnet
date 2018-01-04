@@ -27,15 +27,30 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        TimeSpan IActorReminderState.RemainingDueTime => this.nextDueTime;
+        TimeSpan IActorReminderState.RemainingDueTime
+        {
+            get { return this.nextDueTime; }
+        }
 
-        string IActorReminder.Name => this.reminder.Name;
+        string IActorReminder.Name
+        {
+            get { return this.reminder.Name; }
+        }
 
-        TimeSpan IActorReminder.DueTime => this.reminder.DueTime;
+        TimeSpan IActorReminder.DueTime
+        {
+            get { return this.reminder.DueTime; }
+        }
 
-        TimeSpan IActorReminder.Period => this.reminder.Period;
+        TimeSpan IActorReminder.Period
+        {
+            get { return this.reminder.Period; }
+        }
 
-        byte[] IActorReminder.State => this.reminder.State;
+        byte[] IActorReminder.State
+        {
+            get { return this.reminder.State; }
+        }
 
 
         private static TimeSpan ComputeRemainingTime(

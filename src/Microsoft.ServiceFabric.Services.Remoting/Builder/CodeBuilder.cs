@@ -25,7 +25,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
             this.proxyGeneratorBuildResultMap = new Dictionary<Type, ProxyGeneratorBuildResult>();
         }
 
-        ICodeBuilderNames ICodeBuilder.Names => this.codeBuilderNames;
+        ICodeBuilderNames ICodeBuilder.Names
+        {
+            get { return this.codeBuilderNames; }
+        }
 
         MethodDispatcherBuildResult ICodeBuilder.GetOrBuilderMethodDispatcher(Type interfaceType)
         {

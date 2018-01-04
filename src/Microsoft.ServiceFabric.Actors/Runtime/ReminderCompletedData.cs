@@ -21,9 +21,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.utcTime = utcTime;
         }
 
-        public TimeSpan LogicalTime => this.logicalTime;
+        public TimeSpan LogicalTime
+        {
+            get { return this.logicalTime; }
+        }
 
-        public DateTime UtcTime => this.utcTime;
+        public DateTime UtcTime
+        {
+            get { return this.utcTime; }
+        }
 
         public long EstimateDataLength()
         {

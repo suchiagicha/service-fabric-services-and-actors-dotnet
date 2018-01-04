@@ -85,7 +85,10 @@ namespace FabActUtil.CommandLineParser
         /// <summary>
         ///     Returns true if the argument did not have an explicit short name specified.
         /// </summary>
-        public bool DefaultShortName => null == this.ShortName;
+        public bool DefaultShortName
+        {
+            get { return null == this.ShortName; }
+        }
 
         /// <summary>
         ///     The short name of the argument.
@@ -95,7 +98,10 @@ namespace FabActUtil.CommandLineParser
         /// <summary>
         ///     Returns true if the argument did not have an explicit long name specified.
         /// </summary>
-        public bool DefaultLongName => null == this.longName;
+        public bool DefaultLongName
+        {
+            get { return null == this.longName; }
+        }
 
         /// <summary>
         ///     The long name of the argument.
@@ -107,7 +113,7 @@ namespace FabActUtil.CommandLineParser
                 Debug.Assert(!this.DefaultLongName);
                 return this.longName;
             }
-            set => this.longName = value;
+            set { this.longName = value; }
         }
 
 
@@ -676,7 +682,10 @@ namespace FabActUtil.CommandLineParser
                     !this.IsCollection && this.elementType == null);
             }
 
-            public Type ValueType => this.IsCollection ? this.elementType : this.Type;
+            public Type ValueType
+            {
+                get { return this.IsCollection ? this.elementType : this.Type; }
+            }
 
             public string LongName { get; }
 
@@ -686,17 +695,32 @@ namespace FabActUtil.CommandLineParser
 
             public string ShortName { get; }
 
-            public bool IsRequired => 0 != (this.flags & CommandLineArgumentType.Required);
+            public bool IsRequired
+            {
+                get { return 0 != (this.flags & CommandLineArgumentType.Required); }
+            }
 
             public bool SeenValue { get; private set; }
 
-            public bool AllowMultiple => 0 != (this.flags & CommandLineArgumentType.Multiple);
+            public bool AllowMultiple
+            {
+                get { return 0 != (this.flags & CommandLineArgumentType.Multiple); }
+            }
 
-            public bool Unique => 0 != (this.flags & CommandLineArgumentType.Unique);
+            public bool Unique
+            {
+                get { return 0 != (this.flags & CommandLineArgumentType.Unique); }
+            }
 
-            public Type Type => this.field.FieldType;
+            public Type Type
+            {
+                get { return this.field.FieldType; }
+            }
 
-            public bool IsCollection => IsCollectionType(this.Type);
+            public bool IsCollection
+            {
+                get { return IsCollectionType(this.Type); }
+            }
 
             public bool IsDefault { get; }
 

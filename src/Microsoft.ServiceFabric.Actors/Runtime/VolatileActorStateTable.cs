@@ -476,18 +476,30 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 this.current = null;
             }
 
-            public long CommittedCount => this.committedEntriesListShallowCopy.Count;
+            public long CommittedCount
+            {
+                get { return this.committedEntriesListShallowCopy.Count; }
+            }
 
-            public long UncommittedCount => this.uncommittedEntriesListShallowCopy.Count;
+            public long UncommittedCount
+            {
+                get { return this.uncommittedEntriesListShallowCopy.Count; }
+            }
 
-            ActorStateDataWrapper IEnumerator<ActorStateDataWrapper>.Current => this.current;
+            ActorStateDataWrapper IEnumerator<ActorStateDataWrapper>.Current
+            {
+                get { return this.current; }
+            }
 
             void IDisposable.Dispose()
             {
                 // no-op
             }
 
-            object IEnumerator.Current => this.current;
+            object IEnumerator.Current
+            {
+                get { return this.current; }
+            }
 
             bool IEnumerator.MoveNext()
             {
@@ -500,7 +512,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 this.current = null;
             }
 
-            int IReadOnlyCollection<ActorStateDataWrapper>.Count => this.committedEntriesListShallowCopy.Count + this.uncommittedEntriesListShallowCopy.Count;
+            int IReadOnlyCollection<ActorStateDataWrapper>.Count
+            {
+                get { return this.committedEntriesListShallowCopy.Count + this.uncommittedEntriesListShallowCopy.Count; }
+            }
 
             IEnumerator<ActorStateDataWrapper> IEnumerable<ActorStateDataWrapper>.GetEnumerator()
             {
@@ -582,9 +597,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             public bool IsReplicationComplete { get; private set; }
 
-            public bool IsFailed => this.replicationException != null;
+            public bool IsFailed
+            {
+                get { return this.replicationException != null; }
+            }
 
-            public bool IsAllEntriesComplete => this.associatedEntryCount == 0;
+            public bool IsAllEntriesComplete
+            {
+                get { return this.associatedEntryCount == 0; }
+            }
 
             public void SetReplicationComplete(Exception replicationException)
             {
@@ -637,7 +658,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             public ActorStateDataWrapper ActorStateDataWrapper { get; }
 
-            public bool IsReplicationComplete => this.PendingReplicationContext == null || this.PendingReplicationContext.IsReplicationComplete;
+            public bool IsReplicationComplete
+            {
+                get { return this.PendingReplicationContext == null || this.PendingReplicationContext.IsReplicationComplete; }
+            }
 
             public bool IsFailed
             {

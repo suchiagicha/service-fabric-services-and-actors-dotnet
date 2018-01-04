@@ -31,7 +31,7 @@ namespace FabActUtil.CommandLineParser
         /// </summary>
         public int Indent
         {
-            get => this.indent;
+            get { return this.indent; }
             set
             {
                 this.indent = value;

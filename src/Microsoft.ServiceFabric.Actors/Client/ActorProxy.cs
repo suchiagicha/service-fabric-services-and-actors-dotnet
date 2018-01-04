@@ -59,7 +59,10 @@ namespace Microsoft.ServiceFabric.Actors.Client
         ///     <see cref="Remoting.V1.Client.IActorServicePartitionClient" /> that this proxy is using to communicate with the
         ///     actor.
         /// </value>
-        public IActorServicePartitionClient ActorServicePartitionClient => this.servicePartitionClient;
+        public IActorServicePartitionClient ActorServicePartitionClient
+        {
+            get { return this.servicePartitionClient; }
+        }
 #endif
 
         /// <summary>
@@ -70,7 +73,10 @@ namespace Microsoft.ServiceFabric.Actors.Client
         ///     <see cref="Remoting.V2.Client.IActorServicePartitionClient" /> that this proxy is using to communicate with the
         ///     actor.
         /// </value>
-        public Remoting.V2.Client.IActorServicePartitionClient ActorServicePartitionClientV2 => this.servicePartitionClientV2;
+        public Remoting.V2.Client.IActorServicePartitionClient ActorServicePartitionClientV2
+        {
+            get { return this.servicePartitionClientV2; }
+        }
 
 
         /// <summary>

@@ -11,7 +11,10 @@ namespace Microsoft.ServiceFabric.Services.Common
     {
         private static readonly Task<bool> DoneConstant = Task.FromResult(true);
 
-        public static Task Done => DoneConstant;
+        public static Task Done
+        {
+            get { return DoneConstant; }
+        }
     }
 
     internal static class TaskDone<T>

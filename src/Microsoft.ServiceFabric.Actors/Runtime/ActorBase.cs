@@ -59,13 +59,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         ///     Gets the name of the application that contains the actor service that is hosting this actor.
         /// </summary>
         /// <value>The name of application that contains the actor service that is hosting this actor.</value>
-        public string ApplicationName => this.Manager.ActorService.Context.CodePackageActivationContext.ApplicationName;
+        public string ApplicationName
+        {
+            get { return this.Manager.ActorService.Context.CodePackageActivationContext.ApplicationName; }
+        }
 
         /// <summary>
         ///     Gets the URI of the actor service that is hosting this actor.
         /// </summary>
         /// <value>The <see cref="System.Uri" /> of the actor service that is hosting this actor.</value>
-        public Uri ServiceUri => this.Manager.ActorService.Context.ServiceName;
+        public Uri ServiceUri
+        {
+            get { return this.Manager.ActorService.Context.ServiceName; }
+        }
 
         /// <summary>
         ///     Gets the stateful service replica that is hosting the actor.
@@ -73,7 +79,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <value>
         ///     The <see cref="ActorService" /> that represents the stateful service replica hosting the actor.
         /// </value>
-        public ActorService ActorService => this.Manager.ActorService;
+        public ActorService ActorService
+        {
+            get { return this.Manager.ActorService; }
+        }
 
         internal IdleObjectGcHandle GcHandler { get; }
 
@@ -87,9 +96,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal bool MarkedForDeletion
         {
-            get => this.markedForDeletion;
+            get { return this.markedForDeletion; }
 
-            set => this.markedForDeletion = value;
+            set { this.markedForDeletion = value; }
         }
 
         internal bool IsDummy { get; set; }

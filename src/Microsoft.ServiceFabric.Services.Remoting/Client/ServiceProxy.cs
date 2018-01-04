@@ -19,6 +19,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
     using Microsoft.ServiceFabric.Services.Remoting.V1;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Builder;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Client;
+
 #endif
 
     /// <summary>
@@ -43,7 +44,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
         ///     The V1 Service partition client used to send requests to the service.
         /// </summary>
         /// <value>ServicePartitionClient used by the ServiceProxy</value>
-        public IServiceRemotingPartitionClient ServicePartitionClient => this.partitionClient;
+        public IServiceRemotingPartitionClient ServicePartitionClient
+        {
+            get { return this.partitionClient; }
+        }
 #endif
 
         /// <summary>
@@ -51,7 +55,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
         /// </summary>
         /// <value>ServicePartitionClient used by the ServiceProxy</value>
 
-        public V2.Client.IServiceRemotingPartitionClient ServicePartitionClient2 => this.partitionClientV2;
+        public V2.Client.IServiceRemotingPartitionClient ServicePartitionClient2
+        {
+            get { return this.partitionClientV2; }
+        }
 
         /// <summary>
         ///     Creates a proxy to communicate to the specified service using the remoted interface TServiceInterface that

@@ -49,8 +49,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public string EndpointResourceName
         {
-            get => this.listenerSettings.EndpointResourceName;
-            set => this.listenerSettings.EndpointResourceName = value;
+            get { return this.listenerSettings.EndpointResourceName; }
+            set { this.listenerSettings.EndpointResourceName = value; }
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// <remarks>Default Value for Operation Timeout is set as 5 mins</remarks>
         public TimeSpan OperationTimeout
         {
-            get => this.listenerSettings.OperationTimeout;
-            set => this.listenerSettings.OperationTimeout = value;
+            get { return this.listenerSettings.OperationTimeout; }
+            set { this.listenerSettings.OperationTimeout = value; }
         }
 
 
@@ -79,8 +79,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public TimeSpan KeepAliveTimeout
         {
-            get => this.listenerSettings.KeepAliveTimeout;
-            set => this.listenerSettings.KeepAliveTimeout = value;
+            get { return this.listenerSettings.KeepAliveTimeout; }
+            set { this.listenerSettings.KeepAliveTimeout = value; }
         }
 
         /// <summary>
@@ -95,8 +95,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public long MaxMessageSize
         {
-            get => this.listenerSettings.MaxMessageSize;
-            set => this.listenerSettings.MaxMessageSize = value;
+            get { return this.listenerSettings.MaxMessageSize; }
+            set { this.listenerSettings.MaxMessageSize = value; }
         }
 
         /// <summary>
@@ -111,8 +111,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public long MaxQueueSize
         {
-            get => this.listenerSettings.MaxQueueSize;
-            set => this.listenerSettings.MaxQueueSize = value;
+            get { return this.listenerSettings.MaxQueueSize; }
+            set { this.listenerSettings.MaxQueueSize = value; }
         }
 
         /// <summary>
@@ -126,8 +126,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public long MaxConcurrentCalls
         {
-            get => this.listenerSettings.MaxConcurrentCalls;
-            set => this.listenerSettings.MaxConcurrentCalls = value;
+            get { return this.listenerSettings.MaxConcurrentCalls; }
+            set { this.listenerSettings.MaxConcurrentCalls = value; }
         }
 
         /// <summary>
@@ -160,11 +160,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// </remarks>
         public SecurityCredentials SecurityCredentials
         {
-            get => this.listenerSettings.SecurityCredentials;
-            set => this.listenerSettings.SecurityCredentials = value;
+            get { return this.listenerSettings.SecurityCredentials; }
+            set { this.listenerSettings.SecurityCredentials = value; }
         }
 
-        internal static object DefaultEndpointResourceName => FabricTransportListenerSettings.DefaultEndpointResourceName;
+        internal static object DefaultEndpointResourceName
+        {
+            get { return FabricTransportListenerSettings.DefaultEndpointResourceName; }
+        }
 
         /// <summary>
         ///     Loads the FabricTransport settings from a section specified in the service settings configuration file -

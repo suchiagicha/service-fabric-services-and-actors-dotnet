@@ -490,7 +490,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        private bool CurrentReplicaRoleNotPrimary => this.owner.CurrentReplicaRole != ReplicaRole.Primary;
+        private bool CurrentReplicaRoleNotPrimary
+        {
+            get { return this.owner.CurrentReplicaRole != ReplicaRole.Primary; }
+        }
 
         #endregion
     }
@@ -506,8 +509,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.stopWatch = Stopwatch.StartNew();
         }
 
-        public bool HasRemainingTime => this.stopWatch.Elapsed < this.originalTimeout;
+        public bool HasRemainingTime
+        {
+            get { return this.stopWatch.Elapsed < this.originalTimeout; }
+        }
 
-        public bool HasTimedOut => !this.HasRemainingTime;
+        public bool HasTimedOut
+        {
+            get { return !this.HasRemainingTime; }
+        }
     }
 }

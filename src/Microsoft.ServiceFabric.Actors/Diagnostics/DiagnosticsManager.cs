@@ -27,7 +27,10 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             this.eventSourceProviderV2.RegisterWithDiagnosticsEventManager(this.diagnosticsEventManager);
         }
 
-        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager => this.diagnosticsEventManager;
+        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager
+        {
+            get { return this.diagnosticsEventManager; }
+        }
 
         void IDisposable.Dispose()
         {

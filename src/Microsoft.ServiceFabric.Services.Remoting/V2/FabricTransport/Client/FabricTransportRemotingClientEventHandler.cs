@@ -21,17 +21,17 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
 
         public string ListenerName
         {
-            set => this.remotingClient.ListenerName = value;
+            set { this.remotingClient.ListenerName = value; }
         }
 
         public ResolvedServicePartition ResolvedServicePartition
         {
-            set => this.remotingClient.ResolvedServicePartition = value;
+            set { this.remotingClient.ResolvedServicePartition = value; }
         }
 
         public ResolvedServiceEndpoint Endpoint
         {
-            set => this.remotingClient.Endpoint = value;
+            set { this.remotingClient.Endpoint = value; }
         }
 
         void IFabricTransportClientEventHandler.OnConnected()

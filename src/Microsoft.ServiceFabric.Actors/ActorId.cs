@@ -80,7 +80,10 @@ namespace Microsoft.ServiceFabric.Actors
         ///     Gets the <see cref="ActorIdKind" /> for the ActorId.
         /// </summary>
         /// <value><see cref="ActorIdKind" /> for the ActorId.</value>
-        public ActorIdKind Kind => this.kind;
+        public ActorIdKind Kind
+        {
+            get { return this.kind; }
+        }
 
         /// <summary>
         ///     Compares this instance with a specified <see cref="ActorId" /> object and indicates whether this

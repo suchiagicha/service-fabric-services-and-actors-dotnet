@@ -30,9 +30,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Client
         /// <value><see cref="System.Fabric.ResolvedServicePartition" /> object</value>
         public ResolvedServicePartition ResolvedServicePartition
         {
-            get => this.WcfClient.ResolvedServicePartition;
+            get { return this.WcfClient.ResolvedServicePartition; }
 
-            set => this.WcfClient.ResolvedServicePartition = value;
+            set { this.WcfClient.ResolvedServicePartition = value; }
         }
 
         /// <summary>
@@ -41,9 +41,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Client
         /// </summary>
         public string ListenerName
         {
-            get => this.WcfClient.ListenerName;
+            get { return this.WcfClient.ListenerName; }
 
-            set => this.WcfClient.ListenerName = value;
+            set { this.WcfClient.ListenerName = value; }
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Client
         /// </value>
         public ResolvedServiceEndpoint Endpoint
         {
-            get => this.WcfClient.Endpoint;
+            get { return this.WcfClient.Endpoint; }
 
-            set => this.WcfClient.Endpoint = value;
+            set { this.WcfClient.Endpoint = value; }
         }
 
         public async Task<byte[]> RequestResponseAsync(ServiceRemotingMessageHeaders headers, byte[] requestBody)

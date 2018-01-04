@@ -70,9 +70,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
         /// </summary>
         private sealed class MethodCallTracker
         {
-            private int methodId;
             private readonly Dictionary<string, MethodCallTrackerEntry> callTracker;
             private readonly SemaphoreSlim callTrackerLock;
+            private int methodId;
 
             public MethodCallTracker(int methodId)
             {

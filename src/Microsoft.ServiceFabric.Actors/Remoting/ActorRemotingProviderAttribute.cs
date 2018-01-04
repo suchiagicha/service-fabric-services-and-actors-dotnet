@@ -13,9 +13,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.V1.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
-    using IServiceRemotingClientFactory = Microsoft.ServiceFabric.Services.Remoting.V1.Client.IServiceRemotingClientFactory;
 #if !DotNetCoreClr
     using Microsoft.ServiceFabric.Services.Remoting.V1;
 
@@ -86,7 +84,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting
         /// </summary>
         /// <param name="callbackMessageHandler">Client implementation where the callbacks should be dispatched.</param>
         /// <returns>An <see cref="Services.Remoting.V1.Client.IServiceRemotingClientFactory" />.</returns>
-        public abstract Services.Remoting.V2.Client.IServiceRemotingClientFactory CreateServiceRemotingClientFactoryV2(
+        public abstract IServiceRemotingClientFactory CreateServiceRemotingClientFactoryV2(
             IServiceRemotingCallbackMessageHandler callbackMessageHandler);
 
         internal static ActorRemotingProviderAttribute GetProvider(IEnumerable<Type> types = null)
@@ -138,11 +136,11 @@ namespace Microsoft.ServiceFabric.Actors.Remoting
         ///     Client implementation where the callbacks should be dispatched.
         /// </param>
         /// <returns>
-        ///     An <see cref="IServiceRemotingClientFactory" />
+        ///     An <see cref="Services.Remoting.V1.Client.IServiceRemotingClientFactory" />
         ///     that can be used with <see cref="Microsoft.ServiceFabric.Actors.Client.ActorProxyFactory" /> to
         ///     generate actor proxy to talk to the actor over remoted actor interface.
         /// </returns>
-        public abstract IServiceRemotingClientFactory CreateServiceRemotingClientFactory(
+        public abstract Services.Remoting.V1.Client.IServiceRemotingClientFactory CreateServiceRemotingClientFactory(
             IServiceRemotingCallbackClient callbackClient);
 #endif
     }

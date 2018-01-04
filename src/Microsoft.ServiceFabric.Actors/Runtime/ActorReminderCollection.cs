@@ -26,7 +26,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             return this.reminderCollectionsByActorId.ContainsKey(key);
         }
 
-        IEnumerable<ActorId> IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.Keys => this.reminderCollectionsByActorId.Keys;
+        IEnumerable<ActorId> IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.Keys
+        {
+            get { return this.reminderCollectionsByActorId.Keys; }
+        }
 
         bool IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.TryGetValue(
             ActorId key,
@@ -36,12 +39,21 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         IEnumerable<IReadOnlyCollection<IActorReminderState>>
-            IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.Values => this.reminderCollectionsByActorId.Values;
+            IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.Values
+        {
+            get { return this.reminderCollectionsByActorId.Values; }
+        }
 
         IReadOnlyCollection<IActorReminderState> IReadOnlyDictionary<ActorId, IReadOnlyCollection<IActorReminderState>>.
-            this[ActorId key] => this.reminderCollectionsByActorId[key];
+            this[ActorId key]
+        {
+            get { return this.reminderCollectionsByActorId[key]; }
+        }
 
-        int IReadOnlyCollection<KeyValuePair<ActorId, IReadOnlyCollection<IActorReminderState>>>.Count => this.reminderCollectionsByActorId.Count;
+        int IReadOnlyCollection<KeyValuePair<ActorId, IReadOnlyCollection<IActorReminderState>>>.Count
+        {
+            get { return this.reminderCollectionsByActorId.Count; }
+        }
 
         IEnumerator<KeyValuePair<ActorId, IReadOnlyCollection<IActorReminderState>>>
             IEnumerable<KeyValuePair<ActorId, IReadOnlyCollection<IActorReminderState>>>.GetEnumerator()
@@ -74,7 +86,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 this.concurrentBag = new ConcurrentBag<T>();
             }
 
-            int IReadOnlyCollection<T>.Count => this.concurrentBag.Count;
+            int IReadOnlyCollection<T>.Count
+            {
+                get { return this.concurrentBag.Count; }
+            }
 
             IEnumerator IEnumerable.GetEnumerator()
             {

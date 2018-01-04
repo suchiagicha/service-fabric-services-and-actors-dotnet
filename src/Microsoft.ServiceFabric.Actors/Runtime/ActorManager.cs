@@ -56,9 +56,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.gcTimer = new Timer(this.RunGarbageCollection, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        private IActorStateProvider StateProvider => this.ActorService.StateProvider;
+        private IActorStateProvider StateProvider
+        {
+            get { return this.ActorService.StateProvider; }
+        }
 
-        private IActorActivator ActorActivator => this.ActorService.ActorActivator;
+        private IActorActivator ActorActivator
+        {
+            get { return this.ActorService.ActorActivator; }
+        }
 
         #region Test Helpers
 
@@ -324,7 +330,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region Actor Reminders
 
-        public bool HasRemindersLoaded => this.loadRemindersTask != null && this.loadRemindersTask.IsCompleted;
+        public bool HasRemindersLoaded
+        {
+            get { return this.loadRemindersTask != null && this.loadRemindersTask.IsCompleted; }
+        }
 
         public async Task<IActorReminder> RegisterOrUpdateReminderAsync(
             ActorId actorId,
@@ -672,7 +681,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 actorId);
         }
 
-        public ActorEventSource TraceSource => ActorTrace.Source;
+        public ActorEventSource TraceSource
+        {
+            get { return ActorTrace.Source; }
+        }
 
         #endregion
 

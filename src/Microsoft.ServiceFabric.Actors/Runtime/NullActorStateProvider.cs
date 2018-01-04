@@ -45,7 +45,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Func<CancellationToken, Task> IStateProviderReplica2.OnRestoreCompletedAsync
         {
-            set => this.onRestoreCompFunc = value;
+            set { this.onRestoreCompFunc = value; }
         }
 
         #endregion
@@ -239,7 +239,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Func<CancellationToken, Task<bool>> IStateProviderReplica.OnDataLossAsync
         {
-            set => this.onDataLoFunc = value;
+            set { this.onDataLoFunc = value; }
         }
 
         void IStateProviderReplica.Initialize(StatefulServiceInitializationParameters initializationParameters)
@@ -507,19 +507,40 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region IActorStateProviderInternal
 
-        string IActorStateProviderInternal.TraceType => TraceType;
+        string IActorStateProviderInternal.TraceType
+        {
+            get { return TraceType; }
+        }
 
-        string IActorStateProviderInternal.TraceId => this.traceId;
+        string IActorStateProviderInternal.TraceId
+        {
+            get { return this.traceId; }
+        }
 
-        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole => this.currentRole;
+        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole
+        {
+            get { return this.currentRole; }
+        }
 
-        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay => TimeSpan.Zero;
+        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay
+        {
+            get { return TimeSpan.Zero; }
+        }
 
-        TimeSpan IActorStateProviderInternal.CurrentLogicalTime => TimeSpan.Zero;
+        TimeSpan IActorStateProviderInternal.CurrentLogicalTime
+        {
+            get { return TimeSpan.Zero; }
+        }
 
-        TimeSpan IActorStateProviderInternal.OperationTimeout => TimeSpan.Zero;
+        TimeSpan IActorStateProviderInternal.OperationTimeout
+        {
+            get { return TimeSpan.Zero; }
+        }
 
-        long IActorStateProviderInternal.RoleChangeTracker => 0;
+        long IActorStateProviderInternal.RoleChangeTracker
+        {
+            get { return 0; }
+        }
 
         #endregion
     }

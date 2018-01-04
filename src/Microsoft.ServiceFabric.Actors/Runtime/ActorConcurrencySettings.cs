@@ -58,7 +58,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// </value>
         public TimeSpan LockTimeout
         {
-            get => this.lockTimeout;
+            get { return this.lockTimeout; }
 
             set
             {

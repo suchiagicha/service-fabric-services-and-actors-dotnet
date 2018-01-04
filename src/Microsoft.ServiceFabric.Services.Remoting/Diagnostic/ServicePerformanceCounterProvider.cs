@@ -29,8 +29,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Diagnostic
         private readonly Guid partitionId;
         private readonly string counterInstanceDifferentiator;
         private readonly bool generateCounterforServiceCategory;
-        private Dictionary<long, CounterInstanceData> serviceMethodCounterInstanceData;
         private readonly IEnumerable<ServiceInterfaceDescription> serviceInterfaceDescriptions;
+        private Dictionary<long, CounterInstanceData> serviceMethodCounterInstanceData;
 
         static ServicePerformanceCounterProvider()
         {
@@ -228,9 +228,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Diagnostic
             IEnumerable<KeyValuePair<long, string>> counterInstanceNames = percCounterInstanceNameBuilder.GetMethodCounterInstanceNames(methodInfoList);
             foreach (KeyValuePair<long, string> kvp in counterInstanceNames)
             {
-                this.serviceMethodCounterInstanceData[kvp.Key] = new CounterInstanceData {InstanceName = kvp.Value};
-                this.serviceMethodCounterInstanceData[kvp.Key].CounterWriters =
-                    this.InitializeMethodCounterInstanceData(kvp.Value);
+                this.serviceMethodCounterInstanceData[kvp.Key] = new CounterInstanceData
+                {
+                    CounterWriters = this.InitializeMethodCounterInstanceData(kvp.Value)
+                };
             }
         }
 
@@ -404,7 +405,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Diagnostic
         private class CounterInstanceData
         {
             internal MethodSpecificCounterWriters CounterWriters;
-            internal string InstanceName;
         }
 
         private class MethodSpecificCounterWriters

@@ -1189,19 +1189,40 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region IActorStateProviderInternal
 
-        string IActorStateProviderInternal.TraceType => TraceType;
+        string IActorStateProviderInternal.TraceType
+        {
+            get { return TraceType; }
+        }
 
-        string IActorStateProviderInternal.TraceId => this.traceId;
+        string IActorStateProviderInternal.TraceId
+        {
+            get { return this.traceId; }
+        }
 
-        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole => this.replicaRole;
+        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole
+        {
+            get { return this.replicaRole; }
+        }
 
-        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay => this.stateProviderSettings.TransientErrorRetryDelay;
+        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay
+        {
+            get { return this.stateProviderSettings.TransientErrorRetryDelay; }
+        }
 
-        TimeSpan IActorStateProviderInternal.CurrentLogicalTime => this.logicalTimeManager.CurrentLogicalTime;
+        TimeSpan IActorStateProviderInternal.CurrentLogicalTime
+        {
+            get { return this.logicalTimeManager.CurrentLogicalTime; }
+        }
 
-        TimeSpan IActorStateProviderInternal.OperationTimeout => this.stateProviderSettings.OperationTimeout;
+        TimeSpan IActorStateProviderInternal.OperationTimeout
+        {
+            get { return this.stateProviderSettings.OperationTimeout; }
+        }
 
-        long IActorStateProviderInternal.RoleChangeTracker => Interlocked.Read(ref this.roleChangeTracker);
+        long IActorStateProviderInternal.RoleChangeTracker
+        {
+            get { return Interlocked.Read(ref this.roleChangeTracker); }
+        }
 
         #endregion
     }

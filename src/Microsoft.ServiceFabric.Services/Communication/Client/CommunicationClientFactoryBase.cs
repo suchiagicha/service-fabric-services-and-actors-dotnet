@@ -92,7 +92,10 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         ///     Gets the custom exception handlers for handling exceptions on the client to service communication channel.
         /// </summary>
         /// <value>List of Exception handlers</value>
-        public IEnumerable<IExceptionHandler> ExceptionHandlers => this.exceptionHandlers;
+        public IEnumerable<IExceptionHandler> ExceptionHandlers
+        {
+            get { return this.exceptionHandlers; }
+        }
 
         /// <summary>
         ///     Gets the diagnostics trace identifier for this component.

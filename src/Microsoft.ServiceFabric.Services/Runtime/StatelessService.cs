@@ -60,12 +60,12 @@ namespace Microsoft.ServiceFabric.Services.Runtime
 
         IReadOnlyDictionary<string, string> IStatelessUserServiceInstance.Addresses
         {
-            set => Volatile.Write(ref this.addresses, value);
+            set { Volatile.Write(ref this.addresses, value); }
         }
 
         IStatelessServicePartition IStatelessUserServiceInstance.Partition
         {
-            set => this.Partition = value;
+            set { this.Partition = value; }
         }
 
         IEnumerable<ServiceInstanceListener> IStatelessUserServiceInstance.CreateServiceInstanceListeners()

@@ -45,8 +45,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// <remarks>Default Value for Operation Timeout is set as 5 mins.</remarks>
         public TimeSpan OperationTimeout
         {
-            get => this.fabricTransportSettings.OperationTimeout;
-            set => this.fabricTransportSettings.OperationTimeout = value;
+            get { return this.fabricTransportSettings.OperationTimeout; }
+            set { this.fabricTransportSettings.OperationTimeout = value; }
         }
 
         /// <summary>
@@ -61,8 +61,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// </remarks>
         public TimeSpan KeepAliveTimeout
         {
-            get => this.fabricTransportSettings.KeepAliveTimeout;
-            set => this.fabricTransportSettings.KeepAliveTimeout = value;
+            get { return this.fabricTransportSettings.KeepAliveTimeout; }
+            set { this.fabricTransportSettings.KeepAliveTimeout = value; }
         }
 
         /// <summary>
@@ -72,8 +72,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// <remarks>Default Value for ConnectTimeout Timeout is set as 5 seconds.</remarks>
         public TimeSpan ConnectTimeout
         {
-            get => this.fabricTransportSettings.ConnectTimeout;
-            set => this.fabricTransportSettings.ConnectTimeout = value;
+            get { return this.fabricTransportSettings.ConnectTimeout; }
+            set { this.fabricTransportSettings.ConnectTimeout = value; }
         }
 
         /// <summary>
@@ -87,8 +87,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// </remarks>
         public long MaxMessageSize
         {
-            get => this.fabricTransportSettings.MaxMessageSize;
-            set => this.fabricTransportSettings.MaxMessageSize = value;
+            get { return this.fabricTransportSettings.MaxMessageSize; }
+            set { this.fabricTransportSettings.MaxMessageSize = value; }
         }
 
         /// <summary>
@@ -103,8 +103,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// </remarks>
         public long MaxQueueSize
         {
-            get => this.fabricTransportSettings.MaxQueueSize;
-            set => this.fabricTransportSettings.MaxQueueSize = value;
+            get { return this.fabricTransportSettings.MaxQueueSize; }
+            set { this.fabricTransportSettings.MaxQueueSize = value; }
         }
 
         /// <summary>
@@ -118,8 +118,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// </remarks>
         public long MaxConcurrentCalls
         {
-            get => this.fabricTransportSettings.MaxConcurrentCalls;
-            set => this.fabricTransportSettings.MaxConcurrentCalls = value;
+            get { return this.fabricTransportSettings.MaxConcurrentCalls; }
+            set { this.fabricTransportSettings.MaxConcurrentCalls = value; }
         }
 
 
@@ -152,8 +152,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// </remarks>
         public SecurityCredentials SecurityCredentials
         {
-            get => this.fabricTransportSettings.SecurityCredentials;
-            set => this.fabricTransportSettings.SecurityCredentials = value;
+            get { return this.fabricTransportSettings.SecurityCredentials; }
+            set { this.fabricTransportSettings.SecurityCredentials = value; }
         }
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             }
 
             settings = null;
-            return isSucceded;
+            return false;
         }
 
 

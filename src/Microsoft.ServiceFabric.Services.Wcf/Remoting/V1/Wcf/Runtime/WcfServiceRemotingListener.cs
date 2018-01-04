@@ -143,7 +143,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
         ///     listener is opened by the runtime via <see cref="ICommunicationListener.OpenAsync(CancellationToken)" /> method,
         ///     the service host can be customized by accessing it via this property.
         /// </remarks>
-        public ServiceHost ServiceHost => ((WcfCommunicationListener<IServiceRemotingContract>) this.wcfListener).ServiceHost;
+        public ServiceHost ServiceHost
+        {
+            get { return ((WcfCommunicationListener<IServiceRemotingContract>) this.wcfListener).ServiceHost; }
+        }
 
         /// <summary>
         ///     This method causes the communication listener to be opened. Once the Open

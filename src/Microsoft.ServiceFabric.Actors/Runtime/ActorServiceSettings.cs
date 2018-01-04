@@ -22,7 +22,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorGarbageCollectionSettings" /> for the Actor Service.</value>
         public ActorGarbageCollectionSettings ActorGarbageCollectionSettings
         {
-            get => this.actorGarbageCollectionSettings;
+            get { return this.actorGarbageCollectionSettings; }
 
             set
             {
@@ -41,7 +41,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorConcurrencySettings" /> for the Actor Service.</value>
         public ActorConcurrencySettings ActorConcurrencySettings
         {
-            get => this.actorConcurrencySettings;
+            get { return this.actorConcurrencySettings; }
 
             set
             {
@@ -60,7 +60,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ReminderSettings" /> for the Actor Service.</value>
         public ReminderSettings ReminderSettings
         {
-            get => this.reminderSettings;
+            get { return this.reminderSettings; }
 
             set
             {

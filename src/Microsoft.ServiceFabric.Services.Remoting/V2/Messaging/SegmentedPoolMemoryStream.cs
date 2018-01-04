@@ -27,18 +27,30 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             this.Initialize();
         }
 
-        public override bool CanRead => this.canRead;
+        public override bool CanRead
+        {
+            get { return this.canRead; }
+        }
 
-        public override bool CanSeek => this.canSeek;
+        public override bool CanSeek
+        {
+            get { return this.canSeek; }
+        }
 
-        public override bool CanWrite => this.canWrite;
+        public override bool CanWrite
+        {
+            get { return this.canWrite; }
+        }
 
-        public override long Length => this.position;
+        public override long Length
+        {
+            get { return this.position; }
+        }
 
         public override long Position
         {
-            get => this.position;
-            set => this.position = value;
+            get { return this.position; }
+            set { this.position = value; }
         }
 
 

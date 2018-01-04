@@ -28,7 +28,10 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
         /// <value>The WCF channel for the specified contract that this communication client uses.</value>
         public TServiceContract Channel { get; }
 
-        internal IClientChannel ClientChannel => (IClientChannel) this.Channel;
+        internal IClientChannel ClientChannel
+        {
+            get { return (IClientChannel) this.Channel; }
+        }
 
         /// <summary>
         ///     Gets or sets the resolved service partition which contains information about the partition

@@ -18,9 +18,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Description
             this.parameterInfo = parameterInfo;
         }
 
-        public string Name => this.parameterInfo.Name;
+        public string Name
+        {
+            get { return this.parameterInfo.Name; }
+        }
 
-        public Type ArgumentType => this.parameterInfo.ParameterType;
+        public Type ArgumentType
+        {
+            get { return this.parameterInfo.ParameterType; }
+        }
 
         internal static MethodArgumentDescription Create(string remotedInterfaceKindName, MethodInfo methodInfo, ParameterInfo parameter)
         {

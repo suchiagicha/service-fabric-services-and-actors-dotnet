@@ -67,7 +67,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
 
         public ResolvedServicePartition Rsp
         {
-            get => this.rsp;
+            get { return this.rsp; }
             set
             {
                 this.rsp = value;

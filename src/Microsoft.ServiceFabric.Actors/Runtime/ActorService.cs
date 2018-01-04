@@ -30,8 +30,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private const string TraceType = "ActorService";
         private readonly ActorManagerAdapter actorManagerAdapter;
         private readonly Func<ActorBase, IActorStateProvider, IActorStateManager> stateManagerFactory;
-#if !DotNetCoreClr
-#endif
         private ReplicaRole replicaRole;
 
         /// <summary>
@@ -107,7 +105,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal ActorMethodFriendlyNameBuilder MethodFriendlyNameBuilder { get; private set; }
 
-        internal IActorManager ActorManager => this.actorManagerAdapter.ActorManager;
+        internal IActorManager ActorManager
+        {
+            get { return this.actorManagerAdapter.ActorManager; }
+        }
 
         internal void InitializeInternal(ActorMethodFriendlyNameBuilder methodNameBuilder)
         {
@@ -119,6 +120,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.MethodDispatcherMapV2 =
                 new Remoting.V2.Runtime.ActorMethodDispatcherMap(this.ActorTypeInformation);
         }
+#if !DotNetCoreClr
+#endif
 
         #region IActorService Members        
 

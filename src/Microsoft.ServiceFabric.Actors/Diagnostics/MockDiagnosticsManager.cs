@@ -17,7 +17,10 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             this.diagnosticsEventManager = new DiagnosticsEventManager(actorService.MethodFriendlyNameBuilder);
         }
 
-        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager => this.diagnosticsEventManager;
+        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager
+        {
+            get { return this.diagnosticsEventManager; }
+        }
 
         void IDisposable.Dispose()
         {

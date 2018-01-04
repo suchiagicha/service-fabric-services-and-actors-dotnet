@@ -80,12 +80,12 @@ namespace Microsoft.ServiceFabric.Services.Runtime
 
         IReadOnlyDictionary<string, string> IStatefulUserServiceReplica.Addresses
         {
-            set => Volatile.Write(ref this.addresses, value);
+            set { Volatile.Write(ref this.addresses, value); }
         }
 
         IStatefulServicePartition IStatefulUserServiceReplica.Partition
         {
-            set => this.Partition = value;
+            set { this.Partition = value; }
         }
 
         IStateProviderReplica2 IStatefulUserServiceReplica.CreateStateProviderReplica()

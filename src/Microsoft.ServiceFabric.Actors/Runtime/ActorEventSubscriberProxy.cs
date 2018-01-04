@@ -36,7 +36,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.RemotingListener = RemotingListener.V2Listener;
         }
 
-        Guid IActorEventSubscriberProxy.Id => this.id;
+        Guid IActorEventSubscriberProxy.Id
+        {
+            get { return this.id; }
+        }
 
         public RemotingListener RemotingListener { get; }
 

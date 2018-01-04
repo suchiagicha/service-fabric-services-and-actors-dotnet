@@ -42,9 +42,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Description
 
         public int V1Id { get; }
 
-        public string Name => this.MethodInfo.Name;
+        public string Name
+        {
+            get { return this.MethodInfo.Name; }
+        }
 
-        public Type ReturnType => this.MethodInfo.ReturnType;
+        public Type ReturnType
+        {
+            get { return this.MethodInfo.ReturnType; }
+        }
 
         public bool HasCancellationToken { get; }
 

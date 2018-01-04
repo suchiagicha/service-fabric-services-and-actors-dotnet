@@ -47,7 +47,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 
         ResolvedServicePartition ICommunicationClient.ResolvedServicePartition
         {
-            get => this.resolvedServicePartition;
+            get { return this.resolvedServicePartition; }
             set
             {
                 this.resolvedServicePartition = value;
@@ -60,7 +60,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 
         string ICommunicationClient.ListenerName
         {
-            get => this.listenerName;
+            get { return this.listenerName; }
             set
             {
                 this.listenerName = value;
@@ -73,7 +73,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 
         ResolvedServiceEndpoint ICommunicationClient.Endpoint
         {
-            get => this.resolvedServiceEndpoint;
+            get { return this.resolvedServiceEndpoint; }
             set
             {
                 this.resolvedServiceEndpoint = value;

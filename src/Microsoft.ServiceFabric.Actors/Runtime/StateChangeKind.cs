@@ -5,7 +5,6 @@
 
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
-    using System.Collections.Generic;
     using System.Threading;
 
     /// <summary>

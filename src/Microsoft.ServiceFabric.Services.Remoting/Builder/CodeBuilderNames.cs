@@ -22,13 +22,25 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
             this.namePrefix = namePrefix;
         }
 
-        public string InterfaceId => "interfaceId";
+        public string InterfaceId
+        {
+            get { return "interfaceId"; }
+        }
 
-        public string MethodId => "methodId";
+        public string MethodId
+        {
+            get { return "methodId"; }
+        }
 
-        public string RetVal => "retVal";
+        public string RetVal
+        {
+            get { return "retVal"; }
+        }
 
-        public string RequestBody => "requestBody";
+        public string RequestBody
+        {
+            get { return "requestBody"; }
+        }
 
         public string GetMethodBodyTypesAssemblyName(Type interfaceType)
         {

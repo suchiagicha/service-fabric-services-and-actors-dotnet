@@ -37,7 +37,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
 
         public bool IsValid { get; private set; }
 
-        public object ConnectionAddress => this.fabricTransportClient.ConnectionAddress;
+        public object ConnectionAddress
+        {
+            get { return this.fabricTransportClient.ConnectionAddress; }
+        }
 
         public ResolvedServicePartition ResolvedServicePartition { get; set; }
 

@@ -12,9 +12,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting
     using Microsoft.ServiceFabric.Services.Remoting.FabricTransport;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.V1;
-    using Microsoft.ServiceFabric.Services.Remoting.V1.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
-    using IServiceRemotingClientFactory = Microsoft.ServiceFabric.Services.Remoting.V1.Client.IServiceRemotingClientFactory;
+
 #if !DotNetCoreClr
 
 #endif
@@ -72,7 +71,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         /// </summary>
         public RemotingListener RemotingListener { get; set; }
 
-        internal static string DefaultV2listenerName => "V2Listener";
+        internal static string DefaultV2listenerName
+        {
+            get { return "V2Listener"; }
+        }
 
         /// <summary>
         ///     Creates a V2 service remoting listener for remoting the service interface.
@@ -90,7 +92,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         /// </summary>
         /// <param name="callbackMessageHandler">Client implementation where the callbacks should be dispatched.</param>
         /// <returns>An <see cref="Microsoft.ServiceFabric.Services.Remoting.V2.Client.IServiceRemotingClientFactory" />.</returns>
-        public abstract V2.Client.IServiceRemotingClientFactory CreateServiceRemotingClientFactoryV2(
+        public abstract IServiceRemotingClientFactory CreateServiceRemotingClientFactoryV2(
             IServiceRemotingCallbackMessageHandler callbackMessageHandler);
 
         internal static ServiceRemotingProviderAttribute GetProvider(IEnumerable<Type> types = null)
@@ -137,8 +139,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         ///     <see cref="V1.Client.ServiceProxyFactory" /> to create a proxy for the remoted interface of the service.
         /// </summary>
         /// <param name="callbackClient">Client implementation where the callbacks should be dispatched.</param>
-        /// <returns>An <see cref="IServiceRemotingClientFactory" />.</returns>
-        public abstract IServiceRemotingClientFactory CreateServiceRemotingClientFactory(
+        /// <returns>An <see cref="V1.Client.IServiceRemotingClientFactory" />.</returns>
+        public abstract V1.Client.IServiceRemotingClientFactory CreateServiceRemotingClientFactory(
             IServiceRemotingCallbackClient callbackClient);
 
 #endif

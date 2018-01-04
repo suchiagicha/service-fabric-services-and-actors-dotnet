@@ -22,10 +22,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
     /// </summary>
     public class FabricTransportServiceRemotingListener : IServiceRemotingListener
     {
-        private FabricTransportListener nativeListener;
         private readonly IServiceRemotingMessageHandler messageHandler;
         private readonly string listenAddress;
         private readonly string publishAddress;
+        private FabricTransportListener nativeListener;
 
         /// <summary>
         ///     Constructs a fabric transport based service remoting listener with default

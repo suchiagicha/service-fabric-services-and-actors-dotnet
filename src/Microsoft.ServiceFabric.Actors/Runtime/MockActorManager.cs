@@ -32,7 +32,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.IsClosed = false;
         }
 
-        private IActorStateProvider StateProvider => this.ActorService.StateProvider;
+        private IActorStateProvider StateProvider
+        {
+            get { return this.ActorService.StateProvider; }
+        }
 
         #region IActorManager Implementation
 
@@ -40,7 +43,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region Actor Diagnostics
 
-        public DiagnosticsEventManager DiagnosticsEventManager => this.diagnosticsManager.DiagnosticsEventManager;
+        public DiagnosticsEventManager DiagnosticsEventManager
+        {
+            get { return this.diagnosticsManager.DiagnosticsEventManager; }
+        }
 
         #endregion
 
@@ -124,7 +130,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region Actor Reminders
 
-        public bool HasRemindersLoaded => true;
+        public bool HasRemindersLoaded
+        {
+            get { return true; }
+        }
 
         public async Task<IActorReminder> RegisterOrUpdateReminderAsync(
             ActorId actorId,
