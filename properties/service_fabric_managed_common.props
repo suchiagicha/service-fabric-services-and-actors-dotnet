@@ -43,7 +43,7 @@
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>8</MinorVersion>
-    <BuildVersion>1000</BuildVersion>
+    <BuildVersion>0</BuildVersion>
     <Revision>0</Revision>
   </PropertyGroup>
   
