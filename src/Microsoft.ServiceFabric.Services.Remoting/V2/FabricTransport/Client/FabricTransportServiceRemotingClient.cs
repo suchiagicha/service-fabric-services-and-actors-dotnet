@@ -9,7 +9,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
     using System.Collections.Generic;
     using System.Fabric;
     using System.Globalization;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.FabricTransport.V2;
@@ -17,10 +16,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
     using Microsoft.ServiceFabric.Services.Communication;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
+    using SR = Microsoft.ServiceFabric.Services.Remoting.SR;
 
     internal class FabricTransportServiceRemotingClient : IServiceRemotingClient
     {
         private readonly ServiceRemotingMessageSerializersManager serializersManager;
+
         private readonly FabricTransportClient fabricTransportClient;
         // we need to pass a cache of the serializers here rather than the known types, 
         // the serializer cache should be maintained by the factor
@@ -34,45 +35,44 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             this.IsValid = true;
         }
 
+        public bool IsValid { get; private set; }
+
+        public object ConnectionAddress => this.fabricTransportClient.ConnectionAddress;
+
         public ResolvedServicePartition ResolvedServicePartition { get; set; }
 
         public string ListenerName { get; set; }
 
         public ResolvedServiceEndpoint Endpoint { get; set; }
 
-        public Task OpenAsync(CancellationToken cancellationToken)
-        {
-            return this.fabricTransportClient.OpenAsync(cancellationToken);
-        }
-
         public async Task<IServiceRemotingResponseMessage> RequestResponseAsync(
             IServiceRemotingRequestMessage remotingRequestRequestMessage)
         {
-            var interfaceId = remotingRequestRequestMessage.GetHeader().InterfaceId;
-            var serializedHeader = this.serializersManager.GetHeaderSerializer()
+            int interfaceId = remotingRequestRequestMessage.GetHeader().InterfaceId;
+            IMessageHeader serializedHeader = this.serializersManager.GetHeaderSerializer()
                 .SerializeRequestHeader(remotingRequestRequestMessage.GetHeader());
-            var msgBodySeriaizer = this.serializersManager.GetRequestBodySerializer(interfaceId);
-            var serializedMsgBody = msgBodySeriaizer.Serialize(remotingRequestRequestMessage.GetBody());
-            var fabricTransportRequestBody = serializedMsgBody != null
-                ? new FabricTransportRequestBody(serializedMsgBody.GetSendBuffers(),
+            IServiceRemotingRequestMessageBodySerializer msgBodySeriaizer = this.serializersManager.GetRequestBodySerializer(interfaceId);
+            OutgoingMessageBody serializedMsgBody = msgBodySeriaizer.Serialize(remotingRequestRequestMessage.GetBody());
+            FabricTransportRequestBody fabricTransportRequestBody = serializedMsgBody != null
+                ? new FabricTransportRequestBody(
+                    serializedMsgBody.GetSendBuffers(),
                     serializedMsgBody.Dispose)
                 : new FabricTransportRequestBody(new List<ArraySegment<byte>>(), null);
 
 
             //Send Request
-            using (var retval = await this.fabricTransportClient.RequestResponseAsync(
+            using (FabricTransportMessage retval = await this.fabricTransportClient.RequestResponseAsync(
                 new FabricTransportMessage(
                     new FabricTransportRequestHeader(serializedHeader.GetSendBuffer(), serializedHeader.Dispose),
                     fabricTransportRequestBody),
                 this.fabricTransportClient.Settings.OperationTimeout))
             {
-
-                var incomingHeader = (retval != null && retval.GetHeader() != null)
+                IncomingMessageHeader incomingHeader = retval != null && retval.GetHeader() != null
                     ? new IncomingMessageHeader(retval.GetHeader().GetRecievedStream())
                     : null;
 
                 ////DeSerialize Response
-                var header =
+                IServiceRemotingResponseMessageHeader header =
                     this.serializersManager.GetHeaderSerializer()
                         .DeserializeResponseHeaders(
                             incomingHeader);
@@ -81,32 +81,33 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
                 if (header != null && header.TryGetHeaderValue("HasRemoteException", out headerValue))
                 {
                     Exception e;
-                    var isDeserialzied =
-                        RemoteException.ToException(retval.GetBody().GetRecievedStream(),
+                    bool isDeserialzied =
+                        RemoteException.ToException(
+                            retval.GetBody().GetRecievedStream(),
                             out e);
                     if (isDeserialzied)
                     {
                         throw new AggregateException(e);
                     }
-                    else
-                    {
-                        throw new ServiceException(e.GetType().FullName, string.Format(
+
+                    throw new ServiceException(
+                        e.GetType().FullName,
+                        string.Format(
                             CultureInfo.InvariantCulture,
-                            Remoting.SR.ErrorDeserializationFailure,
+                            SR.ErrorDeserializationFailure,
                             e.ToString()));
-                    }
                 }
-                var responseSerializer = this.serializersManager.GetResponseBodySerializer(interfaceId);
-                IServiceRemotingResponseMessageBody responseMessageBody =null;
+
+                IServiceRemotingResponseMessageBodySerializer responseSerializer = this.serializersManager.GetResponseBodySerializer(interfaceId);
+                IServiceRemotingResponseMessageBody responseMessageBody = null;
                 if (retval != null && retval.GetBody() != null)
                 {
                     responseMessageBody =
                         responseSerializer.Deserialize(new IncomingMessageBody(retval.GetBody().GetRecievedStream()));
                 }
-                    
-                return (IServiceRemotingResponseMessage) new ServiceRemotingResponseMessage(header, responseMessageBody);
-            }
 
+                return new ServiceRemotingResponseMessage(header, responseMessageBody);
+            }
         }
 
         public void SendOneWay(IServiceRemotingRequestMessage requestMessage)
@@ -114,17 +115,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             throw new NotImplementedException();
         }
 
+        public Task OpenAsync(CancellationToken cancellationToken)
+        {
+            return this.fabricTransportClient.OpenAsync(cancellationToken);
+        }
+
         public void Abort()
         {
             this.IsValid = false;
             this.fabricTransportClient.Abort();
-        }
-
-        public bool IsValid { get; private set; }
-
-        public object ConnectionAddress
-        {
-            get { return this.fabricTransportClient.ConnectionAddress; }
         }
 
         ~FabricTransportServiceRemotingClient()

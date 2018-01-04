@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1
 {
     using System;
@@ -14,7 +15,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         {
             return new DataContractSerializer(
                 typeof(ServiceRemotingMessageBody),
-                new DataContractSerializerSettings()
+                new DataContractSerializerSettings
                 {
                     KnownTypes = knownTypes,
                     MaxItemsInObjectGraph = int.MaxValue
@@ -27,7 +28,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
             // the known type list in the serializer Settings should be updated. 
             return new DataContractSerializer(
                 typeof(ServiceRemotingMessageHeaders),
-                new DataContractSerializerSettings()
+                new DataContractSerializerSettings
                 {
                     MaxItemsInObjectGraph = int.MaxValue
                 });

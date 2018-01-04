@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.Builder
 {
     using System;
@@ -22,7 +23,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
             var result = new List<Type>();
             if (this.MethodBodyTypesMap != null)
             {
-                foreach (var item in this.MethodBodyTypesMap)
+                foreach (KeyValuePair<string, MethodBodyTypes> item in this.MethodBodyTypesMap)
                 {
                     if (item.Value.RequestBodyType != null)
                     {
@@ -39,7 +40,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
             var result = new List<Type>();
             if (this.MethodBodyTypesMap != null)
             {
-                foreach (var item in this.MethodBodyTypesMap)
+                foreach (KeyValuePair<string, MethodBodyTypes> item in this.MethodBodyTypesMap)
                 {
                     if (item.Value.ResponseBodyType != null)
                     {

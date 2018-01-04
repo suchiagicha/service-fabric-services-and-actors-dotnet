@@ -16,7 +16,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
         {
         }
 
-        protected override ActorProxyGenerator CreateProxyGenerator(Type proxyInterfaceType,
+        protected override ActorProxyGenerator CreateProxyGenerator(
+            Type proxyInterfaceType,
             Type proxyActivatorType)
         {
             return new ActorProxyGenerator(

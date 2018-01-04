@@ -2,20 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Runtime
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Fabric;
-    using System.Fabric.Health;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Communication;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
 
-    class StatelessServiceInstanceAdapter : IStatelessServiceInstance
+    internal class StatelessServiceInstanceAdapter : IStatelessServiceInstance
     {
         private const string TraceType = "StatelessServiceInstanceAdapter";
         private readonly string traceId;
@@ -32,8 +31,8 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         private CancellationTokenSource runAsynCancellationTokenSource;
 
         /// <summary>
-        /// This task wraps the actual RunAsync task. All the exceptions
-        /// escaping from actual RunAsync are handled inside the task itself.
+        ///     This task wraps the actual RunAsync task. All the exceptions
+        ///     escaping from actual RunAsync are handled inside the task itself.
         /// </summary>
         private Task executeRunAsyncTask;
 
@@ -56,6 +55,17 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             this.userServiceInstance = userServiceInstance;
             this.userServiceInstance.Addresses = this.endpointCollection.ToReadOnlyDictionary();
         }
+
+        #region Test Hooks
+
+        internal bool Test_IsRunAsyncTaskRunning()
+        {
+            return !this.executeRunAsyncTask.IsCompleted &&
+                   !this.executeRunAsyncTask.IsCanceled &&
+                   !this.executeRunAsyncTask.IsFaulted;
+        }
+
+        #endregion
 
         #region Implementation of IStatelessServiceInstance
 
@@ -91,6 +101,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
 
                 throw;
             }
+
             this.userServiceInstance.Addresses = this.endpointCollection.ToReadOnlyDictionary();
 
             this.runAsynCancellationTokenSource = new CancellationTokenSource();
@@ -125,7 +136,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         private Task ScheduleRunAsync(CancellationToken runAsyncCancellationToken)
         {
             ServiceTrace.Source.WriteInfoWithId(TraceType, this.traceId, "Scheduling RunAsync");
-            
+
             // Ensure that RunAsync is invoked on a different thread so that calling thread
             // can return and complete the OpenAsync() call. If we await RunAsync directly in
             // current thread, then user can block the current thread and OpenAsync() call will
@@ -142,7 +153,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         }
 
         /// <summary>
-        /// We handle all the exceptions coming from actual RunAsync here.
+        ///     We handle all the exceptions coming from actual RunAsync here.
         /// </summary>
         private async Task ExecuteRunAsync(CancellationToken runAsyncCancellationToken)
         {
@@ -168,17 +179,17 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 }
 
                 ServiceTrace.Source.WriteInfoWithId(
-                        TraceType,
-                        this.traceId,
-                        "RunAsync successfully canceled by throwing OperationCanceledException: {0}",
-                        e.ToString());
+                    TraceType,
+                    this.traceId,
+                    "RunAsync successfully canceled by throwing OperationCanceledException: {0}",
+                    e.ToString());
             }
             catch (FabricException e)
             {
                 ServiceFrameworkEventSource.Writer.StatelessRunAsyncFailure(
-                        this.serviceContext,
-                        runAsyncCancellationToken.IsCancellationRequested,
-                        e);
+                    this.serviceContext,
+                    runAsyncCancellationToken.IsCancellationRequested,
+                    e);
 
                 this.serviceHelper.HandleRunAsyncUnexpectedFabricException(this.servicePartition, e);
                 return;
@@ -186,9 +197,9 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             catch (Exception e)
             {
                 ServiceFrameworkEventSource.Writer.StatelessRunAsyncFailure(
-                        this.serviceContext,
-                        runAsyncCancellationToken.IsCancellationRequested,
-                        e);
+                    this.serviceContext,
+                    runAsyncCancellationToken.IsCancellationRequested,
+                    e);
 
                 this.serviceHelper.HandleRunAsyncUnexpectedException(this.servicePartition, e);
                 return;
@@ -202,11 +213,9 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         }
 
         /// <summary>
-        /// This gets called in two cases:
-        /// 
-        /// 1) When replica is being closed.
-        /// 2) When replica is being aborted.
-        /// 
+        ///     This gets called in two cases:
+        ///     1) When replica is being closed.
+        ///     2) When replica is being aborted.
         /// </summary>
         private async Task CancelRunAsync()
         {
@@ -296,15 +305,15 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             var endpointsCollection = new ServiceEndpointCollection();
             var listenerOpenedCount = 0;
 
-            foreach (var entry in this.instanceListeners)
+            foreach (ServiceInstanceListener entry in this.instanceListeners)
             {
-                var communicationListener = entry.CreateCommunicationListener(this.serviceContext);
+                ICommunicationListener communicationListener = entry.CreateCommunicationListener(this.serviceContext);
                 this.AddCommunicationListener(communicationListener);
-                var endpointAddress = await communicationListener.OpenAsync(cancellationToken);
+                string endpointAddress = await communicationListener.OpenAsync(cancellationToken);
                 endpointsCollection.AddEndpoint(entry.Name, endpointAddress);
                 listenerOpenedCount++;
 
-                var traceMsg = entry.Name.Equals(ServiceInstanceListener.DefaultName)
+                string traceMsg = entry.Name.Equals(ServiceInstanceListener.DefaultName)
                     ? "Opened communication listener with default name."
                     : $"Opened communication listener with name {entry.Name}.";
 
@@ -321,13 +330,13 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 TraceType,
                 this.traceId,
                 "Closing {0} communication listeners..",
-                (this.communicationListeners != null) ? this.communicationListeners.Count : 0);
+                this.communicationListeners != null ? this.communicationListeners.Count : 0);
 
             if (this.communicationListeners != null)
             {
                 try
                 {
-                    foreach (var entry in this.communicationListeners)
+                    foreach (ICommunicationListener entry in this.communicationListeners)
                     {
                         await entry.CloseAsync(cancellationToken);
                     }
@@ -372,7 +381,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             if (this.communicationListeners != null)
             {
                 List<Exception> exceptions = null;
-                foreach (var entry in this.communicationListeners)
+                foreach (ICommunicationListener entry in this.communicationListeners)
                 {
                     try
                     {
@@ -384,6 +393,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                         {
                             exceptions = new List<Exception>();
                         }
+
                         exceptions.Add(e);
                     }
                 }
@@ -404,17 +414,6 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                         aggregateException);
                 }
             }
-        }
-
-        #endregion
-
-        #region Test Hooks
-
-        internal bool Test_IsRunAsyncTaskRunning()
-        {
-            return (!this.executeRunAsyncTask.IsCompleted &&
-                    !this.executeRunAsyncTask.IsCanceled &&
-                    !this.executeRunAsyncTask.IsFaulted);
         }
 
         #endregion

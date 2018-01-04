@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Common
 {
     using System.IO;
@@ -19,7 +20,7 @@ namespace Microsoft.ServiceFabric.Services.Common
 
             using (var stream = new MemoryStream())
             {
-                using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                 {
                     serializer.WriteObject(writer, msg);
                     writer.Flush();
@@ -30,14 +31,14 @@ namespace Microsoft.ServiceFabric.Services.Common
 
         public static object Deserialize(DataContractSerializer serializer, byte[] buffer)
         {
-            if ((buffer == null) || (buffer.Length == 0))
+            if (buffer == null || buffer.Length == 0)
             {
                 return null;
             }
 
             using (var stream = new MemoryStream(buffer))
             {
-                using (var reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+                using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
                 {
                     return serializer.ReadObject(reader);
                 }

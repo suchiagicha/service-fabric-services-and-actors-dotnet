@@ -9,13 +9,17 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
     using System.Fabric;
     using System.Globalization;
     using System.Runtime.Serialization;
+    using Microsoft.ServiceFabric.Services.Remoting;
 
     /// <summary>
-    /// Header for the actor messages.
+    ///     Header for the actor messages.
     /// </summary>
     [DataContract(Name = "ActorHeader", Namespace = Constants.Namespace)]
     internal class ActorRemotingMessageHeaders : IActorRemotingMessageHeaders
     {
+        [DataMember(Name = "Headers", IsRequired = true, Order = 5)]
+        private Dictionary<string, byte[]> headers;
+
         public ActorRemotingMessageHeaders()
         {
             this.headers = new Dictionary<string, byte[]>();
@@ -23,21 +27,21 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
         }
 
         /// <summary>
-        /// The methodId of the remote method
+        ///     The methodId of the remote method
         /// </summary>
         /// <value>Method id</value>
         [DataMember(Name = "MethodId", IsRequired = true, Order = 0)]
         public int MethodId { get; set; }
 
         /// <summary>
-        /// The interface id of the remote interface.
+        ///     The interface id of the remote interface.
         /// </summary>
         /// <value>Interface id</value>
         [DataMember(Name = "InterfaceId", IsRequired = true, Order = 1)]
         public int InterfaceId { get; set; }
 
         /// <summary>
-        /// Identifier for the remote method invocation
+        ///     Identifier for the remote method invocation
         /// </summary>
         [DataMember(Name = "InvocationId", IsRequired = false, Order = 2, EmitDefaultValue = false)]
         public string InvocationId { get; set; }
@@ -49,8 +53,6 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
         [DataMember(IsRequired = false, Order = 4)]
         public string CallContext { get; set; }
 
-        [DataMember(Name = "Headers", IsRequired = true, Order = 5)] private Dictionary<string, byte[]> headers;
-
         public void AddHeader(string headerName, byte[] headerValue)
         {
             if (this.headers.ContainsKey(headerName))
@@ -58,7 +60,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
                 throw new FabricElementAlreadyExistsException(
                     string.Format(
                         CultureInfo.CurrentCulture,
-                        Services.Remoting.SR.ErrorHeaderAlreadyExists,
+                        SR.ErrorHeaderAlreadyExists,
                         headerName));
             }
 

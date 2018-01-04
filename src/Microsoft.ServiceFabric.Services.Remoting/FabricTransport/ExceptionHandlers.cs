@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
 {
     using System.Fabric;
@@ -32,9 +33,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             OperationRetrySettings retrySettings,
             out ExceptionHandlingResult result)
         {
-            if ((fabricException is FabricCannotConnectException) ||
-                (fabricException is FabricEndpointNotFoundException)
-                )
+            if (fabricException is FabricCannotConnectException ||
+                fabricException is FabricEndpointNotFoundException
+            )
             {
                 result = new ExceptionHandlingRetryResult(
                     fabricException,

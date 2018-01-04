@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Diagnostic
 {
     using System;
@@ -32,7 +33,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Diagnostic
 
 
         private static readonly Dictionary<Tuple<string, string>, FabricPerformanceCounterType> CounterTypes = new Dictionary
-            <Tuple<string, string>, FabricPerformanceCounterType>()
+            <Tuple<string, string>, FabricPerformanceCounterType>
             {
                 {
                     Tuple.Create(ServiceCategoryName, ServiceRequestProcessingTimeMillisecCounterName),
@@ -62,13 +63,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Diagnostic
                 {
                     Tuple.Create(ServiceCategoryName, ServiceOutstandingRequestsCounterName),
                     FabricPerformanceCounterType.NumberOfItems64
-                },
+                }
             };
 
         private static readonly
             Dictionary<FabricPerformanceCounterSetDefinition, IEnumerable<FabricPerformanceCounterDefinition>>
             CounterSets = new Dictionary
-                <FabricPerformanceCounterSetDefinition, IEnumerable<FabricPerformanceCounterDefinition>>()
+                <FabricPerformanceCounterSetDefinition, IEnumerable<FabricPerformanceCounterDefinition>>
                 {
                     {
                         new FabricPerformanceCounterSetDefinition(
@@ -129,21 +130,21 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Diagnostic
                                 ServiceOutstandingRequestsCounterName,
                                 "Number of requests being processed",
                                 GetType(ServiceCategoryName, ServiceOutstandingRequestsCounterName),
-                                "NumberOfOutstandingRequests"),
+                                "NumberOfOutstandingRequests")
                         }
                     }
                 };
-
-
-        internal static FabricPerformanceCounterType GetType(string categoryName, string counterName)
-        {
-            return CounterTypes[Tuple.Create(categoryName, counterName)];
-        }
 
         public Dictionary<FabricPerformanceCounterSetDefinition, IEnumerable<FabricPerformanceCounterDefinition>>
             GetCounterSets()
         {
             return CounterSets;
+        }
+
+
+        internal static FabricPerformanceCounterType GetType(string categoryName, string counterName)
+        {
+            return CounterTypes[Tuple.Create(categoryName, counterName)];
         }
     }
 }

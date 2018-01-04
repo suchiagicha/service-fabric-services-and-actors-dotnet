@@ -24,7 +24,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         internal ActorEventManager(ActorTypeInformation actorTypeInformation)
         {
             this.eventIdToEventTypeMap = actorTypeInformation.EventInterfaceTypes.ToDictionary(
-                t => new InterfaceId(IdUtil.ComputeId(t),IdUtil.ComputeIdWithCRC(t)),
+                t => new InterfaceId(IdUtil.ComputeId(t), IdUtil.ComputeIdWithCRC(t)),
                 t => t);
 
             this.actorIdToEventProxyMap =
@@ -34,13 +34,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         public Task SubscribeAsync(ActorId actorId, int eventInterfaceId, IActorEventSubscriberProxy subscriber)
         {
             Type eventType;
-            if (!this.eventIdToEventTypeMap.TryGetValue(new InterfaceId(eventInterfaceId,eventInterfaceId), out eventType))
+            if (!this.eventIdToEventTypeMap.TryGetValue(new InterfaceId(eventInterfaceId, eventInterfaceId), out eventType))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ErrorEventNotSupportedByActor,
-                    eventInterfaceId, actorId));
+                throw new ArgumentException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        SR.ErrorEventNotSupportedByActor,
+                        eventInterfaceId,
+                        actorId));
             }
 
-            var eventProxy = this.GetActorEventProxy(actorId, eventType);
+            ActorEventProxy eventProxy = this.GetActorEventProxy(actorId, eventType);
             eventProxy.AddSubscriber(subscriber);
 
             return TaskDone.Done;
@@ -48,15 +52,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public ActorEventProxy GetActorEventProxy(ActorId actorId, Type eventType)
         {
-            var eventProxyMap = this.actorIdToEventProxyMap.GetOrAdd(
+            ConcurrentDictionary<Type, ActorEventProxy> eventProxyMap = this.actorIdToEventProxyMap.GetOrAdd(
                 actorId,
                 new ConcurrentDictionary<Type, ActorEventProxy>());
 
-            var eventProxy = eventProxyMap.GetOrAdd(
+            ActorEventProxy eventProxy = eventProxyMap.GetOrAdd(
                 eventType,
                 t =>
                 {
-                    var eventProxyGenerator = ActorCodeBuilder.GetOrCreateEventProxyGenerator(t);
+                    ActorEventProxyGenerator eventProxyGenerator = ActorCodeBuilder.GetOrCreateEventProxyGenerator(t);
                     return eventProxyGenerator.CreateActorEventProxy();
                 });
             return eventProxy;
@@ -81,7 +85,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             return TaskDone.Done;
         }
 
-      
 
         public Task ClearAllSubscriptions(ActorId actorId)
         {
@@ -93,7 +96,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     }
 
 
-    class InterfaceId
+    internal class InterfaceId
     {
         public InterfaceId(int v1Id, int v2Id)
         {
@@ -102,6 +105,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         public int V1Id { get; }
+
         public int V2Id { get; }
 
         public override int GetHashCode()
@@ -131,9 +135,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 return true;
             }
+
             return false;
         }
     }
-
-
 }

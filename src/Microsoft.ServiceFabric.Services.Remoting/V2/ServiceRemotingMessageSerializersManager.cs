@@ -7,6 +7,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Builder;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
 
@@ -24,10 +25,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             {
                 headerSerializer = new ServiceRemotingMessageHeaderSerializer(new BufferPoolManager());
             }
+
             if (serializationProvider == null)
             {
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider();
             }
+
             this.serializationProvider = serializationProvider;
             this.cachedBodySerializers = new ConcurrentDictionary<int, CacheEntry>();
             this.headerSerializer = headerSerializer;
@@ -55,13 +58,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
         internal virtual CacheEntry CreateSerializers(int interfaceId)
         {
-            var interfaceDetails = GetInterfaceDetails(interfaceId);
-            var serviceInterfaceType = interfaceDetails.ServiceInterfaceType;
+            InterfaceDetails interfaceDetails = this.GetInterfaceDetails(interfaceId);
+            Type serviceInterfaceType = interfaceDetails.ServiceInterfaceType;
             // get the service interface type from the code gen layer
 
-            var requestBodyTypes = interfaceDetails.RequestKnownTypes;
+            List<Type> requestBodyTypes = interfaceDetails.RequestKnownTypes;
             // get the known types from the codegen layer
-            var responseBodyTypes = interfaceDetails.ResponseKnownTypes;
+            List<Type> responseBodyTypes = interfaceDetails.ResponseKnownTypes;
             // get the known types from the codegen layer
 
             return new CacheEntry(
@@ -69,13 +72,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                 this.serializationProvider.CreateResponseMessageSerializer(serviceInterfaceType, responseBodyTypes));
         }
 
-        internal  virtual InterfaceDetails GetInterfaceDetails(int interfaceId)
+        internal virtual InterfaceDetails GetInterfaceDetails(int interfaceId)
         {
             InterfaceDetails interfaceDetails;
             if (!ServiceCodeBuilder.TryGetKnownTypes(interfaceId, out interfaceDetails))
             {
                 throw new ArgumentException("No interface found with this Id  " + interfaceId);
             }
+
             return interfaceDetails;
         }
     }

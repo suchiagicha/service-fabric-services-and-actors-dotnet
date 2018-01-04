@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -16,40 +17,25 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             this.reminder = reminder;
 
-            if(reminderCompletedData != null)
+            if (reminderCompletedData != null)
             {
                 this.nextDueTime = ComputeRemainingTime(currentLogicalTime, reminderCompletedData.LogicalTime, reminder.Period);
             }
             else
             {
                 this.nextDueTime = ComputeRemainingTime(currentLogicalTime, reminder.LogicalCreationTime, reminder.DueTime);
-            }            
+            }
         }
 
-        TimeSpan IActorReminderState.RemainingDueTime
-        {
-            get { return this.nextDueTime; }
-        }
+        TimeSpan IActorReminderState.RemainingDueTime => this.nextDueTime;
 
-        string IActorReminder.Name
-        {
-            get { return this.reminder.Name; }
-        }
+        string IActorReminder.Name => this.reminder.Name;
 
-        TimeSpan IActorReminder.DueTime
-        {
-            get { return this.reminder.DueTime; }
-        }
+        TimeSpan IActorReminder.DueTime => this.reminder.DueTime;
 
-        TimeSpan IActorReminder.Period
-        {
-            get { return this.reminder.Period; }
-        }
+        TimeSpan IActorReminder.Period => this.reminder.Period;
 
-        byte[] IActorReminder.State
-        {
-            get { return this.reminder.State; }
-        }
+        byte[] IActorReminder.State => this.reminder.State;
 
 
         private static TimeSpan ComputeRemainingTime(
@@ -57,9 +43,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             TimeSpan createdOrLastCompletedTime,
             TimeSpan dueTimeOrPeriod)
         {
-            var elapsedTime = TimeSpan.Zero;
+            TimeSpan elapsedTime = TimeSpan.Zero;
 
-            if(currentLogicalTime > createdOrLastCompletedTime)
+            if (currentLogicalTime > createdOrLastCompletedTime)
             {
                 elapsedTime = currentLogicalTime - createdOrLastCompletedTime;
             }
@@ -71,7 +57,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return Timeout.InfiniteTimeSpan;
             }
 
-            var remainingTime = TimeSpan.Zero;
+            TimeSpan remainingTime = TimeSpan.Zero;
 
             if (dueTimeOrPeriod > elapsedTime)
             {

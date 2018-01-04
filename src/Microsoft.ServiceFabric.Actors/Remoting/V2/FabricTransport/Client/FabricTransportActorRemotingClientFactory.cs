@@ -14,18 +14,17 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
 
     /// <summary>
-    /// An <see cref="IServiceRemotingClientFactory"/> that uses
-    /// Fabric TCP transport to create <see cref="IServiceRemotingClient"/> that communicate with 
-    /// actors over interfaces that are remoted via 
-    /// <see cref="FabricTransportServiceRemotingListener"/>.
+    ///     An <see cref="IServiceRemotingClientFactory" /> that uses
+    ///     Fabric TCP transport to create <see cref="IServiceRemotingClient" /> that communicate with
+    ///     actors over interfaces that are remoted via
+    ///     <see cref="FabricTransportServiceRemotingListener" />.
     /// </summary>
     public class FabricTransportActorRemotingClientFactory : FabricTransportServiceRemotingClientFactory
     {
         /// <summary>
-        /// Constructs a fabric transport based actor remoting client factory.
+        ///     Constructs a fabric transport based actor remoting client factory.
         /// </summary>
         /// <param name="callbackMessageHandler">
         ///     The callback client that receives the callbacks from the service.
@@ -37,18 +36,18 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
         }
 
         /// <summary>
-        /// Constructs a fabric transport based actor remoting client factory.
+        ///     Constructs a fabric transport based actor remoting client factory.
         /// </summary>
         /// <param name="fabricTransportRemotingSettings">
-        ///     The settings for the fabric transport. If the settings are not provided or null, default settings 
+        ///     The settings for the fabric transport. If the settings are not provided or null, default settings
         ///     with no security.
         /// </param>
         /// <param name="callbackMessageHandler">
         ///     The callback client that receives the callbacks from the service.
         /// </param>
         /// <param name="servicePartitionResolver">
-        ///     Service partition resolver to resolve the service endpoints. If not specified, a default 
-        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault"/> is used.
+        ///     Service partition resolver to resolve the service endpoints. If not specified, a default
+        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault" /> is used.
         /// </param>
         /// <param name="exceptionHandlers">
         ///     Exception handlers to handle the exceptions encountered in communicating with the actor.
@@ -64,7 +63,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
             string traceId = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null) :
-            base(IntializeSerializationManager(serializationProvider,fabricTransportRemotingSettings),
+            base(
+                IntializeSerializationManager(serializationProvider, fabricTransportRemotingSettings),
                 fabricTransportRemotingSettings,
                 callbackMessageHandler,
                 servicePartitionResolver,
@@ -82,17 +82,19 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
             {
                 handlers.AddRange(exceptionHandlers);
             }
+
             handlers.Add(new ActorRemotingExceptionHandler());
             return handlers;
         }
 
-        private static ActorRemotingSerializationManager IntializeSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider, FabricTransportRemotingSettings settings)
+        private static ActorRemotingSerializationManager IntializeSerializationManager(
+            IServiceRemotingMessageSerializationProvider serializationProvider, FabricTransportRemotingSettings settings)
         {
             settings = settings ?? FabricTransportRemotingSettings.GetDefault();
-         
-            return new ActorRemotingSerializationManager(serializationProvider,
-                new ActorRemotingMessageHeaderSerializer(settings.HeaderBufferSize, settings.HeaderMaxBufferCount));
 
+            return new ActorRemotingSerializationManager(
+                serializationProvider,
+                new ActorRemotingMessageHeaderSerializer(settings.HeaderBufferSize, settings.HeaderMaxBufferCount));
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             }
             else
             {
-                var pooledBuffer = pooledBuffers.ElementAt(0);
+                IPooledBuffer pooledBuffer = pooledBuffers.ElementAt(0);
                 this.outgoingBuffer = new ArraySegment<byte>(
                     pooledBuffer.Value.Array,
                     pooledBuffer.Value.Offset,
@@ -40,32 +40,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
         {
             this.outgoingBuffer = buffer;
             this.pooledBuffer = null;
-          
-        }
-
-        private ArraySegment<byte> CreateAndReleaseBuffer(IEnumerable<IPooledBuffer> pooledBuffers)
-        {
-            ServiceTrace.Source.WriteWarning("OutgoingMessageHeaders", "Header has more than 1 Pooled Buffer");
-            var length = 0;
-            foreach (var pooledBuffer in pooledBuffers)
-            {
-                length += pooledBuffer.ContentLength;
-            }
-            var sourceArr = new byte[length];
-            var writtenBytes = 0;
-            foreach (var pooledBuffer in pooledBuffers)
-            {
-                Array.Copy(pooledBuffer.Value.Array, 0, sourceArr, writtenBytes, pooledBuffer.ContentLength);
-                writtenBytes += pooledBuffer.ContentLength;
-                pooledBuffer.Release();
-            }
-
-            return new ArraySegment<byte>(sourceArr);
         }
 
         public Stream GetReceivedBuffer()
         {
-           throw new NotImplementedException("This method is not valid on outgoing messages");
+            throw new NotImplementedException("This method is not valid on outgoing messages");
         }
 
         public ArraySegment<byte> GetSendBuffer()
@@ -83,6 +62,27 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
                     this.pooledBuffer.Release();
                 }
             }
+        }
+
+        private ArraySegment<byte> CreateAndReleaseBuffer(IEnumerable<IPooledBuffer> pooledBuffers)
+        {
+            ServiceTrace.Source.WriteWarning("OutgoingMessageHeaders", "Header has more than 1 Pooled Buffer");
+            var length = 0;
+            foreach (IPooledBuffer pooledBuffer in pooledBuffers)
+            {
+                length += pooledBuffer.ContentLength;
+            }
+
+            var sourceArr = new byte[length];
+            var writtenBytes = 0;
+            foreach (IPooledBuffer pooledBuffer in pooledBuffers)
+            {
+                Array.Copy(pooledBuffer.Value.Array, 0, sourceArr, writtenBytes, pooledBuffer.ContentLength);
+                writtenBytes += pooledBuffer.ContentLength;
+                pooledBuffer.Release();
+            }
+
+            return new ArraySegment<byte>(sourceArr);
         }
     }
 }

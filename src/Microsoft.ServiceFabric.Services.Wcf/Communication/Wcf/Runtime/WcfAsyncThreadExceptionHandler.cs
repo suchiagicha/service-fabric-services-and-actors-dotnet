@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 {
     using System;
@@ -10,6 +11,8 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 
     internal class WcfAsyncThreadExceptionHandler : ExceptionHandler
     {
+        private readonly string TraceType = "WcfAsyncThreadExceptionHandler";
+
         public override bool HandleException(Exception exception)
         {
             ServiceTrace.Source.WriteWarning(
@@ -25,7 +28,5 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 
             return true;
         }
-
-        private readonly string TraceType = "WcfAsyncThreadExceptionHandler";
     }
 }

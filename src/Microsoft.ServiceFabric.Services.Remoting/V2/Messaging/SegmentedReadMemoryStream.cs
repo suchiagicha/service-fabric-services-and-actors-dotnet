@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
 {
     using System;
@@ -40,40 +41,18 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             this.SetLength();
         }
 
-        void Initialize()
-        {
-            this.canWrite = false;
-            this.canSeek = false;
-            this.canRead = true;
-            this.position = 0;
-            this.bufferNum = 0;
-            this.bufferOffset = 0;
-        }
+        public override bool CanRead => this.canRead;
 
-        public override bool CanRead
-        {
-            get { return this.canRead; }
-        }
+        public override bool CanSeek => this.canSeek;
 
-        public override bool CanSeek
-        {
-            get { return this.canSeek; }
-        }
+        public override bool CanWrite => this.canWrite;
 
-        public override bool CanWrite
-        {
-            get { return this.canWrite; }
-        }
-
-        public override long Length
-        {
-            get { return this.length; }
-        }
+        public override long Length => this.length;
 
         public override long Position
         {
-            get { return this.position; }
-            set { this.position = value; }
+            get => this.position;
+            set => this.position = value;
         }
 
         public override void Flush()
@@ -88,10 +67,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
                 case SeekOrigin.Begin:
                     this.Initialize();
                     return this.Position;
-                    
             }
-            throw new NotImplementedException();
 
+            throw new NotImplementedException();
         }
 
         public override void SetLength(long value)
@@ -102,28 +80,41 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer");
-            if ((offset + count) > buffer.Length)
+            }
+
+            if (offset + count > buffer.Length)
+            {
                 throw new ArgumentException("buffer too small", "buffer");
+            }
+
             if (offset < 0)
+            {
                 throw new ArgumentException("offset must be >= 0", "offset");
+            }
+
             if (count < 0)
+            {
                 throw new ArgumentException("count must be >= 0", "count");
+            }
 
 
             if (this.Position >= this.Length || count == 0)
+            {
                 return 0;
+            }
 
 
-            var bytesToRead = Math.Min(count, (int) (this.Length - this.Position));
+            int bytesToRead = Math.Min(count, (int) (this.Length - this.Position));
             var bytesRead = 0;
-            var bytesLeft = bytesToRead - bytesRead;
+            int bytesLeft = bytesToRead - bytesRead;
 
             while (bytesLeft > 0)
             {
-                var buf = this.readbuffers.ElementAt((this.bufferNum));
-                var bufferSize = buf.Count;
-                var bytesToCopy = (this.bufferOffset + bytesLeft) < bufferSize
+                ArraySegment<byte> buf = this.readbuffers.ElementAt(this.bufferNum);
+                int bufferSize = buf.Count;
+                int bytesToCopy = this.bufferOffset + bytesLeft < bufferSize
                     ? bytesLeft
                     : bufferSize - this.bufferOffset;
 
@@ -151,17 +142,18 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             {
                 return -1;
             }
-            var currentBuffer = this.readbuffers.ElementAt((this.bufferNum));
+
+            ArraySegment<byte> currentBuffer = this.readbuffers.ElementAt(this.bufferNum);
 
             //Read from next buffer
             if (this.bufferOffset == currentBuffer.Count)
             {
                 this.bufferNum++;
                 this.bufferOffset = 0;
-                 currentBuffer = this.readbuffers.ElementAt((this.bufferNum));
+                currentBuffer = this.readbuffers.ElementAt(this.bufferNum);
             }
 
-            var byteread = currentBuffer.Array[this.bufferOffset];
+            byte byteread = currentBuffer.Array[this.bufferOffset];
             this.Position++;
             this.bufferOffset++;
 
@@ -173,9 +165,19 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             throw new NotImplementedException();
         }
 
+        private void Initialize()
+        {
+            this.canWrite = false;
+            this.canSeek = false;
+            this.canRead = true;
+            this.position = 0;
+            this.bufferNum = 0;
+            this.bufferOffset = 0;
+        }
+
         private void SetLength()
         {
-            foreach (var segment in this.readbuffers)
+            foreach (ArraySegment<byte> segment in this.readbuffers)
             {
                 this.length += segment.Count;
             }

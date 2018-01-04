@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
 {
     using System;
@@ -14,7 +15,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
     {
         private readonly IProxyActivator proxyActivator;
 
-        public ActorProxyGenerator(Type proxyInterfaceType,
+        public ActorProxyGenerator(
+            Type proxyInterfaceType,
             IProxyActivator proxyActivator
         ) : base(proxyInterfaceType)
         {
@@ -22,7 +24,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
         }
 
         public ActorProxy CreateActorProxy
-        (ActorServicePartitionClient remotingPartitionClient,
+        (
+            ActorServicePartitionClient remotingPartitionClient,
             IServiceRemotingMessageBodyFactory remotingMessageBodyFactory)
 
         {

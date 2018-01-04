@@ -2,13 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Runtime
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Fabric;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
@@ -18,9 +18,9 @@ namespace Microsoft.ServiceFabric.Services.Runtime
     internal class StatefulServiceReplicaAdapter : IStatefulServiceReplica
     {
         private const string TraceType = "StatefulServiceReplicaAdapter";
-        private readonly string traceId;
 
         private const int PrimaryStatusCheckRetryIntervalInMillis = 512;
+        private readonly string traceId;
 
         private readonly ServiceHelper serviceHelper;
         private readonly StatefulServiceContext serviceContext;
@@ -29,14 +29,13 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         private IStateProviderReplica stateProviderReplica;
         private IStatefulServicePartition servicePartition;
         private IEnumerable<ServiceReplicaListener> replicaListeners;
-        private IList<ICommunicationListener> communicationListeners;
         private ServiceEndpointCollection endpointCollection;
 
         private CancellationTokenSource runAsynCancellationTokenSource;
 
         /// <summary>
-        /// This task wraps the actual RunAsync task. All the exceptions
-        /// escaping from actual RunAsync are handled inside the task itself.
+        ///     This task wraps the actual RunAsync task. All the exceptions
+        ///     escaping from actual RunAsync are handled inside the task itself.
         /// </summary>
         private Task executeRunAsyncTask;
 
@@ -50,7 +49,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
 
             this.servicePartition = null;
             this.replicaListeners = null;
-            this.communicationListeners = null;
+            this.Test_CommunicationListeners = null;
             this.endpointCollection = new ServiceEndpointCollection();
 
             this.runAsynCancellationTokenSource = null;
@@ -70,12 +69,20 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         }
 
         /// <summary>
-        /// This is exposed only for testing use.
+        ///     This is exposed only for testing use.
         /// </summary>
-        internal IList<ICommunicationListener> Test_CommunicationListeners
+        internal IList<ICommunicationListener> Test_CommunicationListeners { get; private set; }
+
+        #region Test Hooks
+
+        internal bool Test_IsRunAsyncTaskRunning()
         {
-            get { return this.communicationListeners; }
-        } 
+            return !this.executeRunAsyncTask.IsCompleted &&
+                   !this.executeRunAsyncTask.IsCanceled &&
+                   !this.executeRunAsyncTask.IsFaulted;
+        }
+
+        #endregion
 
         #region Implementation of IStatefulServiceReplica
 
@@ -96,7 +103,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             this.servicePartition = partition;
             this.userServiceReplica.Partition = partition;
 
-            var replicator = await this.stateProviderReplica.OpenAsync(openMode, partition, cancellationToken);
+            IReplicator replicator = await this.stateProviderReplica.OpenAsync(openMode, partition, cancellationToken);
 
             Exception userReplicaEx = null;
             try
@@ -126,7 +133,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         async Task<string> IStatefulServiceReplica.ChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
         {
             ServiceTrace.Source.WriteInfoWithId(
-                TraceType, 
+                TraceType,
                 this.traceId,
                 "ChangeRoleAsync : new role {0}",
                 newRole);
@@ -142,9 +149,9 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 this.executeRunAsyncTask = this.ScheduleRunAsync(this.runAsynCancellationTokenSource.Token);
             }
             else
-            {                
+            {
                 await this.CancelRunAsync();
-                
+
                 if (newRole == ReplicaRole.ActiveSecondary)
                 {
                     this.endpointCollection = await this.OpenCommunicationListenersAsync(newRole, cancellationToken);
@@ -212,7 +219,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 TraceType,
                 this.traceId,
                 "Abort");
-            
+
             this.AbortCommunicationListeners();
             this.CancelRunAsync().ContinueWith(t => t.Exception, TaskContinuationOptions.OnlyOnFaulted);
             this.userServiceReplica.OnAbort();
@@ -231,7 +238,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         private Task ScheduleRunAsync(CancellationToken runAsyncCancellationToken)
         {
             ServiceTrace.Source.WriteInfoWithId(TraceType, this.traceId, "Scheduling RunAsync");
-            
+
             // Ensure that RunAsync is invoked on a different thread so that calling thread
             // can return and complete the ChangeRoleAsync() call. If we await user's RunAsync
             // directly in current thread, then user can block the current thread and
@@ -248,11 +255,11 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         }
 
         /// <summary>
-        /// We handle all the exceptions coming from actual RunAsync here.
+        ///     We handle all the exceptions coming from actual RunAsync here.
         /// </summary>
         private async Task ExecuteRunAsync(CancellationToken runAsyncCancellationToken)
         {
-            var writeStatusGranted = await this.WaitForWriteStatusAsync(runAsyncCancellationToken);
+            bool writeStatusGranted = await this.WaitForWriteStatusAsync(runAsyncCancellationToken);
 
             // 'writeStatusGranted' will be false only when:
             // 1) This replica is no longer primary.
@@ -288,17 +295,17 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 }
 
                 ServiceTrace.Source.WriteInfoWithId(
-                        TraceType + ServiceHelper.ApiFinishTraceTypeSuffix,
-                        this.traceId,
-                        "RunAsync successfully canceled by throwing OperationCanceledException: {0}",
-                        e.ToString());
+                    TraceType + ServiceHelper.ApiFinishTraceTypeSuffix,
+                    this.traceId,
+                    "RunAsync successfully canceled by throwing OperationCanceledException: {0}",
+                    e.ToString());
             }
             catch (FabricException e)
             {
                 ServiceFrameworkEventSource.Writer.StatefulRunAsyncFailure(
-                        this.serviceContext,
-                        runAsyncCancellationToken.IsCancellationRequested,
-                        e);
+                    this.serviceContext,
+                    runAsyncCancellationToken.IsCancellationRequested,
+                    e);
 
                 this.serviceHelper.HandleRunAsyncUnexpectedFabricException(this.servicePartition, e);
                 return;
@@ -306,9 +313,9 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             catch (Exception e)
             {
                 ServiceFrameworkEventSource.Writer.StatefulRunAsyncFailure(
-                        this.serviceContext,
-                        runAsyncCancellationToken.IsCancellationRequested,
-                        e);
+                    this.serviceContext,
+                    runAsyncCancellationToken.IsCancellationRequested,
+                    e);
 
                 this.serviceHelper.HandleRunAsyncUnexpectedException(this.servicePartition, e);
                 return;
@@ -321,12 +328,10 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         }
 
         /// <summary>
-        /// This gets called in three cases:
-        /// 
-        /// 1) When replica is changing role from primary to secondary.
-        /// 2) When replica is being closed.
-        /// 3) When replica is being aborted.
-        /// 
+        ///     This gets called in three cases:
+        ///     1) When replica is changing role from primary to secondary.
+        ///     2) When replica is being closed.
+        ///     3) When replica is being aborted.
         /// </summary>
         private async Task CancelRunAsync()
         {
@@ -338,8 +343,8 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                     ServiceHelper.RunAsyncExpectedCancellationTimeSpan);
 
                 ServiceTrace.Source.WriteInfoWithId(
-                    TraceType + ServiceHelper.ApiStartTraceTypeSuffix, 
-                    this.traceId, 
+                    TraceType + ServiceHelper.ApiStartTraceTypeSuffix,
+                    this.traceId,
                     "Canceling RunAsync");
 
                 var cancellationStopwatch = new Stopwatch();
@@ -379,6 +384,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                             ex.ToString());
                         throw;
                     }
+
                     ServiceTrace.Source.WriteNoiseWithId(TraceType, this.traceId, "executeRunAsyncTask canceled cooperatively");
                 }
                 catch (Exception ex)
@@ -405,8 +411,8 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                         ServiceHelper.RunAsyncExpectedCancellationTimeSpan);
 
                     ServiceTrace.Source.WriteWarningWithId(
-                        TraceType + ServiceHelper.ApiSlowTraceTypeSuffix, 
-                        this.traceId, 
+                        TraceType + ServiceHelper.ApiSlowTraceTypeSuffix,
+                        this.traceId,
                         "RunAsync slow cancellation: Time: {0}s",
                         cancellationStopwatch.Elapsed.TotalSeconds);
                 }
@@ -444,7 +450,8 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 {
                     return true;
                 }
-                else if (result == PartitionAccessStatus.NotPrimary)
+
+                if (result == PartitionAccessStatus.NotPrimary)
                 {
                     return false;
                 }
@@ -452,22 +459,23 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 await Task.Delay(PrimaryStatusCheckRetryIntervalInMillis, cancellationToken);
             }
         }
-        
+
         #endregion
 
         #region Communication Listeners Management
 
         private void AddCommunicationListener(ICommunicationListener communicationListener)
         {
-            if (this.communicationListeners == null)
+            if (this.Test_CommunicationListeners == null)
             {
-                this.communicationListeners = new List<ICommunicationListener>();
+                this.Test_CommunicationListeners = new List<ICommunicationListener>();
             }
 
-            this.communicationListeners.Add(communicationListener);
+            this.Test_CommunicationListeners.Add(communicationListener);
         }
 
-        private async Task<ServiceEndpointCollection> OpenCommunicationListenersAsync(ReplicaRole replicaRole,
+        private async Task<ServiceEndpointCollection> OpenCommunicationListenersAsync(
+            ReplicaRole replicaRole,
             CancellationToken cancellationToken)
         {
             ServiceTrace.Source.WriteInfoWithId(
@@ -484,18 +492,18 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             var endpointsCollection = new ServiceEndpointCollection();
             var listenerOpenedCount = 0;
 
-            foreach (var entry in this.replicaListeners)
+            foreach (ServiceReplicaListener entry in this.replicaListeners)
             {
                 if (replicaRole == ReplicaRole.Primary ||
-                    (replicaRole == ReplicaRole.ActiveSecondary && entry.ListenOnSecondary))
+                    replicaRole == ReplicaRole.ActiveSecondary && entry.ListenOnSecondary)
                 {
-                    var communicationListener = entry.CreateCommunicationListener(this.serviceContext);
+                    ICommunicationListener communicationListener = entry.CreateCommunicationListener(this.serviceContext);
                     this.AddCommunicationListener(communicationListener);
-                    var endpointAddress = await communicationListener.OpenAsync(cancellationToken);
+                    string endpointAddress = await communicationListener.OpenAsync(cancellationToken);
                     endpointsCollection.AddEndpoint(entry.Name, endpointAddress);
                     listenerOpenedCount++;
 
-                    var traceMsg = entry.Name.Equals(ServiceReplicaListener.DefaultName)
+                    string traceMsg = entry.Name.Equals(ServiceReplicaListener.DefaultName)
                         ? "Opened communication listener with default name."
                         : $"Opened {entry.Name} communication listener with name {entry.Name}.";
 
@@ -513,15 +521,14 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 TraceType,
                 this.traceId,
                 "Closing {0} communication listeners..",
-                (this.communicationListeners != null) ? this.communicationListeners.Count : 0);
+                this.Test_CommunicationListeners != null ? this.Test_CommunicationListeners.Count : 0);
 
-            if (this.communicationListeners != null)
+            if (this.Test_CommunicationListeners != null)
             {
                 try
                 {
-                    foreach (var entry in this.communicationListeners)
+                    foreach (ICommunicationListener entry in this.Test_CommunicationListeners)
                     {
-                        
                         await entry.CloseAsync(cancellationToken);
                     }
                 }
@@ -536,7 +543,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                     this.AbortCommunicationListeners();
                 }
 
-                this.communicationListeners = null;
+                this.Test_CommunicationListeners = null;
             }
 
             ServiceTrace.Source.WriteInfoWithId(
@@ -552,10 +559,10 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 this.traceId,
                 "Aborting communication listeners..");
 
-            if (this.communicationListeners != null)
+            if (this.Test_CommunicationListeners != null)
             {
                 List<Exception> exceptions = null;
-                foreach (var entry in this.communicationListeners)
+                foreach (ICommunicationListener entry in this.Test_CommunicationListeners)
                 {
                     try
                     {
@@ -567,11 +574,12 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                         {
                             exceptions = new List<Exception>();
                         }
+
                         exceptions.Add(e);
                     }
                 }
 
-                this.communicationListeners = null;
+                this.Test_CommunicationListeners = null;
                 if (exceptions != null)
                 {
                     // Trace the exception and continue. Do not bubble up exception as abort path
@@ -587,17 +595,6 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                         aggregateException);
                 }
             }
-        }
-
-        #endregion
-
-        #region Test Hooks
-
-        internal bool Test_IsRunAsyncTaskRunning()
-        {
-            return (!this.executeRunAsyncTask.IsCompleted && 
-                    !this.executeRunAsyncTask.IsCanceled && 
-                    !this.executeRunAsyncTask.IsFaulted);
         }
 
         #endregion

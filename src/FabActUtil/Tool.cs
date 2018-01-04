@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace FabActUtil
 {
     using System;
@@ -10,8 +11,8 @@ namespace FabActUtil
     using System.IO;
     using System.Reflection;
     using Microsoft.ServiceFabric.Actors;
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Actors.Generator;
+    using Microsoft.ServiceFabric.Actors.Runtime;
 
     internal class Tool
     {
@@ -56,13 +57,12 @@ namespace FabActUtil
                 GenerateManifest(context);
                 AddParametersToLocalFiveNodeAppParamFile(context);
                 AddParametersToLocalOneNodeAppParamFile(context);
-                return;
             }
         }
 
         private static void GenerateManifest(ToolContext context)
         {
-            var generatorArgs = new ManifestGenerator.Arguments()
+            var generatorArgs = new ManifestGenerator.Arguments
             {
                 ApplicationPrefix = context.Arguments.ApplicationPrefix,
                 ServicePackageNamePrefix = context.Arguments.ServicePackagePrefix,
@@ -84,7 +84,7 @@ namespace FabActUtil
                 return;
             }
 
-            var updaterArgs = new AppParameterFileUpdater.Arguments()
+            var updaterArgs = new AppParameterFileUpdater.Arguments
             {
                 ActorTypes = context.ActorTypes,
                 AppParamFilePath = context.Arguments.Local5NodeAppParamFile
@@ -100,7 +100,7 @@ namespace FabActUtil
                 return;
             }
 
-            var updaterArgs = new AppParameterFileUpdater.Arguments()
+            var updaterArgs = new AppParameterFileUpdater.Arguments
             {
                 ActorTypes = context.ActorTypes,
                 AppParamFilePath = context.Arguments.Local1NodeAppParamFile
@@ -116,11 +116,11 @@ namespace FabActUtil
 
         private static void LoadActors(ToolContext context)
         {
-            var inputAssembly = context.InputAssembly;
-            var actorTypes = context.ActorTypes;
+            Assembly inputAssembly = context.InputAssembly;
+            IList<ActorTypeInformation> actorTypes = context.ActorTypes;
             IList<string> actorFilters = null;
 
-            if ((context.Arguments.Actors != null) && (context.Arguments.Actors.Length > 0))
+            if (context.Arguments.Actors != null && context.Arguments.Actors.Length > 0)
             {
                 actorFilters = new List<string>(context.Arguments.Actors);
             }
@@ -128,26 +128,34 @@ namespace FabActUtil
             LoadActors(inputAssembly, actorFilters, actorTypes);
 
             // check if all specified actor types were loaded or not
-            if ((actorFilters != null) && (actorFilters.Count > 0))
+            if (actorFilters != null && actorFilters.Count > 0)
             {
                 throw new TypeLoadException(
-                    string.Format(CultureInfo.CurrentCulture,
+                    string.Format(
+                        CultureInfo.CurrentCulture,
                         SR.ErrorNotAnActor,
                         actorFilters[0],
                         typeof(Actor).FullName));
             }
         }
 
-        private static void LoadActors(Assembly inputAssembly, IList<string> actorFilters,
+        private static void LoadActors(
+            Assembly inputAssembly, IList<string> actorFilters,
             IList<ActorTypeInformation> actorTypes)
         {
             var actorTypeInfoTable = new Dictionary<Type, ActorTypeInformation>();
-            foreach (var t in inputAssembly.GetTypes())
+            foreach (Type t in inputAssembly.GetTypes())
             {
-                if (!t.IsActor()) continue;
+                if (!t.IsActor())
+                {
+                    continue;
+                }
 
-                var actorTypeInformation = ActorTypeInformation.Get(t);
-                if (actorTypeInformation.IsAbstract) continue;
+                ActorTypeInformation actorTypeInformation = ActorTypeInformation.Get(t);
+                if (actorTypeInformation.IsAbstract)
+                {
+                    continue;
+                }
 
                 CheckForDuplicateFabricServiceName(actorTypeInfoTable, actorTypeInformation);
 
@@ -168,7 +176,7 @@ namespace FabActUtil
         private static void CheckForDuplicateFabricServiceName(
             IDictionary<Type, ActorTypeInformation> actorTypeInfoTable, ActorTypeInformation actorTypeInformation)
         {
-            foreach (var actorTypeInterface in actorTypeInformation.InterfaceTypes)
+            foreach (Type actorTypeInterface in actorTypeInformation.InterfaceTypes)
             {
                 if (actorTypeInfoTable.ContainsKey(actorTypeInterface))
                 {
@@ -180,34 +188,36 @@ namespace FabActUtil
                             actorTypeInfoTable[actorTypeInterface].ImplementationType))
                         {
                             throw new TypeLoadException(
-                            string.Format(CultureInfo.CurrentCulture,
-                                SR.ErrorNoActorServiceNameMultipleImplDerivation,
-                                actorTypeInterface.FullName,
-                                actorTypeInfoTable[actorTypeInterface].ImplementationType.FullName,
-                                actorTypeInformation.ImplementationType.FullName,
-                                typeof(ActorServiceAttribute).FullName));
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    SR.ErrorNoActorServiceNameMultipleImplDerivation,
+                                    actorTypeInterface.FullName,
+                                    actorTypeInfoTable[actorTypeInterface].ImplementationType.FullName,
+                                    actorTypeInformation.ImplementationType.FullName,
+                                    typeof(ActorServiceAttribute).FullName));
                         }
-                        else if (actorTypeInfoTable[actorTypeInterface].ImplementationType.IsAssignableFrom(
+
+                        if (actorTypeInfoTable[actorTypeInterface].ImplementationType.IsAssignableFrom(
                             actorTypeInformation.ImplementationType))
                         {
                             throw new TypeLoadException(
-                              string.Format(CultureInfo.CurrentCulture,
-                                  SR.ErrorNoActorServiceNameMultipleImplDerivation,
-                                  actorTypeInterface.FullName,
-                                  actorTypeInformation.ImplementationType.FullName,
-                                  actorTypeInfoTable[actorTypeInterface].ImplementationType.FullName,
-                                  typeof(ActorServiceAttribute).FullName));
-                        }
-                        else
-                        {
-                            throw new TypeLoadException(
-                                string.Format(CultureInfo.CurrentCulture,
-                                    SR.ErrorNoActorServiceNameMultipleImpl,
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    SR.ErrorNoActorServiceNameMultipleImplDerivation,
                                     actorTypeInterface.FullName,
                                     actorTypeInformation.ImplementationType.FullName,
                                     actorTypeInfoTable[actorTypeInterface].ImplementationType.FullName,
                                     typeof(ActorServiceAttribute).FullName));
                         }
+
+                        throw new TypeLoadException(
+                            string.Format(
+                                CultureInfo.CurrentCulture,
+                                SR.ErrorNoActorServiceNameMultipleImpl,
+                                actorTypeInterface.FullName,
+                                actorTypeInformation.ImplementationType.FullName,
+                                actorTypeInfoTable[actorTypeInterface].ImplementationType.FullName,
+                                typeof(ActorServiceAttribute).FullName));
                     }
                 }
                 else
@@ -233,7 +243,7 @@ namespace FabActUtil
 
         private static string GetToolPath()
         {
-            var codeBase = Assembly.GetEntryAssembly().CodeBase;
+            string codeBase = Assembly.GetEntryAssembly().CodeBase;
             var uri = new UriBuilder(codeBase);
             return Uri.UnescapeDataString(uri.Path);
         }

@@ -2,18 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.ServiceFabric.Actors
 {
+    using System;
     using System.Globalization;
     using Microsoft.ServiceFabric.Actors.Remoting;
 
-    class Helper
+    internal class Helper
     {
         public static string GetCallContext()
         {
@@ -26,10 +22,8 @@ namespace Microsoft.ServiceFabric.Actors
                     callContextValue,
                     Guid.NewGuid().ToString());
             }
-            else
-            {
-                return Guid.NewGuid().ToString();
-            }
+
+            return Guid.NewGuid().ToString();
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -12,17 +13,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     internal class ActorTimer : IActorTimer
     {
         private readonly ActorBase owner;
-        private readonly TimeSpan dueTime;
-        private readonly TimeSpan period;
         private readonly object callbackState;
         private readonly ActorMethodContext callbackMethodContext;
 
         private Timer timer;
-        private Func<Object, Task> asyncCallback;
+        private Func<object, Task> asyncCallback;
 
         public ActorTimer(
             ActorBase owner,
-            Func<Object, Task> asyncCallback,
+            Func<object, Task> asyncCallback,
             object state,
             TimeSpan dueTime,
             TimeSpan period)
@@ -31,12 +30,22 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.asyncCallback = asyncCallback;
             this.callbackMethodContext = ActorMethodContext.CreateForTimer(this.asyncCallback.GetMethodInfo().Name);
             this.callbackState = state;
-            this.period = period;
-            this.dueTime = dueTime;
+            this.Period = period;
+            this.DueTime = dueTime;
             this.timer = new Timer(this.OnTimerCallback);
 
             this.ArmTimer(dueTime);
         }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public TimeSpan DueTime { get; }
+
+        public TimeSpan Period { get; }
 
         private void OnTimerCallback(object state)
         {
@@ -49,7 +58,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             try
             {
-                await this.owner.Manager.DispatchToActorAsync<byte[]>(
+                await this.owner.Manager.DispatchToActorAsync(
                     this.owner.Id,
                     this.callbackMethodContext,
                     false,
@@ -70,7 +79,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (reschedule)
             {
-                this.ArmTimer(this.period);
+                this.ArmTimer(this.Period);
             }
             else
             {
@@ -95,7 +104,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 throw new ObjectDisposedException("actor");
             }
 
-            var callback = this.asyncCallback;
+            Func<object, Task> callback = this.asyncCallback;
             if (callback != null)
             {
                 await callback(this.callbackState);
@@ -106,7 +115,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private void ArmTimer(TimeSpan timeSpan)
         {
-            var t = this.timer;
+            Timer t = this.timer;
             if (t != null)
             {
                 try
@@ -120,31 +129,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        public void Dispose()
+        private void Dispose(bool disposing)
         {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
+            if (!disposing)
+            {
+                return;
+            }
+
+            this.CancelTimer();
         }
 
         ~ActorTimer()
         {
             this.Dispose(false);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (!disposing) return;
-            this.CancelTimer();
-        }
-
-        public TimeSpan DueTime
-        {
-            get { return this.dueTime; }
-        }
-
-        public TimeSpan Period
-        {
-            get { return this.period; }
         }
     }
 }

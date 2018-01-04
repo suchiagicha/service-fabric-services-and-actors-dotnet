@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1
 {
     using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
     using System.Xml;
 
     /// <summary>
-    /// Specifies the headers that are sent along with a ServiceRemoting message.
+    ///     Specifies the headers that are sent along with a ServiceRemoting message.
     /// </summary>
     [DataContract(Name = "ServiceMessageHeaders", Namespace = Constants.ServiceCommunicationNamespace)]
     public class ServiceRemotingMessageHeaders
@@ -23,27 +24,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         private Dictionary<string, byte[]> headers;
 
         /// <summary>
-        /// Gets or sets the methodId of the remote method.
-        /// </summary>
-        /// <value>The method id.</value>
-        [DataMember(Name = "MethodId", IsRequired = true, Order = 0)]
-        public int MethodId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the interface id of the remote interface.
-        /// </summary>
-        /// <value>The interface id.</value>
-        [DataMember(Name = "InterfaceId", IsRequired = true, Order = 1)]
-        public int InterfaceId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the identifier for the remote method invocation.
-        /// </summary>
-        [DataMember(Name = "InvocationId", IsRequired = false, Order = 3, EmitDefaultValue = false)]
-        public string InvocationId { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of the ServiceRemotingMessageHeaders class.
+        ///     Initializes a new instance of the ServiceRemotingMessageHeaders class.
         /// </summary>
         public ServiceRemotingMessageHeaders()
         {
@@ -52,8 +33,28 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         }
 
         /// <summary>
-        /// Adds a new header with the specified name and value.
-        /// Throws FabricElementAlreadyExistsException if a header with the same name already exists.
+        ///     Gets or sets the methodId of the remote method.
+        /// </summary>
+        /// <value>The method id.</value>
+        [DataMember(Name = "MethodId", IsRequired = true, Order = 0)]
+        public int MethodId { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the interface id of the remote interface.
+        /// </summary>
+        /// <value>The interface id.</value>
+        [DataMember(Name = "InterfaceId", IsRequired = true, Order = 1)]
+        public int InterfaceId { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the identifier for the remote method invocation.
+        /// </summary>
+        [DataMember(Name = "InvocationId", IsRequired = false, Order = 3, EmitDefaultValue = false)]
+        public string InvocationId { get; set; }
+
+        /// <summary>
+        ///     Adds a new header with the specified name and value.
+        ///     Throws FabricElementAlreadyExistsException if a header with the same name already exists.
         /// </summary>
         /// <param name="headerName">The header Name.</param>
         /// <param name="headerValue">The header value.</param>
@@ -72,7 +73,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         }
 
         /// <summary>
-        /// Gets the header with the specified name.
+        ///     Gets the header with the specified name.
         /// </summary>
         /// <param name="headerName">The header Name.</param>
         /// <param name="headerValue">The header value.</param>
@@ -90,7 +91,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         }
 
         /// <summary>
-        /// Serializes the headers to a byte array.
+        ///     Serializes the headers to a byte array.
         /// </summary>
         /// <param name="serializer">The serializer.</param>
         /// <param name="msg">The headers.</param>
@@ -104,7 +105,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
 
             using (var stream = new MemoryStream())
             {
-                using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                 {
                     serializer.WriteObject(writer, msg);
                     writer.Flush();
@@ -114,23 +115,23 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         }
 
         /// <summary>
-        /// De-serializes the byte array to a ServiceRemotingMessageHeaders object.
+        ///     De-serializes the byte array to a ServiceRemotingMessageHeaders object.
         /// </summary>
         /// <param name="serializer">The deserializer.</param>
         /// <param name="buffer">The buffer.</param>
         /// <returns>De-serialized headers.</returns>
         public static ServiceRemotingMessageHeaders Deserialize(DataContractSerializer serializer, byte[] buffer)
         {
-            if ((buffer == null) || (buffer.Length == 0))
+            if (buffer == null || buffer.Length == 0)
             {
                 return null;
             }
 
             using (var stream = new MemoryStream(buffer))
             {
-                using (var reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+                using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
                 {
-                    return (ServiceRemotingMessageHeaders)serializer.ReadObject(reader);
+                    return (ServiceRemotingMessageHeaders) serializer.ReadObject(reader);
                 }
             }
         }

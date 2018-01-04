@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Client
 {
     using System;
@@ -10,19 +11,36 @@ namespace Microsoft.ServiceFabric.Services.Client
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Represents a delegate to create a FabricClient object.
+    ///     Represents a delegate to create a FabricClient object.
     /// </summary>
     /// <returns>FabricClient</returns>
     public delegate FabricClient CreateFabricClientDelegate();
 
     /// <summary>
-    /// <para>
-    /// Implements the Service partition resolver class that uses the <see cref="System.Fabric.FabricClient">FabricClient's </see> <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" /> method for service resolution
-    /// and implements a back-off/retry mechanism on errors from that method.
-    /// </para>
+    ///     <para>
+    ///         Implements the Service partition resolver class that uses the
+    ///         <see cref="System.Fabric.FabricClient">FabricClient's </see>
+    ///         <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" /> method for service
+    ///         resolution
+    ///         and implements a back-off/retry mechanism on errors from that method.
+    ///     </para>
     /// </summary>
     public class ServicePartitionResolver : IServicePartitionResolver
     {
+        /// <summary>
+        ///     The default resolve timeout per try used by the ResolveAsync method of <see cref="ServicePartitionResolver" /> when
+        ///     it is
+        ///     invoked without explicitly specifying the resolveTimeoutPerTry argument. The default value is 30 seconds.
+        /// </summary>
+        public static readonly TimeSpan DefaultResolveTimeout = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        ///     The default maximum back-off time used by ServicePartitionResolver's ResolveAsync method before retrying, when it
+        ///     is
+        ///     invoked without explicitly specifying the maxRetryBackoffInterval argument. The default value is 5 seconds.
+        /// </summary>
+        public static readonly TimeSpan DefaultMaxRetryBackoffInterval = TimeSpan.FromSeconds(5);
+
         private static ServicePartitionResolver DefaultResolver;
         private static readonly object StaticLock = new object();
         private static readonly Random Rand = new Random();
@@ -33,29 +51,18 @@ namespace Microsoft.ServiceFabric.Services.Client
         private FabricClient fabricClient;
 
         /// <summary>
-        /// The default resolve timeout per try used by the ResolveAsync method of <see cref="ServicePartitionResolver"/> when it is
-        /// invoked without explicitly specifying the resolveTimeoutPerTry argument. The default value is 30 seconds.
-        /// </summary>
-        public static readonly TimeSpan DefaultResolveTimeout = TimeSpan.FromSeconds(30);
-
-        /// <summary>
-        /// The default maximum back-off time used by ServicePartitionResolver's ResolveAsync method before retrying, when it is
-        /// invoked without explicitly specifying the maxRetryBackoffInterval argument. The default value is 5 seconds.
-        /// </summary>
-        public static readonly TimeSpan DefaultMaxRetryBackoffInterval = TimeSpan.FromSeconds(5);
-
-        /// <summary>
-        /// <para>
-        /// Instantiates a ServicePartionResolver, invoking the first delegate to get the <see cref="System.Fabric.FabricClient">FabricClient.</see>.
-        /// During partition resolution if FabricClient object gets disposed and second delegate is provided,
-        /// it uses the second delegate to get the FabricClient again. The second delegate provides a way to specify
-        /// an alternate way to get or create FabricClient if FabricClient created with first delegate get disposed.
-        /// </para>
+        ///     <para>
+        ///         Instantiates a ServicePartionResolver, invoking the first delegate to get the
+        ///         <see cref="System.Fabric.FabricClient">FabricClient.</see>.
+        ///         During partition resolution if FabricClient object gets disposed and second delegate is provided,
+        ///         it uses the second delegate to get the FabricClient again. The second delegate provides a way to specify
+        ///         an alternate way to get or create FabricClient if FabricClient created with first delegate get disposed.
+        ///     </para>
         /// </summary>
         /// <param name="createFabricClient">Delegate to create the fabric client.</param>
         /// <param name="recreateFabricClient">Delegate to re-create the fabric client.</param>
         public ServicePartitionResolver(
-            CreateFabricClientDelegate createFabricClient, 
+            CreateFabricClientDelegate createFabricClient,
             CreateFabricClientDelegate recreateFabricClient)
         {
             this.createFabricClient = createFabricClient;
@@ -63,7 +70,7 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// Instantiates a ServicePartitionResolver, invoking the given delegate to instantiate FabricClient.
+        ///     Instantiates a ServicePartitionResolver, invoking the given delegate to instantiate FabricClient.
         /// </summary>
         /// <param name="createFabricClient">Delegate to create fabric client.</param>
         public ServicePartitionResolver(
@@ -73,7 +80,8 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// Instantiates a ServicePartitionResolver, uses the given connectionEndpoints to create a new instance of the FabricClient.
+        ///     Instantiates a ServicePartitionResolver, uses the given connectionEndpoints to create a new instance of the
+        ///     FabricClient.
         /// </summary>
         /// <param name="connectionEndpoints">Array of management endpoints of the cluster.</param>
         public ServicePartitionResolver(params string[] connectionEndpoints)
@@ -82,34 +90,35 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// Instantiates a ServicePartitionResolver, uses the given FabricClient Settings and the connectionEndpoints to create
-        /// a new instance of FabricClient.
+        ///     Instantiates a ServicePartitionResolver, uses the given FabricClient Settings and the connectionEndpoints to create
+        ///     a new instance of FabricClient.
         /// </summary>
         /// <param name="settings">Fabric client Settings.</param>
         /// <param name="connectionEndpoints">Array of management endpoints of the cluster.</param>
         public ServicePartitionResolver(
-            FabricClientSettings settings, 
+            FabricClientSettings settings,
             params string[] connectionEndpoints)
             : this(() => new FabricClient(settings, connectionEndpoints))
         {
         }
 
         /// <summary>
-        /// Instantiates a ServicePartitionResolver, uses the given security credentials and the connectionEndpoints to create
-        /// a new instance of FabricClient.
+        ///     Instantiates a ServicePartitionResolver, uses the given security credentials and the connectionEndpoints to create
+        ///     a new instance of FabricClient.
         /// </summary>
         /// <param name="credential">Security credentials for the fabric client.</param>
         /// <param name="connectionEndpoints">Array of management endpoints of the cluster.</param>
         public ServicePartitionResolver(
-            SecurityCredentials credential, 
+            SecurityCredentials credential,
             params string[] connectionEndpoints)
             : this(() => new FabricClient(credential, connectionEndpoints))
         {
         }
 
         /// <summary>
-        /// Instantiates a ServicePartitionResolver, uses the given security credentials, FabricClient Settings and the connectionEndpoints
-        /// to create a new instance of FabricClient.
+        ///     Instantiates a ServicePartitionResolver, uses the given security credentials, FabricClient Settings and the
+        ///     connectionEndpoints
+        ///     to create a new instance of FabricClient.
         /// </summary>
         /// <param name="credential">Security credentials for the fabric client.</param>
         /// <param name="settings">Fabric client Settings.</param>
@@ -123,104 +132,72 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// <para>
-        /// Resolves a partition of the specified service by invoking FabricClient's
-        /// <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method. This uses the default settings for
-        /// <see cref="DefaultResolveTimeout">timeout</see> and <see cref="DefaultMaxRetryBackoffInterval">back-off retry</see> intervals.
-        /// </para>
+        ///     Resolves a partition of the specified service by invoking FabricClient's
+        ///     <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" /> method with the given
+        ///     timeout and back-off/retry on retry-able errors.
         /// </summary>
         /// <param name="serviceUri">Name of the service instance to resolve.</param>
         /// <param name="partitionKey">
-        /// <para>
-        /// <see cref="ServicePartitionKey">Key</see> that determines the target partition of the service instance. The <see cref="ServicePartitionKind">partitioning scheme</see>
-        /// specified in the key should match the partitioning scheme used to create the service instance.
-        /// </para>
+        ///     <para>
+        ///         <see cref="ServicePartitionKey">Key</see> that determines the target partition of the service instance. The
+        ///         <see cref="ServicePartitionKind">partitioning scheme</see>
+        ///         specified in the key should match the partitioning scheme used to create the service instance.
+        ///     </para>
         /// </param>
-        /// <param name="cancellationToken">
-        /// <para>
-        /// The CancellationToken that this operation is observing. It is used to notify the operation that it should be canceled.
-        /// </para>
+        /// <param name="resolveTimeoutPerTry">
+        ///     The timeout passed to FabricClient's
+        ///     <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method.
         /// </param>
-        /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
-        /// the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
-        /// about the resolved service partition including the service endpoints.
-        /// </returns>
-        /// <exception cref="System.Fabric.FabricServiceNotFoundException"> 
-        /// <para>
-        /// This method can throw a FabricServiceNotFoundExcepion if there is no service instance in the cluster matching the specified serviceUri.
-        /// </para>
-        /// </exception>
-        /// <exception cref="System.Fabric.FabricException"> 
-        /// <para>
-        /// This method can throw a FabricException if the scheme specified in the ServicePartitionKey doesn't match the scheme used to create the service instance.
-        /// See also <see href="https://azure.microsoft.com/documentation/articles/service-fabric-errors-and-exceptions/">Errors and Exceptions</see> for handling common FabricClient failures.
-        /// </para>
-        /// </exception>
-        /// <remarks>
-        /// <para>
-        /// This method retries on all transient exceptions. For cases where you want to limit the max execution time of this method, you should create a <see href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">cancellation token associated with that max execution time</see>
-        /// and pass that cancellation token to this method.
-        /// </para>
-        /// </remarks>
-        public Task<ResolvedServicePartition> ResolveAsync(
-            Uri serviceUri,
-            ServicePartitionKey partitionKey,
-            CancellationToken cancellationToken)
-        {
-            return this.ResolveAsync(
-                serviceUri,
-                partitionKey,
-                DefaultResolveTimeout,
-                DefaultMaxRetryBackoffInterval,
-                cancellationToken);
-        }
-
-        /// <summary>
-        /// Resolves a partition of the specified service by invoking FabricClient's
-        /// <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" /> method with the given timeout and back-off/retry on retry-able errors.
-        /// </summary>
-        /// <param name="serviceUri">Name of the service instance to resolve.</param>
-        /// <param name="partitionKey">
-        /// <para>
-        /// <see cref="ServicePartitionKey">Key</see> that determines the target partition of the service instance. The <see cref="ServicePartitionKind">partitioning scheme</see>
-        /// specified in the key should match the partitioning scheme used to create the service instance.
-        /// </para>
-        /// </param>
-        /// <param name="resolveTimeoutPerTry">The timeout passed to FabricClient's <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method.</param>
         /// <param name="maxRetryBackoffInterval">
-        /// <para>
-        /// The max interval to back-off before retrying when FabricClient's <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method fails with a retry-able exception. 
-        /// The actual back off interval is a random time interval which is less than or equal to the specified maxRetryBackoffInterval.
-        /// </para>
+        ///     <para>
+        ///         The max interval to back-off before retrying when FabricClient's
+        ///         <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method fails with a
+        ///         retry-able exception.
+        ///         The actual back off interval is a random time interval which is less than or equal to the specified
+        ///         maxRetryBackoffInterval.
+        ///     </para>
         /// </param>
         /// <param name="cancellationToken">
-        /// <para>
-        /// The CancellationToken that this operation is observing. It is used to notify the operation that it should be canceled.
-        /// </para>
+        ///     <para>
+        ///         The CancellationToken that this operation is observing. It is used to notify the operation that it should be
+        ///         canceled.
+        ///     </para>
         /// </param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
-        /// the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
-        /// about the resolved service partition including the service endpoints.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
+        ///     the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
+        ///     about the resolved service partition including the service endpoints.
         /// </returns>
-        /// <exception cref="System.Fabric.FabricServiceNotFoundException"> 
-        /// <para>
-        /// This method can throw a FabricServiceNotFoundExcepion if there is no service instance in the cluster matching the specified serviceUri.
-        /// </para>
-        /// </exception>
-        /// <exception cref="System.Fabric.FabricException"> 
-        /// <para>
-        /// This can throw a FabricException if the scheme specified in the ServicePartitionKey doesn't match the scheme used to create the service instance.
-        /// See also <see href="https://azure.microsoft.com/documentation/articles/service-fabric-errors-and-exceptions/">Errors and Exceptions</see> for more information.
-        /// </para>
-        /// </exception>
-        /// <remarks>
-        /// <para>
-        /// This method retries on all transient exceptions. For cases where you want to limit the max execution time of this method, you should create a <see href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">cancellation token associated with that max execution time</see>
-        /// and pass that cancellation token to this method.
-        /// </para>
-        /// </remarks>
+        /// <exception cref="System.Fabric.FabricServiceNotFoundException">
+        ///     <para>
+        ///         This method can throw a FabricServiceNotFoundExcepion if there is no service instance in the cluster matching
+        ///         the specified serviceUri.
+        ///     </para>
+        /// </exception>
+        /// <exception cref="System.Fabric.FabricException">
+        ///     <para>
+        ///         This can throw a FabricException if the scheme specified in the ServicePartitionKey doesn't match the scheme
+        ///         used to create the service instance.
+        ///         See also
+        ///         <see href="https://azure.microsoft.com/documentation/articles/service-fabric-errors-and-exceptions/">
+        ///             Errors and
+        ///             Exceptions
+        ///         </see>
+        ///         for more information.
+        ///     </para>
+        /// </exception>
+        /// <remarks>
+        ///     <para>
+        ///         This method retries on all transient exceptions. For cases where you want to limit the max execution time of
+        ///         this method, you should create a
+        ///         <see
+        ///             href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">
+        ///             cancellation
+        ///             token associated with that max execution time
+        ///         </see>
+        ///         and pass that cancellation token to this method.
+        ///     </para>
+        /// </remarks>
         public Task<ResolvedServicePartition> ResolveAsync(
             Uri serviceUri,
             ServicePartitionKey partitionKey,
@@ -236,135 +213,115 @@ namespace Microsoft.ServiceFabric.Services.Client
             switch (partitionKey.Kind)
             {
                 case ServicePartitionKind.Singleton:
-                    {
-                        return this.ResolveHelperAsync(
-                            (client, prevRsp, timeout, cancellation) => ResolveSingletonPartitionAsync(
-                                client,
-                                serviceUri,
-                                prevRsp,
-                                timeout,
-                                cancellation),
-                            null,
-                            resolveTimeoutPerTry,
-                            maxRetryBackoffInterval,
-                            cancellationToken);
-                    }
+                {
+                    return this.ResolveHelperAsync(
+                        (client, prevRsp, timeout, cancellation) => ResolveSingletonPartitionAsync(
+                            client,
+                            serviceUri,
+                            prevRsp,
+                            timeout,
+                            cancellation),
+                        null,
+                        resolveTimeoutPerTry,
+                        maxRetryBackoffInterval,
+                        cancellationToken);
+                }
                 case ServicePartitionKind.Named:
-                    {
-                        return this.ResolveHelperAsync(
-                            (client, prevRsp, timeout, cancellation) => ResolveNamedPartitionAsync(
-                                client,
-                                serviceUri,
-                                (string)partitionKey.Value,
-                                prevRsp,
-                                timeout,
-                                cancellation),
-                            null,
-                            resolveTimeoutPerTry,
-                            maxRetryBackoffInterval,
-                            cancellationToken);
-                    }
+                {
+                    return this.ResolveHelperAsync(
+                        (client, prevRsp, timeout, cancellation) => ResolveNamedPartitionAsync(
+                            client,
+                            serviceUri,
+                            (string) partitionKey.Value,
+                            prevRsp,
+                            timeout,
+                            cancellation),
+                        null,
+                        resolveTimeoutPerTry,
+                        maxRetryBackoffInterval,
+                        cancellationToken);
+                }
                 case ServicePartitionKind.Int64Range:
-                    {
-                        return this.ResolveHelperAsync(
-                            (client, prevRsp, timeout, cancellation) => ResolveInt64PartitionAsync(
-                                client,
-                                serviceUri,
-                                (long)partitionKey.Value,
-                                prevRsp,
-                                timeout,
-                                cancellation),
-                            null,
-                            resolveTimeoutPerTry,
-                            maxRetryBackoffInterval,
-                            cancellationToken);
-                    }
+                {
+                    return this.ResolveHelperAsync(
+                        (client, prevRsp, timeout, cancellation) => ResolveInt64PartitionAsync(
+                            client,
+                            serviceUri,
+                            (long) partitionKey.Value,
+                            prevRsp,
+                            timeout,
+                            cancellation),
+                        null,
+                        resolveTimeoutPerTry,
+                        maxRetryBackoffInterval,
+                        cancellationToken);
+                }
                 default:
                     throw new ArgumentOutOfRangeException("partitionKey");
             }
         }
 
         /// <summary>
-        /// Resolves a partition of the specified service by invoking FabricClient's
-        /// <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method with back-off/retry on retry-able errors. This takes in 
-        /// the resolved service partition that was got via an earlier invocation of the ResolveAsync() method. 
-        /// This method overload is used in cases where the client knows that the resolved service partition that it has is no longer valid.
+        ///     Resolves a partition of the specified service by invoking FabricClient's
+        ///     <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method with
+        ///     back-off/retry on retry-able errors. This takes in
+        ///     the resolved service partition that was got via an earlier invocation of the ResolveAsync() method.
+        ///     This method overload is used in cases where the client knows that the resolved service partition that it has is no
+        ///     longer valid.
         /// </summary>
-        /// <param name="previousRsp">The resolved service partition that the client got from the earlier invocation of the ResolveAsync() method.</param>
-        /// <param name="cancellationToken">
-        /// <para>
-        /// The CancellationToken that this operation is observing. It is used to notify the operation that it should be canceled.
-        /// </para>
+        /// <param name="previousRsp">
+        ///     The resolved service partition that the client got from the earlier invocation of the
+        ///     ResolveAsync() method.
         /// </param>
-        /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
-        /// the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
-        /// about the resolved service partition including the service endpoints.
-        /// </returns>
-        /// <exception cref="System.Fabric.FabricServiceNotFoundException"> 
-        /// <para>
-        /// This method can throw a FabricServiceNotFoundExcepion if the service which was resolved previously is no longer present in the cluster.
-        /// </para>
-        /// </exception>
-        /// <remarks>
-        /// <para>
-        /// This method retries on all transient exceptions. For cases where you want to limit the max execution time of this method, you should create a <see href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">cancellation token associated with that max execution time</see>
-        /// and pass that cancellation token to this method.
-        /// </para>
-        /// </remarks>
-        public Task<ResolvedServicePartition> ResolveAsync(
-            ResolvedServicePartition previousRsp,
-            CancellationToken cancellationToken)
-        {
-            return this.ResolveAsync(
-                previousRsp,
-                DefaultResolveTimeout,
-                DefaultMaxRetryBackoffInterval,
-                cancellationToken);
-        }
-
-        /// <summary>
-        /// Resolves a partition of the specified service by invoking FabricClient's
-        /// <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method with back-off/retry on retry-able errors. This takes in 
-        /// the resolved service partition that was got via an earlier invocation of the ResolveAsync() method. 
-        /// This method overload is used in cases where the client knows that the resolved service partition that it has is no longer valid.
-        /// </summary>
-        /// <param name="previousRsp">The resolved service partition that the client got from the earlier invocation of the ResolveAsync() method.</param>
-        /// <param name="resolveTimeoutPerTry">The timeout passed to FabricClient's <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method </param>
+        /// <param name="resolveTimeoutPerTry">
+        ///     The timeout passed to FabricClient's
+        ///     <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method
+        /// </param>
         /// <param name="maxRetryBackoffInterval">
-        /// <para>
-        /// The max interval to back-off before retrying when FabricClient's <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method fails with a retry-able exception. 
-        /// The actual back off interval is a random time interval which is less than or equal to the specified maxRetryBackoffInterval.
-        /// </para>
+        ///     <para>
+        ///         The max interval to back-off before retrying when FabricClient's
+        ///         <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method fails with a
+        ///         retry-able exception.
+        ///         The actual back off interval is a random time interval which is less than or equal to the specified
+        ///         maxRetryBackoffInterval.
+        ///     </para>
         /// </param>
         /// <param name="cancellationToken">
-        /// <para>
-        /// The CancellationToken that this operation is observing. It is used to notify the operation that it should be canceled.
-        /// </para>
+        ///     <para>
+        ///         The CancellationToken that this operation is observing. It is used to notify the operation that it should be
+        ///         canceled.
+        ///     </para>
         /// </param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
-        /// the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
-        /// about the resolved service partition including the service endpoints.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
+        ///     the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
+        ///     about the resolved service partition including the service endpoints.
         /// </returns>
-        /// <exception cref="System.Fabric.FabricServiceNotFoundException"> 
-        /// <para>
-        /// This method can throw a FabricServiceNotFoundExcepion if the service which was resolved previously is no longer present in the cluster.
-        /// </para>
-        /// </exception>
-        /// <remarks>
-        /// <para>
-        /// This method retries on all transient exceptions. For cases where you want to limit the max execution time of this method, you should create a <see href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">cancellation token associated with that max execution time</see>
-        /// and pass that cancellation token to this method.
-        /// </para>
-        /// </remarks>
+        /// <exception cref="System.Fabric.FabricServiceNotFoundException">
+        ///     <para>
+        ///         This method can throw a FabricServiceNotFoundExcepion if the service which was resolved previously is no longer
+        ///         present in the cluster.
+        ///     </para>
+        /// </exception>
+        /// <remarks>
+        ///     <para>
+        ///         This method retries on all transient exceptions. For cases where you want to limit the max execution time of
+        ///         this method, you should create a
+        ///         <see
+        ///             href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">
+        ///             cancellation
+        ///             token associated with that max execution time
+        ///         </see>
+        ///         and pass that cancellation token to this method.
+        ///     </para>
+        /// </remarks>
         public Task<ResolvedServicePartition> ResolveAsync(
             ResolvedServicePartition previousRsp,
             TimeSpan resolveTimeoutPerTry,
             TimeSpan maxRetryBackoffInterval,
             CancellationToken cancellationToken)
         {
-            var serviceName = previousRsp.ServiceName;
+            Uri serviceName = previousRsp.ServiceName;
             switch (previousRsp.Info.Kind)
             {
                 case ServicePartitionKind.Singleton:
@@ -383,7 +340,7 @@ namespace Microsoft.ServiceFabric.Services.Client
                 }
                 case ServicePartitionKind.Named:
                 {
-                    var partitionName = ((NamedPartitionInformation) previousRsp.Info).Name;
+                    string partitionName = ((NamedPartitionInformation) previousRsp.Info).Name;
                     return this.ResolveHelperAsync(
                         (client, prevRsp, timeout, cancellation) => ResolveNamedPartitionAsync(
                             client,
@@ -399,7 +356,7 @@ namespace Microsoft.ServiceFabric.Services.Client
                 }
                 case ServicePartitionKind.Int64Range:
                 {
-                    var partitionKey = ((Int64RangePartitionInformation) previousRsp.Info).LowKey;
+                    long partitionKey = ((Int64RangePartitionInformation) previousRsp.Info).LowKey;
                     return this.ResolveHelperAsync(
                         (client, prevRsp, timeout, cancellation) => ResolveInt64PartitionAsync(
                             client,
@@ -419,7 +376,130 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// Updates the default ServicePartitionResolver.
+        ///     <para>
+        ///         Resolves a partition of the specified service by invoking FabricClient's
+        ///         <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method. This uses
+        ///         the default settings for
+        ///         <see cref="DefaultResolveTimeout">timeout</see> and
+        ///         <see cref="DefaultMaxRetryBackoffInterval">back-off retry</see> intervals.
+        ///     </para>
+        /// </summary>
+        /// <param name="serviceUri">Name of the service instance to resolve.</param>
+        /// <param name="partitionKey">
+        ///     <para>
+        ///         <see cref="ServicePartitionKey">Key</see> that determines the target partition of the service instance. The
+        ///         <see cref="ServicePartitionKind">partitioning scheme</see>
+        ///         specified in the key should match the partitioning scheme used to create the service instance.
+        ///     </para>
+        /// </param>
+        /// <param name="cancellationToken">
+        ///     <para>
+        ///         The CancellationToken that this operation is observing. It is used to notify the operation that it should be
+        ///         canceled.
+        ///     </para>
+        /// </param>
+        /// <returns>
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
+        ///     the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
+        ///     about the resolved service partition including the service endpoints.
+        /// </returns>
+        /// <exception cref="System.Fabric.FabricServiceNotFoundException">
+        ///     <para>
+        ///         This method can throw a FabricServiceNotFoundExcepion if there is no service instance in the cluster matching
+        ///         the specified serviceUri.
+        ///     </para>
+        /// </exception>
+        /// <exception cref="System.Fabric.FabricException">
+        ///     <para>
+        ///         This method can throw a FabricException if the scheme specified in the ServicePartitionKey doesn't match the
+        ///         scheme used to create the service instance.
+        ///         See also
+        ///         <see href="https://azure.microsoft.com/documentation/articles/service-fabric-errors-and-exceptions/">
+        ///             Errors and
+        ///             Exceptions
+        ///         </see>
+        ///         for handling common FabricClient failures.
+        ///     </para>
+        /// </exception>
+        /// <remarks>
+        ///     <para>
+        ///         This method retries on all transient exceptions. For cases where you want to limit the max execution time of
+        ///         this method, you should create a
+        ///         <see
+        ///             href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">
+        ///             cancellation
+        ///             token associated with that max execution time
+        ///         </see>
+        ///         and pass that cancellation token to this method.
+        ///     </para>
+        /// </remarks>
+        public Task<ResolvedServicePartition> ResolveAsync(
+            Uri serviceUri,
+            ServicePartitionKey partitionKey,
+            CancellationToken cancellationToken)
+        {
+            return this.ResolveAsync(
+                serviceUri,
+                partitionKey,
+                DefaultResolveTimeout,
+                DefaultMaxRetryBackoffInterval,
+                cancellationToken);
+        }
+
+        /// <summary>
+        ///     Resolves a partition of the specified service by invoking FabricClient's
+        ///     <see cref="FabricClient.ServiceManagementClient.ResolveServicePartitionAsync(System.Uri)" />method with
+        ///     back-off/retry on retry-able errors. This takes in
+        ///     the resolved service partition that was got via an earlier invocation of the ResolveAsync() method.
+        ///     This method overload is used in cases where the client knows that the resolved service partition that it has is no
+        ///     longer valid.
+        /// </summary>
+        /// <param name="previousRsp">
+        ///     The resolved service partition that the client got from the earlier invocation of the
+        ///     ResolveAsync() method.
+        /// </param>
+        /// <param name="cancellationToken">
+        ///     <para>
+        ///         The CancellationToken that this operation is observing. It is used to notify the operation that it should be
+        ///         canceled.
+        ///     </para>
+        /// </param>
+        /// <returns>
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result from
+        ///     the task is the <see cref="System.Fabric.ResolvedServicePartition" /> object, that contains the information
+        ///     about the resolved service partition including the service endpoints.
+        /// </returns>
+        /// <exception cref="System.Fabric.FabricServiceNotFoundException">
+        ///     <para>
+        ///         This method can throw a FabricServiceNotFoundExcepion if the service which was resolved previously is no longer
+        ///         present in the cluster.
+        ///     </para>
+        /// </exception>
+        /// <remarks>
+        ///     <para>
+        ///         This method retries on all transient exceptions. For cases where you want to limit the max execution time of
+        ///         this method, you should create a
+        ///         <see
+        ///             href="https://docs.microsoft.com/en-us/dotnet/core/api/system.threading.cancellationtokensource#System_Threading_CancellationTokenSource__ctor_System_TimeSpan_">
+        ///             cancellation
+        ///             token associated with that max execution time
+        ///         </see>
+        ///         and pass that cancellation token to this method.
+        ///     </para>
+        /// </remarks>
+        public Task<ResolvedServicePartition> ResolveAsync(
+            ResolvedServicePartition previousRsp,
+            CancellationToken cancellationToken)
+        {
+            return this.ResolveAsync(
+                previousRsp,
+                DefaultResolveTimeout,
+                DefaultMaxRetryBackoffInterval,
+                cancellationToken);
+        }
+
+        /// <summary>
+        ///     Updates the default ServicePartitionResolver.
         /// </summary>
         /// <param name="defaultServiceResolver">The new default value</param>
         public static void SetDefault(ServicePartitionResolver defaultServiceResolver)
@@ -431,16 +511,24 @@ namespace Microsoft.ServiceFabric.Services.Client
         }
 
         /// <summary>
-        /// Gets the default ServicePartitionResolver.
-        /// <remarks>
-        /// <para>
-        /// The default service partition resolver instance uses the local <see href="https://docs.microsoft.com/en-us/dotnet/api/system.fabric.fabricclient#System_Fabric_FabricClient__ctor">fabric client</see>.
-        /// If you are using the ServicePartitionResolver to resolve services that are running on a remote cluster, the recommended practice is to create a ServicePartitionResolver using the appropriate endpoints or FabricClient and then update
-        /// the default ServicePartitionResolver.
-        /// </para>
-        /// </remarks>
+        ///     Gets the default ServicePartitionResolver.
+        ///     <remarks>
+        ///         <para>
+        ///             The default service partition resolver instance uses the local
+        ///             <see
+        ///                 href="https://docs.microsoft.com/en-us/dotnet/api/system.fabric.fabricclient#System_Fabric_FabricClient__ctor">
+        ///                 fabric
+        ///                 client
+        ///             </see>
+        ///             .
+        ///             If you are using the ServicePartitionResolver to resolve services that are running on a remote cluster, the
+        ///             recommended practice is to create a ServicePartitionResolver using the appropriate endpoints or
+        ///             FabricClient and then update
+        ///             the default ServicePartitionResolver.
+        ///         </para>
+        ///     </remarks>
         /// </summary>
-        /// <returns>Default <see cref="ServicePartitionResolver"/></returns>
+        /// <returns>Default <see cref="ServicePartitionResolver" /></returns>
         public static ServicePartitionResolver GetDefault()
         {
             lock (StaticLock)
@@ -449,7 +537,7 @@ namespace Microsoft.ServiceFabric.Services.Client
                 {
                     DefaultResolver = new ServicePartitionResolver(
                         () => new FabricClient(
-                            new FabricClientSettings()
+                            new FabricClientSettings
                             {
                                 PartitionLocationCacheBucketCount = 4096,
                                 PartitionLocationCacheLimit = 4096
@@ -520,7 +608,7 @@ namespace Microsoft.ServiceFabric.Services.Client
                     throw new OperationCanceledException();
                 }
 
-                var client = this.GetClient();
+                FabricClient client = this.GetClient();
                 ResolvedServicePartition rsp = null;
 
                 // resolve and get the rsp
@@ -537,9 +625,9 @@ namespace Microsoft.ServiceFabric.Services.Client
                     ae.Handle(
                         x =>
                         {
-                            if ((x is FabricTransientException) ||
-                                (x is TimeoutException) ||
-                                (x is OperationCanceledException))
+                            if (x is FabricTransientException ||
+                                x is TimeoutException ||
+                                x is OperationCanceledException)
                             {
                                 return true;
                             }
@@ -580,7 +668,7 @@ namespace Microsoft.ServiceFabric.Services.Client
 
                 // wait before retry
                 await Task.Delay(
-                    new TimeSpan((long) (Rand.NextDouble() * maxRetryInterval.Ticks)), 
+                    new TimeSpan((long) (Rand.NextDouble() * maxRetryInterval.Ticks)),
                     cancellationToken);
             }
         }

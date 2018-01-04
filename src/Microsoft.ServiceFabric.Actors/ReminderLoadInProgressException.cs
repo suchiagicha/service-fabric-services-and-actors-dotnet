@@ -2,8 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors
-{   
+{
     using System;
     using System.Fabric;
     using System.Runtime.Serialization;
@@ -11,7 +12,7 @@ namespace Microsoft.ServiceFabric.Actors
     [Serializable]
     internal sealed class ReminderLoadInProgressException : FabricTransientException
     {
-        public ReminderLoadInProgressException() : base()
+        public ReminderLoadInProgressException()
         {
         }
 

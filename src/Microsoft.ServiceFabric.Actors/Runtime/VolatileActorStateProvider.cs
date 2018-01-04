@@ -15,35 +15,26 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using Microsoft.ServiceFabric.Actors.Generator;
     using Microsoft.ServiceFabric.Actors.Query;
     using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Actors.Generator;
     using ActorStateTable = VolatileActorStateTable<
         VolatileActorStateProvider.ActorStateType,
         string,
         VolatileActorStateProvider.ActorStateData>;
-    using ActorStateDataWrapper = VolatileActorStateTable<
-        VolatileActorStateProvider.ActorStateType,
-        string,
-        VolatileActorStateProvider.ActorStateData>.ActorStateDataWrapper;
-    using SR = Microsoft.ServiceFabric.Actors.SR;
+    using ActorStateDataWrapper =
+        VolatileActorStateTable<VolatileActorStateProvider.ActorStateType, string, VolatileActorStateProvider.ActorStateData>.ActorStateDataWrapper;
 
     /// <summary>
-    /// Provides an implementation of <see cref="IActorStateProvider"/> where actor state is kept in-memory and is volatile.
+    ///     Provides an implementation of <see cref="IActorStateProvider" /> where actor state is kept in-memory and is
+    ///     volatile.
     /// </summary>
     public class VolatileActorStateProvider :
         IActorStateProvider, IStateProvider, VolatileLogicalTimeManager.ISnapshotHandler, IActorStateProviderInternal
     {
-        internal enum ActorStateType
-        {
-            LogicalTimestamp = 0,
-            Actor = 1,
-            Reminder = 2
-        }
-
         private const string LogicalTimestampKey = "LogicalTimestamp";
         private const string TraceType = "VolatileActorStateProvider";
-        private static readonly ActorStateData ActorPresenceValue = new ActorStateData(new[] { byte.MinValue });
+        private static readonly ActorStateData ActorPresenceValue = new ActorStateData(new[] {byte.MinValue});
 
         private readonly ActorStateTable stateTable;
         private readonly DataContractSerializer copyOrReplicationOperationSerializer;
@@ -66,7 +57,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private long roleChangeTracker;
 
         /// <summary>
-        /// Creates an instance of <see cref="VolatileActorStateProvider"/>.
+        ///     Creates an instance of <see cref="VolatileActorStateProvider" />.
         /// </summary>
         public VolatileActorStateProvider()
             : this(null)
@@ -74,11 +65,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Creates an instance of <see cref="VolatileActorStateProvider"/> with 
-        /// specified replicator settings.
+        ///     Creates an instance of <see cref="VolatileActorStateProvider" /> with
+        ///     specified replicator settings.
         /// </summary>
         /// <param name="replicatorSettings">
-        /// A <see cref="ReplicatorSettings"/> that describes replicator settings.
+        ///     A <see cref="ReplicatorSettings" /> that describes replicator settings.
         /// </param>
         public VolatileActorStateProvider(ReplicatorSettings replicatorSettings)
         {
@@ -94,11 +85,49 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.actorStateProviderHelper = new ActorStateProviderHelper(this);
         }
 
+        #region IStateProviderReplica2
+
+        /// <summary>
+        ///     Function called post restore has been performed on the replica.
+        /// </summary>
+        /// <value>
+        ///     A function representing on restore completed callback function.
+        /// </value>
+        public Func<CancellationToken, Task> OnRestoreCompletedAsync { private get; set; }
+
+        #endregion
+
+        #region ISnapshotHandler
+
+        async Task VolatileLogicalTimeManager.ISnapshotHandler.OnSnapshotAsync(TimeSpan currentLogicalTime)
+        {
+            try
+            {
+                await this.ReplicateUpdateAsync(
+                    ActorStateType.LogicalTimestamp,
+                    LogicalTimestampKey,
+                    new ActorStateData(currentLogicalTime));
+            }
+            catch (Exception)
+            {
+                // Ignore exception.
+            }
+        }
+
+        #endregion ISnapshotHandler
+
+        internal enum ActorStateType
+        {
+            LogicalTimestamp = 0,
+            Actor = 1,
+            Reminder = 2
+        }
+
         #region IActorStateProvider
 
         /// <summary>
-        /// Initializes the actor state provider with type information
-        /// of the actor type associated with it.
+        ///     Initializes the actor state provider with type information
+        ///     of the actor type associated with it.
         /// </summary>
         /// <param name="actorTypeInfo">Type information of the actor class</param>
         void IActorStateProvider.Initialize(ActorTypeInformation actorTypeInfo)
@@ -107,7 +136,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// This method is invoked as part of the activation process of the actor with the specified Id. 
+        ///     This method is invoked as part of the activation process of the actor with the specified Id.
         /// </summary>
         /// <param name="actorId">ID of the actor that is activated.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -115,7 +144,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <returns> A task that represents the asynchronous Actor activation notification processing.</returns>
         async Task IActorStateProvider.ActorActivatedAsync(ActorId actorId, CancellationToken cancellationToken)
         {
-            var key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
+            string key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
 
             ActorStateData data;
 
@@ -133,18 +162,18 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// This method is invoked when a reminder fires and finishes executing its callback 
-        /// <see cref="IRemindable.ReceiveReminderAsync"/> successfully.
+        ///     This method is invoked when a reminder fires and finishes executing its callback
+        ///     <see cref="IRemindable.ReceiveReminderAsync" /> successfully.
         /// </summary>
         /// <param name="actorId">ID of the actor which own reminder</param>
         /// <param name="reminder">Actor reminder that completed successfully.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
-        /// A task that represents the asynchronous reminder callback completed notification processing.
+        ///     A task that represents the asynchronous reminder callback completed notification processing.
         /// </returns>
         Task IActorStateProvider.ReminderCallbackCompletedAsync(ActorId actorId, IActorReminder reminder, CancellationToken cancellationToken)
         {
-            var reminderCompletedKey = ActorStateProviderHelper.CreateReminderCompletedStorageKey(actorId, reminder.Name);
+            string reminderCompletedKey = ActorStateProviderHelper.CreateReminderCompletedStorageKey(actorId, reminder.Name);
             var reminderCompletedData = new ReminderCompletedData(this.logicalTimeManager.CurrentLogicalTime, DateTime.UtcNow);
             var actorStateData = new ActorStateData(reminderCompletedData);
 
@@ -159,7 +188,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Loads the actor state associated with the specified state name.
+        ///     Loads the actor state associated with the specified state name.
         /// </summary>
         /// <typeparam name="T">Type of value of actor state associated with given state name.</typeparam>
         /// <param name="actorId">The ID of the actor for which to load the state.</param>
@@ -168,14 +197,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <exception cref="KeyNotFoundException">The actor state associated with specified state name does not exist.</exception>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         /// <returns>
-        /// A task that represents the asynchronous load operation. The value of TResult
-        /// parameter contains value of actor state associated with given state name.
+        ///     A task that represents the asynchronous load operation. The value of TResult
+        ///     parameter contains value of actor state associated with given state name.
         /// </returns>
         Task<T> IActorStateProvider.LoadStateAsync<T>(ActorId actorId, string stateName, CancellationToken cancellationToken)
         {
             Requires.Argument("stateName", stateName).NotNull();
 
-            var key = CreateActorStorageKey(actorId, stateName);
+            string key = CreateActorStorageKey(actorId, stateName);
 
             ActorStateData data;
 
@@ -189,32 +218,32 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Saves the specified set of actor state changes atomically.
+        ///     Saves the specified set of actor state changes atomically.
         /// </summary>
         /// <param name="actorId">The ID of the actor for which to save the state changes.</param>
         /// <param name="stateChanges">The collection of state changes to save.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous save operation.</returns>
         /// <remarks>
-        /// The collection of state changes should contain only one item for a given state name.
-        /// The save operation will fail on trying to add an actor state which already exists 
-        /// or update/remove an actor state which does not exist.
+        ///     The collection of state changes should contain only one item for a given state name.
+        ///     The save operation will fail on trying to add an actor state which already exists
+        ///     or update/remove an actor state which does not exist.
         /// </remarks>
         /// <exception cref="System.InvalidOperationException">
-        /// When <see cref="StateChangeKind"/> is <see cref="StateChangeKind.None"/>
+        ///     When <see cref="StateChangeKind" /> is <see cref="StateChangeKind.None" />
         /// </exception>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         async Task IActorStateProvider.SaveStateAsync(ActorId actorId, IReadOnlyCollection<ActorStateChange> stateChanges, CancellationToken cancellationToken)
         {
             var actorStateDataWrapperList = new List<ActorStateDataWrapper>();
 
-            foreach (var stateChange in stateChanges)
+            foreach (ActorStateChange stateChange in stateChanges)
             {
-                var key = CreateActorStorageKey(actorId, stateChange.StateName);
+                string key = CreateActorStorageKey(actorId, stateChange.StateName);
 
                 if (stateChange.ChangeKind == StateChangeKind.Add || stateChange.ChangeKind == StateChangeKind.Update)
                 {
-                    var buffer = this.actorStateSerializer.Serialize(stateChange.Type, stateChange.Value);
+                    byte[] buffer = this.actorStateSerializer.Serialize(stateChange.Type, stateChange.Value);
                     actorStateDataWrapperList.Add(
                         ActorStateDataWrapper.CreateForUpdate(ActorStateType.Actor, key, new ActorStateData(buffer)));
                 }
@@ -238,15 +267,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Checks whether actor state provider contains an actor state with 
-        /// specified state name.
+        ///     Checks whether actor state provider contains an actor state with
+        ///     specified state name.
         /// </summary>
         /// <param name="actorId">The ID of the actor for which to check state existence.</param>
         /// <param name="stateName">The name of the actor state to check for existence.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
-        /// A task that represents the asynchronous check operation. The value of TResult
-        /// parameter is <c>true</c> if state with specified name exists otherwise <c>false</c>.
+        ///     A task that represents the asynchronous check operation. The value of TResult
+        ///     parameter is <c>true</c> if state with specified name exists otherwise <c>false</c>.
         /// </returns>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         Task<bool> IActorStateProvider.ContainsStateAsync(ActorId actorId, string stateName, CancellationToken cancellationToken)
@@ -254,7 +283,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             Requires.Argument("stateName", stateName).NotNull();
 
             ActorStateData data;
-            var key = CreateActorStorageKey(actorId, stateName);
+            string key = CreateActorStorageKey(actorId, stateName);
 
             if (this.stateTable.TryGetValue(ActorStateType.Actor, key, out data))
             {
@@ -265,7 +294,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Removes all the existing states and reminders associated with specified actor atomically.
+        ///     Removes all the existing states and reminders associated with specified actor atomically.
         /// </summary>
         /// <param name="actorId">ID of the actor for which to remove state.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -278,12 +307,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             ActorStateDataWrapper actorStateDataWrapper;
 
             // Actor keys to delete
-            var actorStorageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string actorStorageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
 
             // Reminder last completed keys to delete
-            var reminderCompletedKeyPrefix = ActorStateProviderHelper.CreateReminderCompletedStorageKeyPrefix(actorId);
+            string reminderCompletedKeyPrefix = ActorStateProviderHelper.CreateReminderCompletedStorageKeyPrefix(actorId);
 
-            var actorStateEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Actor);
+            ActorStateTable.ActorStateEnumerator actorStateEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Actor);
 
             while ((actorStateDataWrapper = actorStateEnumerator.GetNext()) != null)
             {
@@ -297,9 +326,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
 
             // Reminder keys to delete
-            var reminderStorgaeKeyPrefix = CreateReminderStorageKeyPrefix(actorId, string.Empty);
+            string reminderStorgaeKeyPrefix = CreateReminderStorageKeyPrefix(actorId, string.Empty);
 
-            var reminderEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Reminder);
+            ActorStateTable.ActorStateEnumerator reminderEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Reminder);
 
             while ((actorStateDataWrapper = reminderEnumerator.GetNext()) != null)
             {
@@ -311,7 +340,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
 
             // Actor presence key to delete.
-            var key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
+            string key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
             actorStateDataWrapperList.Add(ActorStateDataWrapper.CreateForDelete(ActorStateType.Actor, key));
 
             if (actorStateDataWrapperList.Count > 0)
@@ -328,28 +357,28 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Creates an enumerable of all the state names associated with specified actor.
+        ///     Creates an enumerable of all the state names associated with specified actor.
         /// </summary>
         /// <remarks>
-        /// The enumerator returned from actor state provider is safe to use concurrently
-        /// with reads and writes to the state provider. It represents a snapshot consistent
-        /// view of the state provider.
+        ///     The enumerator returned from actor state provider is safe to use concurrently
+        ///     with reads and writes to the state provider. It represents a snapshot consistent
+        ///     view of the state provider.
         /// </remarks>
         /// <param name="actorId">The ID of the actor for which to create enumerable.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
-        /// A task that represents the asynchronous enumeration operation. The value of TResult
-        /// parameter is an enumerable of all state names associated with specified actor.
+        ///     A task that represents the asynchronous enumeration operation. The value of TResult
+        ///     parameter is an enumerable of all state names associated with specified actor.
         /// </returns>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         Task<IEnumerable<string>> IActorStateProvider.EnumerateStateNamesAsync(ActorId actorId, CancellationToken cancellationToken)
         {
             var stateNameList = new List<string>();
-            var storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
 
-            var actorStateEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Actor);
+            ActorStateTable.ActorStateEnumerator actorStateEnumerator = this.stateTable.GetShallowCopiesEnumerator(ActorStateType.Actor);
 
-            ActorStateTable.ActorStateDataWrapper actorStateDataWrapper;
+            ActorStateDataWrapper actorStateDataWrapper;
 
             while ((actorStateDataWrapper = actorStateEnumerator.GetNext()) != null)
             {
@@ -360,26 +389,26 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 }
             }
 
-            return Task.FromResult((IEnumerable<string>)stateNameList);
+            return Task.FromResult((IEnumerable<string>) stateNameList);
         }
 
         /// <summary>
-        /// Gets ActorIds from the State Provider.
+        ///     Gets ActorIds from the State Provider.
         /// </summary>
         /// <param name="itemsCount">Number of items requested to be returned.</param>
         /// <param name="continuationToken">
-        /// A continuation token to start querying the results from.
-        /// A null value of continuation token means start returning values form the beginning.
+        ///     A continuation token to start querying the results from.
+        ///     A null value of continuation token means start returning values form the beginning.
         /// </param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation of call to server.</returns>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         /// <remarks>
-        /// The <paramref name="continuationToken"/> is relative to the state of actor state provider
-        /// at the time of invocation of this API. If the state of actor state provider changes (i.e.
-        /// new actors are activated or existing actors are deleted) in between calls to this API and
-        /// the continuation token from previous call (before the state was modified) is supplied, the 
-        /// result may contain entries that were already fetched in previous calls.
+        ///     The <paramref name="continuationToken" /> is relative to the state of actor state provider
+        ///     at the time of invocation of this API. If the state of actor state provider changes (i.e.
+        ///     new actors are activated or existing actors are deleted) in between calls to this API and
+        ///     the continuation token from previous call (before the state was modified) is supplied, the
+        ///     result may contain entries that were already fetched in previous calls.
         /// </remarks>
         Task<PagedResult<ActorId>> IActorStateProvider.GetActorsAsync(
             int itemsCount,
@@ -397,9 +426,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Saves the specified actor reminder. If an actor reminder with
-        /// given name does not exist, it adds the actor reminder otherwise
-        /// existing actor reminder with same name is updated. 
+        ///     Saves the specified actor reminder. If an actor reminder with
+        ///     given name does not exist, it adds the actor reminder otherwise
+        ///     existing actor reminder with same name is updated.
         /// </summary>
         /// <param name="actorId">The ID of the actor for which to save the reminder.</param>
         /// <param name="reminder">The actor reminder to save.</param>
@@ -431,7 +460,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Deletes the specified actor reminder if it exists.
+        ///     Deletes the specified actor reminder if it exists.
         /// </summary>
         /// <param name="actorId">The ID of the actor for which to delete the reminder.</param>
         /// <param name="reminderName">The name of the reminder to delete.</param>
@@ -462,7 +491,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Deletes the specified set of reminders.
+        ///     Deletes the specified set of reminders.
         /// </summary>
         /// <param name="reminderNames">The set of reminders to delete.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -472,7 +501,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             IReadOnlyDictionary<ActorId, IReadOnlyCollection<string>> reminderNames,
             CancellationToken cancellationToken)
         {
-            var actorStateDataWrapperList = this.GetReminderDataWrapperList(reminderNames);
+            List<ActorStateDataWrapper> actorStateDataWrapperList = this.GetReminderDataWrapperList(reminderNames);
 
             if (actorStateDataWrapperList.Count == 0)
             {
@@ -490,29 +519,29 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Loads all the reminders contained in the actor state provider.
+        ///     Loads all the reminders contained in the actor state provider.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token for asynchronous load operation.</param>
         /// <returns>
-        /// A task that represents the asynchronous load operation. The value of TResult
-        /// parameter is a collection of all actor reminders contained in the actor state provider.
+        ///     A task that represents the asynchronous load operation. The value of TResult
+        ///     parameter is a collection of all actor reminders contained in the actor state provider.
         /// </returns>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         Task<IActorReminderCollection> IActorStateProvider.LoadRemindersAsync(CancellationToken cancellationToken)
         {
             var reminderCollection = new ActorReminderCollection();
-            var stateDictionary = this.stateTable.GetActorStateDictionary(ActorStateType.Reminder);
+            IReadOnlyDictionary<string, ActorStateData> stateDictionary = this.stateTable.GetActorStateDictionary(ActorStateType.Reminder);
 
-            foreach (var kvPair in stateDictionary)
+            foreach (KeyValuePair<string, ActorStateData> kvPair in stateDictionary)
             {
-                var reminderData = kvPair.Value.ActorReminderData;
+                ActorReminderData reminderData = kvPair.Value.ActorReminderData;
 
                 if (reminderData == null)
                 {
                     continue;
                 }
 
-                var reminderCompletedKey =
+                string reminderCompletedKey =
                     ActorStateProviderHelper.CreateReminderCompletedStorageKey(reminderData.ActorId, reminderData.Name);
 
                 ActorStateData data = null;
@@ -527,7 +556,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     new ActorReminderState(reminderData, this.logicalTimeManager.CurrentLogicalTime, reminderCompletedData));
             }
 
-            return Task.FromResult((IActorReminderCollection)reminderCollection);
+            return Task.FromResult((IActorReminderCollection) reminderCollection);
         }
 
         #endregion IActorStateProvider
@@ -535,20 +564,24 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         #region IStateProviderReplica
 
         /// <summary>
-        /// Gets or sets the function called during suspected data-loss.
+        ///     Gets or sets the function called during suspected data-loss.
         /// </summary>
         /// <value>
-        /// A function representing data-loss callback function.
+        ///     A function representing data-loss callback function.
         /// </value>
         public Func<CancellationToken, Task<bool>> OnDataLossAsync { private get; set; }
 
         /// <summary>
-        /// Initialize the state provider replica using the service initialization information.
+        ///     Initialize the state provider replica using the service initialization information.
         /// </summary>
         /// <remarks>
-        /// No complex processing should be done during Initialize. Expensive or long-running initialization should be done in OpenAsync.
+        ///     No complex processing should be done during Initialize. Expensive or long-running initialization should be done in
+        ///     OpenAsync.
         /// </remarks>
-        /// <param name="initializationParameters">Service initialization information such as service name, partition id, replica id, and code package information.</param>
+        /// <param name="initializationParameters">
+        ///     Service initialization information such as service name, partition id, replica
+        ///     id, and code package information.
+        /// </param>
         void IStateProviderReplica.Initialize(StatefulServiceInitializationParameters initializationParameters)
         {
             this.initParams = initializationParameters;
@@ -558,17 +591,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Open the state provider replica for use.
+        ///     Open the state provider replica for use.
         /// </summary>
         /// <remarks>
-        /// Extended state provider initialization tasks can be started at this time.
+        ///     Extended state provider initialization tasks can be started at this time.
         /// </remarks>
         /// <param name="openMode">Indicates whether this is a new or existing replica.</param>
         /// <param name="partition">The partition this replica belongs to.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
-        /// Task that represents the asynchronous open operation. The result contains the replicator
-        /// responsible for replicating state between other state provider replicas in the partition.
+        ///     Task that represents the asynchronous open operation. The result contains the replicator
+        ///     responsible for replicating state between other state provider replicas in the partition.
         /// </returns>
         Task<IReplicator> IStateProviderReplica.OpenAsync(
             ReplicaOpenMode openMode,
@@ -591,7 +624,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Notify the state provider replica that its role is changing, for example to Primary or Secondary.
+        ///     Notify the state provider replica that its role is changing, for example to Primary or Secondary.
         /// </summary>
         /// <param name="newRole">The new replica role, such as primary or secondary.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -638,11 +671,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Gracefully close the state provider replica.
+        ///     Gracefully close the state provider replica.
         /// </summary>
         /// <remarks>
-        /// This generally occurs when the replica's code is being upgrade, the replica is being moved
-        /// due to load balancing, or a transient fault is detected.
+        ///     This generally occurs when the replica's code is being upgrade, the replica is being moved
+        ///     due to load balancing, or a transient fault is detected.
         /// </remarks>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>Task that represents the asynchronous close operation.</returns>
@@ -655,11 +688,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Forcefully abort the state provider replica.
+        ///     Forcefully abort the state provider replica.
         /// </summary>
         /// <remarks>
-        /// This generally occurs when a permanent fault is detected on the node, or when
-        /// Service Fabric cannot reliably manage the replica's life-cycle due to internal failures.
+        ///     This generally occurs when a permanent fault is detected on the node, or when
+        ///     Service Fabric cannot reliably manage the replica's life-cycle due to internal failures.
         /// </remarks>
         void IStateProviderReplica.Abort()
         {
@@ -667,20 +700,23 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Performs a full backup of state managed by this actor state provider
+        ///     Performs a full backup of state managed by this actor state provider
         /// </summary>
-        /// <param name="backupCallback">Callback to be called when the backup folder has been created locally and is ready to be moved out of the node.</param>
+        /// <param name="backupCallback">
+        ///     Callback to be called when the backup folder has been created locally and is ready to be
+        ///     moved out of the node.
+        /// </param>
         /// <returns>Task that represents the asynchronous backup operation.</returns>
         /// <remarks>
-        /// Backup/restore is not supported by <see cref="VolatileActorStateProvider"/>.
+        ///     Backup/restore is not supported by <see cref="VolatileActorStateProvider" />.
         /// </remarks>
         Task IStateProviderReplica.BackupAsync(Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
         {
-            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, Actors.SR.ErrorMethodNotSupported, "Backup", this.GetType()));
+            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, SR.ErrorMethodNotSupported, "Backup", this.GetType()));
         }
 
         /// <summary>
-        /// Performs backup of state managed by this actor sate provider.
+        ///     Performs backup of state managed by this actor sate provider.
         /// </summary>
         /// <param name="option">The option for the backup.</param>
         /// <param name="timeout">The timeout for the backup.</param>
@@ -688,7 +724,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <param name="backupCallback">The callback to be called once the backup folder is ready.</param>
         /// <returns>Task that represents the asynchronous operation.</returns>
         /// <remarks>
-        /// Backup/restore is not supported by <see cref="VolatileActorStateProvider"/>.
+        ///     Backup/restore is not supported by <see cref="VolatileActorStateProvider" />.
         /// </remarks>
         Task IStateProviderReplica.BackupAsync(
             BackupOption option,
@@ -696,74 +732,78 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             CancellationToken cancellationToken,
             Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
         {
-            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, Actors.SR.ErrorMethodNotSupported, "Backup", this.GetType()));
+            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, SR.ErrorMethodNotSupported, "Backup", this.GetType()));
         }
 
         /// <summary>
-        /// Restore a backup taken by <see cref="IStateProviderReplica.BackupAsync(Func{BackupInfo, CancellationToken, Task{bool}})"/> or 
-        /// <see cref="IStateProviderReplica.BackupAsync(BackupOption, TimeSpan, CancellationToken, Func{BackupInfo, CancellationToken, Task{bool}})"/>.
+        ///     Restore a backup taken by
+        ///     <see cref="IStateProviderReplica.BackupAsync(Func{BackupInfo, CancellationToken, Task{bool}})" /> or
+        ///     <see
+        ///         cref="IStateProviderReplica.BackupAsync(BackupOption, TimeSpan, CancellationToken, Func{BackupInfo, CancellationToken, Task{bool}})" />
+        ///     .
         /// </summary>
         /// <param name="backupFolderPath">
-        /// The directory where the replica is to be restored from.
+        ///     The directory where the replica is to be restored from.
         /// </param>
         /// <remarks>
-        /// Backup/restore is not supported by <see cref="VolatileActorStateProvider"/>.
+        ///     Backup/restore is not supported by <see cref="VolatileActorStateProvider" />.
         /// </remarks>
         /// <returns>Task that represents the asynchronous restore operation.</returns>
         Task IStateProviderReplica.RestoreAsync(string backupFolderPath)
         {
-            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, Actors.SR.ErrorMethodNotSupported, "Restore", this.GetType()));
+            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, SR.ErrorMethodNotSupported, "Restore", this.GetType()));
         }
 
         /// <summary>
-        /// Restore a backup taken by <see cref="IStateProviderReplica.BackupAsync(Func{BackupInfo, CancellationToken, Task{bool}})"/> or 
-        /// <see cref="IStateProviderReplica.BackupAsync(BackupOption, TimeSpan, CancellationToken, Func{BackupInfo, CancellationToken, Task{bool}})"/>.
+        ///     Restore a backup taken by
+        ///     <see cref="IStateProviderReplica.BackupAsync(Func{BackupInfo, CancellationToken, Task{bool}})" /> or
+        ///     <see
+        ///         cref="IStateProviderReplica.BackupAsync(BackupOption, TimeSpan, CancellationToken, Func{BackupInfo, CancellationToken, Task{bool}})" />
+        ///     .
         /// </summary>
         /// <param name="restorePolicy">The restore policy.</param>
         /// <param name="backupFolderPath">
-        /// The directory where the replica is to be restored from.
+        ///     The directory where the replica is to be restored from.
         /// </param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>Task that represents the asynchronous restore operation.</returns>
-        /// /// <remarks>
-        /// Backup/restore is not supported by <see cref="VolatileActorStateProvider"/>.
+        /// ///
+        /// <remarks>
+        ///     Backup/restore is not supported by <see cref="VolatileActorStateProvider" />.
         /// </remarks>
         Task IStateProviderReplica.RestoreAsync(string backupFolderPath, RestorePolicy restorePolicy, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, Actors.SR.ErrorMethodNotSupported, "Restore", this.GetType()));
+            throw new NotImplementedException(string.Format(CultureInfo.CurrentCulture, SR.ErrorMethodNotSupported, "Restore", this.GetType()));
         }
 
         #endregion IStateProviderReplica
 
-        #region IStateProviderReplica2
-
-        /// <summary>
-        /// Function called post restore has been performed on the replica.
-        /// </summary>
-        /// <value>
-        /// A function representing on restore completed callback function.
-        /// </value>
-        public Func<CancellationToken, Task> OnRestoreCompletedAsync { private get; set; }
-
-        #endregion
-        
         #region IStateProvider
 
         /// <summary>
-        /// <para>Obtains context on a Secondary replica after it is created and opened to send context to the Primary replica.</para>
+        ///     <para>Obtains context on a Secondary replica after it is created and opened to send context to the Primary replica.</para>
         /// </summary>
         /// <returns>
-        /// <para>Returns <see cref="IOperationDataStream" />.</para>
+        ///     <para>Returns <see cref="IOperationDataStream" />.</para>
         /// </returns>
         /// <remarks>
-        /// <para>The Primary replica analyzes the context and sends back state via <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" />.</para>
-        /// <para>
-        ///     <see cref="IStateProvider.GetCopyContext" /> is called on newly created, idle Secondary replicas and provides
-        ///     a mechanism to asynchronously establish a bidirectional conversation with the Primary replica. The Secondary replica sends <see cref="OperationData" />
-        ///     objects with which the Primary replica can determine the progress of collecting context on the Secondary replica. The Primary replica responds by sending the required state back.
-        ///     See <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" /> at the Primary replica for the other half of the exchange. </para>
-        /// <para>For in-memory services, the <see cref="IStateProvider.GetCopyContext" /> method is not called, 
-        /// as the state of the Secondary replicas is known (they are empty and will require all of the state).</para>
+        ///     <para>
+        ///         The Primary replica analyzes the context and sends back state via
+        ///         <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" />.
+        ///     </para>
+        ///     <para>
+        ///         <see cref="IStateProvider.GetCopyContext" /> is called on newly created, idle Secondary replicas and provides
+        ///         a mechanism to asynchronously establish a bidirectional conversation with the Primary replica. The Secondary
+        ///         replica sends <see cref="OperationData" />
+        ///         objects with which the Primary replica can determine the progress of collecting context on the Secondary
+        ///         replica. The Primary replica responds by sending the required state back.
+        ///         See <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" /> at the Primary replica for the other
+        ///         half of the exchange.
+        ///     </para>
+        ///     <para>
+        ///         For in-memory services, the <see cref="IStateProvider.GetCopyContext" /> method is not called,
+        ///         as the state of the Secondary replicas is known (they are empty and will require all of the state).
+        ///     </para>
         /// </remarks>
         IOperationDataStream IStateProvider.GetCopyContext()
         {
@@ -772,35 +812,53 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// <para>Obtains the state on a Primary replica that is required to build a Secondary replica.</para>
+        ///     <para>Obtains the state on a Primary replica that is required to build a Secondary replica.</para>
         /// </summary>
         /// <param name="upToSequenceNumber">
-        /// <para>The maximum last sequence number (LSN) that should be placed in the copy stream via the <see cref="IStateReplicator.GetCopyStream" /> method.
-        /// LSNs greater than this number are delivered to the Secondary replica as a part of the replication stream via the <see cref="IStateReplicator.GetReplicationStream" /> method.</para>
+        ///     <para>
+        ///         The maximum last sequence number (LSN) that should be placed in the copy stream via the
+        ///         <see cref="IStateReplicator.GetCopyStream" /> method.
+        ///         LSNs greater than this number are delivered to the Secondary replica as a part of the replication stream via
+        ///         the <see cref="IStateReplicator.GetReplicationStream" /> method.
+        ///     </para>
         /// </param>
         /// <param name="copyContext">
-        /// <para>An <see cref="IOperationDataStream" /> that contains the <see cref="OperationData" /> objects that are created by the Secondary replica. </para>
+        ///     <para>
+        ///         An <see cref="IOperationDataStream" /> that contains the <see cref="OperationData" /> objects that are
+        ///         created by the Secondary replica.
+        ///     </para>
         /// </param>
         /// <returns>
-        /// <para>Returns <see cref="IOperationDataStream" />.</para>
+        ///     <para>Returns <see cref="IOperationDataStream" />.</para>
         /// </returns>
         /// <remarks>
-        /// <para>Just as <see cref="IStateProvider.GetCopyContext" /> enables the Secondary replica to send context to the Primary replica via
-        /// an <see cref="IOperationDataStream" />, <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" /> enables the Primary 
-        /// replica to respond with an <see cref="IOperationDataStream" />. The stream contains objects that are delivered to the Secondary replica
-        /// via the <see cref="IStateReplicator.GetCopyStream" /> method of the <see cref="FabricReplicator" /> class. The objects implement 
-        /// <see cref="IOperation" /> and contain the specified data. </para>
-        /// <para> When the Primary replica receives this call, it should create and return another <see cref="IOperationDataStream" /> 
-        /// that contains <see cref="OperationData" />. <see cref="OperationData" /> represents the data/state that the Secondary replica
-        /// requires to catch up to the provided <paramref name="upToSequenceNumber" /> maximum LSN. 
-        /// How much and which state has to be sent can be determined via the context information that the Secondary replica provides via 
-        /// <see cref="IStateProvider.GetCopyContext"/> method.</para>
+        ///     <para>
+        ///         Just as <see cref="IStateProvider.GetCopyContext" /> enables the Secondary replica to send context to the
+        ///         Primary replica via
+        ///         an <see cref="IOperationDataStream" />, <see cref="IStateProvider.GetCopyState(Int64,IOperationDataStream)" />
+        ///         enables the Primary
+        ///         replica to respond with an <see cref="IOperationDataStream" />. The stream contains objects that are delivered
+        ///         to the Secondary replica
+        ///         via the <see cref="IStateReplicator.GetCopyStream" /> method of the <see cref="FabricReplicator" /> class. The
+        ///         objects implement
+        ///         <see cref="IOperation" /> and contain the specified data.
+        ///     </para>
+        ///     <para>
+        ///         When the Primary replica receives this call, it should create and return another
+        ///         <see cref="IOperationDataStream" />
+        ///         that contains <see cref="OperationData" />. <see cref="OperationData" /> represents the data/state that the
+        ///         Secondary replica
+        ///         requires to catch up to the provided <paramref name="upToSequenceNumber" /> maximum LSN.
+        ///         How much and which state has to be sent can be determined via the context information that the Secondary
+        ///         replica provides via
+        ///         <see cref="IStateProvider.GetCopyContext" /> method.
+        ///     </para>
         /// </remarks>
         IOperationDataStream IStateProvider.GetCopyState(long upToSequenceNumber, IOperationDataStream copyContext)
         {
             lock (this.replicationLock)
             {
-                var highestSequenceNumber = this.stateTable.GetHighestKnownSequenceNumber();
+                long highestSequenceNumber = this.stateTable.GetHighestKnownSequenceNumber();
                 if (highestSequenceNumber < upToSequenceNumber)
                 {
                     // This is not expected. If we have acquired this.replicationLock 
@@ -809,7 +867,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     var ex = new InvalidOperationException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            Actors.SR.ErrorHighestSequenceNumberLessThanUpToSequenceNumber,
+                            SR.ErrorHighestSequenceNumberLessThanUpToSequenceNumber,
                             highestSequenceNumber,
                             upToSequenceNumber));
 
@@ -823,7 +881,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 }
             }
 
-            var replicatorSettings = this.stateReplicator.GetReplicatorSettings();
+            ReplicatorSettings replicatorSettings = this.stateReplicator.GetReplicatorSettings();
             if (replicatorSettings.MaxReplicationMessageSize == null)
             {
                 // This is unexpected. The MaxReplicationMessageSize must not be null after
@@ -832,7 +890,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 var ex = new InvalidOperationException(
                     string.Format(
                         CultureInfo.CurrentCulture,
-                        Actors.SR.ErrorReplicatorSettings,
+                        SR.ErrorReplicatorSettings,
                         "MaxReplicationMessageSize"));
 
                 ActorTrace.Source.WriteErrorWithId(
@@ -852,17 +910,23 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// <para>Obtains the last sequence number that the service has committed. </para>
+        ///     <para>Obtains the last sequence number that the service has committed. </para>
         /// </summary>
         /// <returns>
-        /// <para>Returns <see cref="Int64" />.</para>
+        ///     <para>Returns <see cref="Int64" />.</para>
         /// </returns>
         /// <remarks>
-        /// <para>This method is called on a service when it first starts up, in case it has any persistent state, and when data loss is suspected. 
-        /// When a stateful service replica starts up, it has the option to restore any data that might have persisted from previous updates.
-        /// If it restores some state in this manner, its current progress is the last written sequence number for that data. A volatile service can simply return 0.
-        /// Note that this method is not called to determine a new primary election during fail-over, 
-        /// because the current committed progress is already known by the <see cref="FabricReplicator" /> class at that time. </para>
+        ///     <para>
+        ///         This method is called on a service when it first starts up, in case it has any persistent state, and when data
+        ///         loss is suspected.
+        ///         When a stateful service replica starts up, it has the option to restore any data that might have persisted from
+        ///         previous updates.
+        ///         If it restores some state in this manner, its current progress is the last written sequence number for that
+        ///         data. A volatile service can simply return 0.
+        ///         Note that this method is not called to determine a new primary election during fail-over,
+        ///         because the current committed progress is already known by the <see cref="FabricReplicator" /> class at that
+        ///         time.
+        ///     </para>
         /// </remarks>
         long IStateProvider.GetLastCommittedSequenceNumber()
         {
@@ -870,24 +934,39 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// <para>Indicates that a write quorum of replicas in this replica set  has been lost, and that therefore data loss might have occurred. 
-        /// The replica set consists of a majority of replicas, which includes the Primary replica. </para>
+        ///     <para>
+        ///         Indicates that a write quorum of replicas in this replica set  has been lost, and that therefore data loss
+        ///         might have occurred.
+        ///         The replica set consists of a majority of replicas, which includes the Primary replica.
+        ///     </para>
         /// </summary>
         /// <param name="cancellationToken">
-        /// <para>The <see cref="CancellationToken" /> object that the operation is observing. 
-        /// It can be used to send a notification that the operation should be canceled. Note that cancellation is advisory and that the operation might still be completed even if it is canceled.</para>
+        ///     <para>
+        ///         The <see cref="CancellationToken" /> object that the operation is observing.
+        ///         It can be used to send a notification that the operation should be canceled. Note that cancellation is advisory
+        ///         and that the operation might still be completed even if it is canceled.
+        ///     </para>
         /// </param>
         /// <returns>
-        /// <para>Returns <see cref="Task{T}" /> of type <see cref="Boolean" />, that indicates whether state changed. 
-        /// When it changed, the method returns true or when it did not change, the method returns false.</para>
+        ///     <para>
+        ///         Returns <see cref="Task{T}" /> of type <see cref="Boolean" />, that indicates whether state changed.
+        ///         When it changed, the method returns true or when it did not change, the method returns false.
+        ///     </para>
         /// </returns>
         /// <remarks>
-        /// <para>When the Service Fabric runtime observes the failure of a quorum of replicas, which includes the Primary replica, 
-        /// it elects a new Primary replica and immediately calls this method on the new Primary replica. A Primary replica that is informed of possible data loss
-        /// can choose to restore its state from some external data source or can continue to run with the state that it currently has. If the service continues to run with its current state,
-        /// it should return false from this method, which indicates that no state change has been made. If it has restored or altered its state,
-        /// such as rolling back incomplete work, it should return true. If true is returned, then the state in other replicas must be assumed to be incorrect.
-        /// Therefore, the Service Fabric runtime removes the other replicas from the replica set and recreates them.</para>
+        ///     <para>
+        ///         When the Service Fabric runtime observes the failure of a quorum of replicas, which includes the Primary
+        ///         replica,
+        ///         it elects a new Primary replica and immediately calls this method on the new Primary replica. A Primary replica
+        ///         that is informed of possible data loss
+        ///         can choose to restore its state from some external data source or can continue to run with the state that it
+        ///         currently has. If the service continues to run with its current state,
+        ///         it should return false from this method, which indicates that no state change has been made. If it has restored
+        ///         or altered its state,
+        ///         such as rolling back incomplete work, it should return true. If true is returned, then the state in other
+        ///         replicas must be assumed to be incorrect.
+        ///         Therefore, the Service Fabric runtime removes the other replicas from the replica set and recreates them.
+        ///     </para>
         /// </remarks>
         Task<bool> IStateProvider.OnDataLossAsync(CancellationToken cancellationToken)
         {
@@ -895,30 +974,51 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// <para>Indicates to a replica that the configuration of a replica set has changed due to a change or attempted change to the Primary replica. 
-        /// The change occurs due to failure or load balancing of the previous Primary replica. Epoch changes act as a barrier by segmenting operations 
-        /// into the exact configuration periods in which they were sent by a specific Primary replica.</para>
+        ///     <para>
+        ///         Indicates to a replica that the configuration of a replica set has changed due to a change or attempted change
+        ///         to the Primary replica.
+        ///         The change occurs due to failure or load balancing of the previous Primary replica. Epoch changes act as a
+        ///         barrier by segmenting operations
+        ///         into the exact configuration periods in which they were sent by a specific Primary replica.
+        ///     </para>
         /// </summary>
         /// <param name="epoch">
-        /// <para>The new <see cref="Epoch" />.</para>
+        ///     <para>The new <see cref="Epoch" />.</para>
         /// </param>
         /// <param name="previousEpochLastSequenceNumber">
-        /// <para> The maximum sequence number (LSN) that should have been observed in the previous epoch.</para>
+        ///     <para> The maximum sequence number (LSN) that should have been observed in the previous epoch.</para>
         /// </param>
         /// <param name="cancellationToken">
-        /// <para>The <see cref="CancellationToken" /> object that the operation is observing. It can be used to send a notification 
-        /// that the operation should be canceled. Note that cancellation is advisory and that the operation might still be completed even if it is canceled.</para>
+        ///     <para>
+        ///         The <see cref="CancellationToken" /> object that the operation is observing. It can be used to send a
+        ///         notification
+        ///         that the operation should be canceled. Note that cancellation is advisory and that the operation might still be
+        ///         completed even if it is canceled.
+        ///     </para>
         /// </param>
         /// <returns>
-        /// <para>Returns <see cref="Task" />.</para>
+        ///     <para>Returns <see cref="Task" />.</para>
         /// </returns>
         /// <remarks>
-        /// <para>This method is called because the Primary replica of the replica set has changed, or a change was attempted. 
-        /// Secondary replicas receive this method either when they are about to become the new Primary replica, or, if they are not the new Primary replica, 
-        /// they receive it when they attempt to get the first operation from the new Primary replica from the replication stream. 
-        /// Primary replicas might occasionally receive this method if there is an attempt to swap the Primary replica, which fails.</para>
-        /// <para>The information in the <see cref="IStateProvider.UpdateEpochAsync(Epoch,Int64,CancellationToken)" /> 
-        /// method enables the service to maintain a progress vector, which is a list of each epoch that the replica has received, and the maximum LSN that they contained. The progress vector data along with the current applied maximum LSN is useful for a Secondary replica to send during the copy operation  to describe how far the operation has progressed. Comparing progress vectors that are received from Secondary replicas during the copy operation enables Primary replicas to determine whether the Secondary replica is up-to-date, what state must be sent to the Secondary replica, and whether the Secondary replica has made false progress. False progress means that an LSN in a previous epoch was greater than the LSN that the Primary replica receives. </para>
+        ///     <para>
+        ///         This method is called because the Primary replica of the replica set has changed, or a change was attempted.
+        ///         Secondary replicas receive this method either when they are about to become the new Primary replica, or, if
+        ///         they are not the new Primary replica,
+        ///         they receive it when they attempt to get the first operation from the new Primary replica from the replication
+        ///         stream.
+        ///         Primary replicas might occasionally receive this method if there is an attempt to swap the Primary replica,
+        ///         which fails.
+        ///     </para>
+        ///     <para>
+        ///         The information in the <see cref="IStateProvider.UpdateEpochAsync(Epoch,Int64,CancellationToken)" />
+        ///         method enables the service to maintain a progress vector, which is a list of each epoch that the replica has
+        ///         received, and the maximum LSN that they contained. The progress vector data along with the current applied
+        ///         maximum LSN is useful for a Secondary replica to send during the copy operation  to describe how far the
+        ///         operation has progressed. Comparing progress vectors that are received from Secondary replicas during the copy
+        ///         operation enables Primary replicas to determine whether the Secondary replica is up-to-date, what state must be
+        ///         sent to the Secondary replica, and whether the Secondary replica has made false progress. False progress means
+        ///         that an LSN in a previous epoch was greater than the LSN that the Primary replica receives.
+        ///     </para>
         /// </remarks>
         Task IStateProvider.UpdateEpochAsync(
             Epoch epoch,
@@ -931,31 +1031,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #endregion IStateProvider
 
-        #region ISnapshotHandler
-
-        async Task VolatileLogicalTimeManager.ISnapshotHandler.OnSnapshotAsync(TimeSpan currentLogicalTime)
-        {
-            try
-            {
-                await this.ReplicateUpdateAsync(
-                    ActorStateType.LogicalTimestamp,
-                    LogicalTimestampKey,
-                    new ActorStateData(currentLogicalTime));
-            }
-            catch (Exception)
-            {
-                // Ignore exception.
-            }
-        }
-
-        #endregion ISnapshotHandler
-
         #region Helper methods
 
         private void LoadActorStateProviderSettings()
         {
-            var configPackageName = ActorNameFormat.GetConfigPackageName(this.actorTypeInformation.ImplementationType);
-            var sectionName = ActorNameFormat.GetActorStateProviderSettingsSectionName(this.actorTypeInformation.ImplementationType);
+            string configPackageName = ActorNameFormat.GetConfigPackageName(this.actorTypeInformation.ImplementationType);
+            string sectionName = ActorNameFormat.GetActorStateProviderSettingsSectionName(this.actorTypeInformation.ImplementationType);
 
             this.stateProviderSettings = VolatileActorStateProviderSettings.LoadFrom(
                 this.initParams.CodePackageActivationContext,
@@ -963,18 +1044,21 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 sectionName);
 
             ActorTrace.Source.WriteInfoWithId(
-                TraceType, this.traceId, "VolatileActorStateProviderSettingss: {0}", this.stateProviderSettings);
+                TraceType,
+                this.traceId,
+                "VolatileActorStateProviderSettingss: {0}",
+                this.stateProviderSettings);
         }
 
         private List<ActorStateDataWrapper> GetReminderDataWrapperList(IReadOnlyDictionary<ActorId, IReadOnlyCollection<string>> reminderNames)
         {
             var actorStateDataWrapperList = new List<ActorStateDataWrapper>();
 
-            foreach (var reminderNamesPerActor in reminderNames)
+            foreach (KeyValuePair<ActorId, IReadOnlyCollection<string>> reminderNamesPerActor in reminderNames)
             {
-                var actorId = reminderNamesPerActor.Key;
+                ActorId actorId = reminderNamesPerActor.Key;
 
-                foreach (var reminderName in reminderNamesPerActor.Value)
+                foreach (string reminderName in reminderNamesPerActor.Value)
                 {
                     actorStateDataWrapperList.Add(
                         ActorStateDataWrapper.CreateForDelete(
@@ -1018,7 +1102,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             try
             {
-                var replicatorSettings = this.LoadReplicatorSettings();
+                ReplicatorSettings replicatorSettings = this.LoadReplicatorSettings();
                 this.stateReplicator.UpdateReplicatorSettings(replicatorSettings);
             }
             catch (FabricElementNotFoundException ex)
@@ -1054,12 +1138,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private Task ReplicateUpdateAsync(ActorStateType type, string key, ActorStateData data)
         {
-            return this.ReplicateStateChangesAsync(ActorStateTable.ActorStateDataWrapper.CreateForUpdate(type, key, data));
+            return this.ReplicateStateChangesAsync(ActorStateDataWrapper.CreateForUpdate(type, key, data));
         }
 
         private Task ReplicateStateChangesAsync(ActorStateDataWrapper actorStateDataWrapper)
         {
-            var actorStateDataWrapperList = new[] { actorStateDataWrapper };
+            var actorStateDataWrapperList = new[] {actorStateDataWrapper};
             return this.ReplicateStateChangesAsync(actorStateDataWrapperList);
         }
 
@@ -1069,7 +1153,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             long sequenceNumber;
             Exception replicationException = null;
 
-            var operationData = SerializeToOperationData(
+            OperationData operationData = SerializeToOperationData(
                 this.copyOrReplicationOperationSerializer,
                 new CopyOrReplicationOperation(actorStateDataWrapperList));
 
@@ -1107,7 +1191,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             using (var memoryStream = new MemoryStream())
             {
-                var binaryWriter = XmlDictionaryWriter.CreateBinaryWriter(memoryStream);
+                XmlDictionaryWriter binaryWriter = XmlDictionaryWriter.CreateBinaryWriter(memoryStream);
                 serializer.WriteObject(binaryWriter, copyOrReplicationOperation);
                 binaryWriter.Flush();
 
@@ -1143,7 +1227,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private static string ExtractStateName(ActorId actorId, string storageKey)
         {
-            var storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
 
             if (storageKey == storageKeyPrefix)
             {
@@ -1160,18 +1244,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         [DataContract]
         internal class CopyOrReplicationOperation
         {
-            [DataMember]
-            private readonly IEnumerable<ActorStateDataWrapper> actorStateDataWrapperList;
-
-            public IEnumerable<ActorStateDataWrapper> ActorStateDataWrapperList
-            {
-                get { return this.actorStateDataWrapperList; }
-            }
+            [DataMember] private readonly IEnumerable<ActorStateDataWrapper> actorStateDataWrapperList;
 
             public CopyOrReplicationOperation(IEnumerable<ActorStateDataWrapper> dataWrapperList)
             {
                 this.actorStateDataWrapperList = dataWrapperList;
             }
+
+            public IEnumerable<ActorStateDataWrapper> ActorStateDataWrapperList => this.actorStateDataWrapperList;
         }
 
         // Boxes different types of state data for storage in VolatileActorStateTable
@@ -1179,18 +1259,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         [DataContract]
         internal sealed class ActorStateData
         {
-            [DataMember]
-            public TimeSpan? LogicalTimestamp { get; private set; }
-
-            [DataMember]
-            public byte[] ActorState { get; private set; }
-
-            [DataMember]
-            public ActorReminderData ActorReminderData { get; private set; }
-
-            [DataMember]
-            public ReminderCompletedData ReminderLastCompletedData { get; private set; }
-
             public ActorStateData(TimeSpan logicalTimestamp)
             {
                 this.LogicalTimestamp = logicalTimestamp;
@@ -1211,12 +1279,24 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 this.ReminderLastCompletedData = reminderCompletedData;
             }
 
+            [DataMember]
+            public TimeSpan? LogicalTimestamp { get; private set; }
+
+            [DataMember]
+            public byte[] ActorState { get; private set; }
+
+            [DataMember]
+            public ActorReminderData ActorReminderData { get; private set; }
+
+            [DataMember]
+            public ReminderCompletedData ReminderLastCompletedData { get; private set; }
+
             public long EstimateDataLength()
             {
-                var timestampLength = !this.LogicalTimestamp.HasValue ? 0 : sizeof(long);
-                var stateLength = this.ActorState == null ? 0 : (this.ActorState.Length * sizeof(byte));
-                var reminderLength = this.ActorReminderData == null ? 0 : this.ActorReminderData.EstimateDataLength();
-                var reminderCompletedDataLength = this.ReminderLastCompletedData == null ? 0 : this.ReminderLastCompletedData.EstimateDataLength();
+                int timestampLength = !this.LogicalTimestamp.HasValue ? 0 : sizeof(long);
+                int stateLength = this.ActorState == null ? 0 : this.ActorState.Length * sizeof(byte);
+                long reminderLength = this.ActorReminderData == null ? 0 : this.ActorReminderData.EstimateDataLength();
+                long reminderCompletedDataLength = this.ReminderLastCompletedData == null ? 0 : this.ReminderLastCompletedData.EstimateDataLength();
 
                 return timestampLength + stateLength + reminderLength + reminderCompletedDataLength;
             }
@@ -1234,11 +1314,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             private readonly long maxDataLength;
 
             /// <summary>
-            /// This LinkedList represents actor state data grouped by sequence number in increasing
-            /// order of sequence number. Each entry in the LinkedList contains sequence number and
-            /// all the ActorStateDataWrapper entries which belong to that sequence number.
-            /// This grouping is required to maintain replication boundary during copy operation
-            /// to build a replica.
+            ///     This LinkedList represents actor state data grouped by sequence number in increasing
+            ///     order of sequence number. Each entry in the LinkedList contains sequence number and
+            ///     all the ActorStateDataWrapper entries which belong to that sequence number.
+            ///     This grouping is required to maintain replication boundary during copy operation
+            ///     to build a replica.
             /// </summary>
             private readonly LinkedList<CopyStateData> copyStateList;
 
@@ -1263,14 +1343,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     return Task.FromResult<OperationData>(null);
                 }
 
-                var dataList = new List<ActorStateTable.ActorStateDataWrapper>();
+                var dataList = new List<ActorStateDataWrapper>();
 
                 long totalEstimatedDataLength = 0;
-                var nextEstimatedDataLength = this.copyStateList.First.Value.GetEstimatedDataLength();
+                long nextEstimatedDataLength = this.copyStateList.First.Value.GetEstimatedDataLength();
 
                 do
                 {
-                    var data = this.copyStateList.First.Value;
+                    CopyStateData data = this.copyStateList.First.Value;
                     this.copyStateList.RemoveFirst();
 
                     // Allow the dataItem to exceed maxDataLength if it's only
@@ -1289,7 +1369,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     }
                 } while (nextEstimatedDataLength > 0 && totalEstimatedDataLength + nextEstimatedDataLength <= this.maxDataLength);
 
-                var operationData = SerializeToOperationData(this.copyOperationSerializer, new CopyOrReplicationOperation(dataList));
+                OperationData operationData = SerializeToOperationData(this.copyOperationSerializer, new CopyOrReplicationOperation(dataList));
 
                 return Task.FromResult(operationData);
             }
@@ -1298,7 +1378,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 while (actorStateEnumerator.PeekNext() != null)
                 {
-                    var peek = actorStateEnumerator.PeekNext();
+                    ActorStateDataWrapper peek = actorStateEnumerator.PeekNext();
                     var copyStateDataWrapper = new CopyStateData(peek.SequenceNumber);
 
                     do
@@ -1313,33 +1393,24 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             private sealed class CopyStateData
             {
-                private readonly long sequenceNumber;
-                private readonly List<ActorStateDataWrapper> actorStateDataWrapperList;
-
                 public CopyStateData(long sequenceNumber)
                 {
-                    this.sequenceNumber = sequenceNumber;
-                    this.actorStateDataWrapperList = new List<ActorStateDataWrapper>();
+                    this.SequenceNumber = sequenceNumber;
+                    this.ActorStateDataWrapperList = new List<ActorStateDataWrapper>();
                 }
 
-                public long SequenceNumber
-                {
-                    get { return this.sequenceNumber; }
-                }
+                public long SequenceNumber { get; }
 
-                public List<ActorStateDataWrapper> ActorStateDataWrapperList
-                {
-                    get { return this.actorStateDataWrapperList; }
-                }
+                public List<ActorStateDataWrapper> ActorStateDataWrapperList { get; }
 
                 public long GetEstimatedDataLength()
                 {
                     long dataLength = 0;
 
-                    foreach (var actorStateDataWrapper in this.ActorStateDataWrapperList)
+                    foreach (ActorStateDataWrapper actorStateDataWrapper in this.ActorStateDataWrapperList)
                     {
                         dataLength += sizeof(int) // Type
-                                      + (actorStateDataWrapper.Key.Length * sizeof(char))
+                                      + actorStateDataWrapper.Key.Length * sizeof(char)
                                       + (actorStateDataWrapper.IsDelete ? 0 : actorStateDataWrapper.Value.EstimateDataLength())
                                       + sizeof(long); // SequenceNumber;
                     }
@@ -1404,7 +1475,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         "Starting PumpLoop. isCopy: {0}",
                         isCopy);
 
-                    var operationStream = this.GetOperationStream(isCopy);
+                    IOperationStream operationStream = this.GetOperationStream(isCopy);
 
                     var donePumping = false;
                     IOperation operation;
@@ -1416,7 +1487,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         {
                             using (var memoryStream = new MemoryStream(operation.Data[0].Array))
                             {
-                                var binaryReader = XmlDictionaryReader.CreateBinaryReader(
+                                XmlDictionaryReader binaryReader = XmlDictionaryReader.CreateBinaryReader(
                                     memoryStream,
                                     XmlDictionaryReaderQuotas.Max);
 
@@ -1468,15 +1539,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 IOperation operation,
                 bool isCopy)
             {
-                var deserialized = this.copyOrReplicationOperationSerializer.ReadObject(binaryReader);
+                object deserialized = this.copyOrReplicationOperationSerializer.ReadObject(binaryReader);
                 var result = deserialized as CopyOrReplicationOperation;
                 if (result != null)
                 {
-                    var dataWrapperList = result.ActorStateDataWrapperList;
+                    IEnumerable<ActorStateDataWrapper> dataWrapperList = result.ActorStateDataWrapperList;
 
                     if (!isCopy)
                     {
-                        foreach (var dataWrapper in dataWrapperList)
+                        foreach (ActorStateDataWrapper dataWrapper in dataWrapperList)
                         {
                             dataWrapper.UpdateSequenceNumber(operation.SequenceNumber);
                             this.UpdateLogicalTimestamp(dataWrapper);
@@ -1490,7 +1561,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     throw new InvalidOperationException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            Actors.SR.ErrorCasting,
+                            SR.ErrorCasting,
                             deserialized.GetType(),
                             typeof(CopyOrReplicationOperation)));
                 }
@@ -1509,43 +1580,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region IActorStateProviderInternal
 
-        string IActorStateProviderInternal.TraceType
-        {
-            get { return TraceType; }
-        }
+        string IActorStateProviderInternal.TraceType => TraceType;
 
-        string IActorStateProviderInternal.TraceId
-        {
-            get { return this.traceId; }
-        }
+        string IActorStateProviderInternal.TraceId => this.traceId;
 
-        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole
-        {
-            get { return this.replicaRole; }
-        }
+        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole => this.replicaRole;
 
-        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay
-        {
-            get { return this.stateProviderSettings.TransientErrorRetryDelay; }
-        }
+        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay => this.stateProviderSettings.TransientErrorRetryDelay;
 
-        TimeSpan IActorStateProviderInternal.CurrentLogicalTime
-        {
-            get { return this.logicalTimeManager.CurrentLogicalTime; }
-        }
+        TimeSpan IActorStateProviderInternal.CurrentLogicalTime => this.logicalTimeManager.CurrentLogicalTime;
 
-        TimeSpan IActorStateProviderInternal.OperationTimeout
-        {
-            get { return this.stateProviderSettings.OperationTimeout; }
-        }
+        TimeSpan IActorStateProviderInternal.OperationTimeout => this.stateProviderSettings.OperationTimeout;
 
-        long IActorStateProviderInternal.RoleChangeTracker
-        {
-            get
-            {
-                return Interlocked.Read(ref this.roleChangeTracker);
-            }
-        }
+        long IActorStateProviderInternal.RoleChangeTracker => Interlocked.Read(ref this.roleChangeTracker);
 
         #endregion
     }

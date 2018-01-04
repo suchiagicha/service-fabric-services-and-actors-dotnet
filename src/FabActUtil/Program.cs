@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace FabActUtil
 {
     using System;
@@ -11,6 +12,8 @@ namespace FabActUtil
 
     internal class Program
     {
+        internal static string AssemblyResolvePath;
+
         private static int Main(string[] args)
         {
             var parsedArguments = new ToolArguments();
@@ -24,7 +27,7 @@ namespace FabActUtil
             {
                 AssemblyResolvePath = parsedArguments.AssemblyResolvePath;
                 AppDomain currentDomain = AppDomain.CurrentDomain;
-                currentDomain.AssemblyResolve += new ResolveEventHandler(ResolveHandler);
+                currentDomain.AssemblyResolve += ResolveHandler;
 
                 Tool.Run(parsedArguments);
             }
@@ -36,8 +39,6 @@ namespace FabActUtil
 
             return 0;
         }
-
-        internal static string AssemblyResolvePath;
 
         private static Assembly ResolveHandler(object sender, ResolveEventArgs args)
         {
@@ -54,19 +55,16 @@ namespace FabActUtil
                     {
                         return Assembly.LoadFrom(assemblyPath);
                     }
-                    else
+
+                    assemblyPath = Path.Combine(AssemblyResolvePath, assemblyName + ".exe");
+                    if (File.Exists(assemblyPath))
                     {
-                        assemblyPath = Path.Combine(AssemblyResolvePath, assemblyName + ".exe");
-                        if (File.Exists(assemblyPath))
-                        {
-                            return Assembly.LoadFrom(assemblyPath);
-                        }
+                        return Assembly.LoadFrom(assemblyPath);
                     }
                 }
             }
 
             return null;
         }
-
     }
 }

@@ -2,36 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1
 {
     using System;
     using System.Fabric.Common;
     using System.Globalization;
     using System.IO;
-    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Text;
     using Microsoft.ServiceFabric.Services.Common;
     using Microsoft.ServiceFabric.Services.Communication;
 
     /// <summary>
-    /// Represents the fault type used by Service Remoting to transfer the exception details from the Service Replica to the client.
+    ///     Represents the fault type used by Service Remoting to transfer the exception details from the Service Replica to
+    ///     the client.
     /// </summary>
     [DataContract(Name = "RemoteExceptionInformation", Namespace = Constants.ServiceCommunicationNamespace)]
     public class RemoteExceptionInformation
     {
-        /// <summary>
-        /// Serialized exception or the exception message encoded as UTF8 if the exception cannot be serialized.
-        /// </summary>
-        /// <value>The data in the exception.</value>
-        [DataMember(Name = "Data", Order = 0)]
-        public byte[] Data { get; private set; }
-
         private static readonly DataContractSerializer serializer =
             new DataContractSerializer(typeof(ServiceExceptionData));
 
         /// <summary>
-        /// Instantiates the RemoteExceptionInformation object with the data.
+        ///     Instantiates the RemoteExceptionInformation object with the data.
         /// </summary>
         /// <param name="data">The data to be sent to the client.</param>
         public RemoteExceptionInformation(byte[] data)
@@ -39,9 +33,16 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
             this.Data = data;
         }
 
+        /// <summary>
+        ///     Serialized exception or the exception message encoded as UTF8 if the exception cannot be serialized.
+        /// </summary>
+        /// <value>The data in the exception.</value>
+        [DataMember(Name = "Data", Order = 0)]
+        public byte[] Data { get; private set; }
+
 
         /// <summary>
-        /// Indicates a method that constructs the RemoteExceptionInformation from an exception.
+        ///     Indicates a method that constructs the RemoteExceptionInformation from an exception.
         /// </summary>
         /// <param name="exception">The exception.</param>
         /// <returns>Returns the RemoteExceptionInformation.</returns>
@@ -60,20 +61,24 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
             catch (Exception e)
             {
                 // failed to serialize the exception, include the information about the exception in the data
-                ServiceTrace.Source.WriteWarning("RemoteExceptionInformation", "Serialization failed for Exception Type {0} : Reason  {1}", exception.GetType().FullName, e);
+                ServiceTrace.Source.WriteWarning(
+                    "RemoteExceptionInformation",
+                    "Serialization failed for Exception Type {0} : Reason  {1}",
+                    exception.GetType().FullName,
+                    e);
                 return FromExceptionString(exception);
             }
         }
 
         /// <summary>
-        /// Gets the exception from the RemoteExceptionInformation
+        ///     Gets the exception from the RemoteExceptionInformation
         /// </summary>
         /// <param name="remoteExceptionInformation">The RemoteExceptionInformation.</param>
         /// <param name="result">The exception from the remote side.</param>
         /// <returns>true if there was a valid exception; otherwise, false.</returns>
         public static bool ToException(RemoteExceptionInformation remoteExceptionInformation, out Exception result)
         {
-            Requires.ThrowIfNull(remoteExceptionInformation, "RemoteExceptionInformation");
+            remoteExceptionInformation.ThrowIfNull("RemoteExceptionInformation");
 
             // try to de-serialize the bytes in to the exception
             Exception res;
@@ -103,7 +108,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
             {
                 using (var stream = new MemoryStream(data))
                 {
-                    result = (Exception)serializer.Deserialize(stream);
+                    result = (Exception) serializer.Deserialize(stream);
                     return true;
                 }
             }
@@ -141,7 +146,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
         {
             try
             {
-                var exceptionData = (ServiceExceptionData)SerializationUtility.Deserialize(serializer, data);
+                var exceptionData = (ServiceExceptionData) SerializationUtility.Deserialize(serializer, data);
                 result = exceptionData;
                 return true;
             }
@@ -173,7 +178,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1
                 exception);
             var exceptionData = new ServiceExceptionData(exception.GetType().FullName, exceptionStringBuilder.ToString());
 
-            var exceptionBytes = SerializationUtility.Serialize(serializer, exceptionData);
+            byte[] exceptionBytes = SerializationUtility.Serialize(serializer, exceptionData);
 
             return new RemoteExceptionInformation(exceptionBytes);
         }

@@ -2,10 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Diagnostics
 {
     using System;
-    using System.Fabric;
     using Microsoft.ServiceFabric.Actors.Runtime;
 
     internal sealed class DiagnosticsManager : IDiagnosticsManager
@@ -14,16 +14,8 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         // to allow following references easily in the dumps
 
-        private PerformanceCounterProviderV2 perfCounterProviderV2;
-        private EventSourceProvider eventSourceProviderV2;
-
-        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager
-        {
-            get
-            {
-                return this.diagnosticsEventManager;
-            } 
-        }
+        private readonly PerformanceCounterProviderV2 perfCounterProviderV2;
+        private readonly EventSourceProvider eventSourceProviderV2;
 
         internal DiagnosticsManager(ActorService actorService)
         {
@@ -33,8 +25,9 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             this.eventSourceProviderV2 = new EventSourceProviderV2(actorService.Context, actorService.ActorTypeInformation);
             this.perfCounterProviderV2.RegisterWithDiagnosticsEventManager(this.diagnosticsEventManager);
             this.eventSourceProviderV2.RegisterWithDiagnosticsEventManager(this.diagnosticsEventManager);
-            
         }
+
+        DiagnosticsEventManager IDiagnosticsManager.DiagnosticsEventManager => this.diagnosticsEventManager;
 
         void IDisposable.Dispose()
         {

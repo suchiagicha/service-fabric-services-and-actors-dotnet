@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
 {
     using System;
@@ -9,10 +10,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Communication.Client;
-    using Microsoft.ServiceFabric.Services.Remoting;
 
     /// <summary>
-    /// Specifies the Service partition client for Remoting communication
+    ///     Specifies the Service partition client for Remoting communication
     /// </summary>
     internal class ServiceRemotingPartitionClient : ServicePartitionClient<IServiceRemotingClient>, IServiceRemotingPartitionClient
     {
@@ -26,17 +26,17 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
             string listenerName = null,
             OperationRetrySettings retrySettings = null)
             : base(
-            remotingClientFactory, 
-            serviceUri, 
-            partitionKey,
-            targetReplicaSelector,
-            listenerName, 
-            retrySettings)
+                remotingClientFactory,
+                serviceUri,
+                partitionKey,
+                targetReplicaSelector,
+                listenerName,
+                retrySettings)
         {
         }
 
         public async Task<IServiceRemotingResponseMessage> InvokeAsync(
-          IServiceRemotingRequestMessage remotingRequestMessage,
+            IServiceRemotingRequestMessage remotingRequestMessage,
             CancellationToken cancellationToken)
         {
             if (!cancellationToken.CanBeCanceled)
@@ -61,12 +61,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
             var tcs = new TaskCompletionSource<bool>();
             using (cancellationToken.Register(() => tcs.TrySetResult(false)))
             {
-
-                var innerTask = this.InvokeWithRetryAsync(
+                Task<IServiceRemotingResponseMessage> innerTask = this.InvokeWithRetryAsync(
                     client => client.RequestResponseAsync(remotingRequestMessage),
                     cancellationToken);
 
-                var completedTask = await Task.WhenAny(innerTask, tcs.Task);
+                Task completedTask = await Task.WhenAny(innerTask, tcs.Task);
 
                 if (completedTask != innerTask)
                 {
@@ -78,7 +77,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
                         // Adding a cancellation header indicates that the request that was sent with
                         // for the interface, method and identified by the call-context should be canceled.
                         //
-                        var headers = remotingRequestMessage.GetHeader();
+                        IServiceRemotingRequestMessageHeader headers = remotingRequestMessage.GetHeader();
                         ServiceTrace.Source.WriteInfo(
                             TraceType,
                             "Cancellation requested for CallContext : {0}, MethodId : {1}, InterfaceId : {2}",
@@ -99,7 +98,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
                         // Cancellation token is not sent in this call that means that cancellation *will* be 
                         // delivered.
 
-                        var remoteCancellationTask = this.InvokeWithRetryAsync(
+                        Task<IServiceRemotingResponseMessage> remoteCancellationTask = this.InvokeWithRetryAsync(
                             client => client.RequestResponseAsync(remotingRequestMessage),
                             remoteCancellationTaskCts.Token);
 
@@ -112,35 +111,35 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
                         // task or actual request task to finish.
                         //
 
-                        var finishedTask = await Task.WhenAny(innerTask, remoteCancellationTask);
+                        Task<IServiceRemotingResponseMessage> finishedTask = await Task.WhenAny(innerTask, remoteCancellationTask);
 
                         if (finishedTask != innerTask)
-                        { 
+                        {
                             ServiceTrace.Source.WriteInfo(
                                 TraceType,
                                 "Cancellation delivered for CallContext : {0}, MethodId : {1}, InterfaceId : {2}",
                                 headers.InvocationId,
                                 headers.MethodId,
                                 headers.InterfaceId);
-                    }
-                    else
-                    {
-                        //
-                        // Actual task finished before cancellation task.
-                        // Cancel the cancellation task and observe exception if any.
-                        //
-                        remoteCancellationTaskCts.Cancel();
+                        }
+                        else
+                        {
+                            //
+                            // Actual task finished before cancellation task.
+                            // Cancel the cancellation task and observe exception if any.
+                            //
+                            remoteCancellationTaskCts.Cancel();
 
-                        try
-                        {
-                            await remoteCancellationTask;
-                        }
-                        catch (Exception)
-                        {
-                            // Ignore.
+                            try
+                            {
+                                await remoteCancellationTask;
+                            }
+                            catch (Exception)
+                            {
+                                // Ignore.
+                            }
                         }
                     }
-                }
                 }
 
                 tcs.TrySetResult(true);

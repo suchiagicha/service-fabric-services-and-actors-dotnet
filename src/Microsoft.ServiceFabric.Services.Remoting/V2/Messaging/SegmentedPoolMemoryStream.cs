@@ -27,43 +27,18 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             this.Initialize();
         }
 
-        private void Initialize()
-        {
-            this.canWrite = true;
-            this.canRead = false;
-            this.canSeek = false;
-            this.position = 0;
-            this.writeBuffers = new List<IPooledBuffer>(1);
-            this.currentBuffer = this.bufferPoolManager.TakeBuffer();
-            this.writeBuffers.Add(this.currentBuffer);
-            this.bufferSize = this.writeBuffers[0].Value.Count;
-            this.currentBufferOffset = 0;
-        }
+        public override bool CanRead => this.canRead;
 
-        public override bool CanRead
-        {
-            get { return this.canRead; }
-        }
+        public override bool CanSeek => this.canSeek;
 
-        public override bool CanSeek
-        {
-            get { return this.canSeek; }
-        }
+        public override bool CanWrite => this.canWrite;
 
-        public override bool CanWrite
-        {
-            get { return this.canWrite; }
-        }
-
-        public override long Length
-        {
-            get { return this.position; }
-        }
+        public override long Length => this.position;
 
         public override long Position
         {
-            get { return this.position; }
-            set { this.position = value; }
+            get => this.position;
+            set => this.position = value;
         }
 
 
@@ -89,21 +64,36 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-           if (buffer == null)
+            if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer");
-            if ((offset + count) > buffer.Length)
+            }
+
+            if (offset + count > buffer.Length)
+            {
                 throw new ArgumentException("buffer too small", "buffer");
+            }
+
             if (offset < 0)
+            {
                 throw new ArgumentException("offset must be >= 0", "offset");
+            }
+
             if (count < 0)
+            {
                 throw new ArgumentException("count must be >= 0", "count");
+            }
 
 
-            var i = this.currentBufferOffset + count;
+            int i = this.currentBufferOffset + count;
 
             if (i <= this.bufferSize)
             {
-                Buffer.BlockCopy(buffer, offset, this.currentBuffer.Value.Array, this.currentBufferOffset,
+                Buffer.BlockCopy(
+                    buffer,
+                    offset,
+                    this.currentBuffer.Value.Array,
+                    this.currentBufferOffset,
                     count);
                 this.currentBuffer.ContentLength += count;
                 this.currentBufferOffset += count;
@@ -111,7 +101,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
                 return;
             }
 
-            var bytesLeft = count;
+            int bytesLeft = count;
 
             while (bytesLeft > 0)
             {
@@ -126,11 +116,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
                     this.currentBufferOffset = 0;
                 }
 
-                var bytesToCopy = (this.currentBufferOffset + bytesLeft) <= this.bufferSize
+                int bytesToCopy = this.currentBufferOffset + bytesLeft <= this.bufferSize
                     ? bytesLeft
                     : this.bufferSize - this.currentBufferOffset;
 
-                Buffer.BlockCopy(buffer, offset, this.currentBuffer.Value.Array, this.currentBufferOffset,
+                Buffer.BlockCopy(
+                    buffer,
+                    offset,
+                    this.currentBuffer.Value.Array,
+                    this.currentBufferOffset,
                     bytesToCopy);
 
                 this.currentBuffer.ContentLength += bytesToCopy;
@@ -144,7 +138,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
 
         public override void WriteByte(byte value)
         {
-            var i = this.currentBufferOffset + 1;
+            int i = this.currentBufferOffset + 1;
 
             if (i > this.bufferSize)
             {
@@ -166,6 +160,19 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
             }
 
             return this.writeBuffers;
+        }
+
+        private void Initialize()
+        {
+            this.canWrite = true;
+            this.canRead = false;
+            this.canSeek = false;
+            this.position = 0;
+            this.writeBuffers = new List<IPooledBuffer>(1);
+            this.currentBuffer = this.bufferPoolManager.TakeBuffer();
+            this.writeBuffers.Add(this.currentBuffer);
+            this.bufferSize = this.writeBuffers[0].Value.Count;
+            this.currentBufferOffset = 0;
         }
     }
 }

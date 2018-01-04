@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace FabActUtil.CommandLineParser
 {
     using System;
@@ -9,12 +10,14 @@ namespace FabActUtil.CommandLineParser
     using System.Text;
 
     /// <summary>
-    /// Stream which writes at different indents.
+    ///     Stream which writes at different indents.
     /// </summary>
     public class IndentedWriter : StreamWriter
     {
+        private int indent;
+
         /// <summary>
-        /// Create a new Indented Writer.
+        ///     Create a new Indented Writer.
         /// </summary>
         /// <param name="stream"></param>
         public IndentedWriter(Stream stream)
@@ -24,11 +27,11 @@ namespace FabActUtil.CommandLineParser
         }
 
         /// <summary>
-        /// The current number of spaces to indent.
+        ///     The current number of spaces to indent.
         /// </summary>
         public int Indent
         {
-            get { return this.indent; }
+            get => this.indent;
             set
             {
                 this.indent = value;
@@ -43,17 +46,13 @@ namespace FabActUtil.CommandLineParser
             s.Append(' ', this.indent);
             this.NewLine = s.ToString();
         }
-
-        private int indent;
     }
 
     /// <summary>
-    /// 
     /// </summary>
     public struct Indent : IDisposable
     {
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="indent"></param>
@@ -66,7 +65,6 @@ namespace FabActUtil.CommandLineParser
         }
 
         /// <summary>
-        /// 
         /// </summary>
         public void Dispose()
         {

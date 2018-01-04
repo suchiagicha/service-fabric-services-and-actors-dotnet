@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -12,11 +13,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
     internal static class BinaryReaderWriterExtensions
     {
-        private const int NegativeLength = -1;
-
         public const byte NullPrefixByte = 0;
         public const byte NotNullPrefixByte = 1;
-        
+        private const int NegativeLength = -1;
+
         public static void Write(this BinaryWriter writer, Guid guid)
         {
             var gb = new GuidBytes(guid);
@@ -39,7 +39,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
 
             writer.WriteNotNullPrefixByte();
-            writer.Write((byte)actorId.Kind);
+            writer.Write((byte) actorId.Kind);
 
             switch (actorId.Kind)
             {
@@ -65,7 +65,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return null;
             }
 
-            var actorIdKind = (ActorIdKind)reader.ReadByte();
+            var actorIdKind = (ActorIdKind) reader.ReadByte();
 
             switch (actorIdKind)
             {
@@ -109,14 +109,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return;
             }
 
-            var bytes = encoding.GetBytes(str);
+            byte[] bytes = encoding.GetBytes(str);
             writer.Write(bytes.Length);
             writer.Write(bytes);
         }
 
         public static string ReadString(this BinaryReader reader, Encoding encoding)
         {
-            var length = reader.ReadInt32();
+            int length = reader.ReadInt32();
             return length == NegativeLength ? null : encoding.GetString(reader.ReadBytes(length));
         }
 
@@ -134,7 +134,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public static byte[] ReadByteArray(this BinaryReader reader)
         {
-            var length = reader.ReadInt32();
+            int length = reader.ReadInt32();
             return length == NegativeLength ? null : reader.ReadBytes(length);
         }
 
@@ -148,19 +148,16 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             writer.Write(NotNullPrefixByte);
         }
     }
-    
+
     [StructLayout(LayoutKind.Explicit)]
     internal struct GuidBytes
     {
-        [FieldOffset(0)]
-        public readonly Guid Guid;
+        [FieldOffset(0)] public readonly Guid Guid;
 
-        [FieldOffset(0)]
-        public readonly ulong First64Bits;
+        [FieldOffset(0)] public readonly ulong First64Bits;
 
-        [FieldOffset(8)]
-        public readonly ulong Second64Bits;
-        
+        [FieldOffset(8)] public readonly ulong Second64Bits;
+
         public GuidBytes(Guid guid) : this()
         {
             this.Guid = guid;
@@ -172,5 +169,4 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.Second64Bits = second64Bits;
         }
     }
-
 }

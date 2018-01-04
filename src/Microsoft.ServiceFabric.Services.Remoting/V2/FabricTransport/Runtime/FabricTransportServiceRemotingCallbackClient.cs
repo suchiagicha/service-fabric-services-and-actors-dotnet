@@ -2,13 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
 {
     using System;
     using System.Collections.Generic;
     using Microsoft.ServiceFabric.FabricTransport.V2;
     using Microsoft.ServiceFabric.FabricTransport.V2.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
+    using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Runtime;
 
     internal class FabricTransportServiceRemotingCallbackClient : IServiceRemotingCallbackClient
@@ -29,12 +30,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
 
         public void SendOneWay(IServiceRemotingRequestMessage requestMessage)
         {
-            var headerSerialzier = this.serializersManager.GetHeaderSerializer();
-            var serialzedHeader = headerSerialzier.SerializeRequestHeader(requestMessage.GetHeader());
-            var requestSerializer = this.serializersManager.GetRequestBodySerializer(requestMessage.GetHeader().InterfaceId);
-            var serializedMsgBody = requestSerializer.Serialize(requestMessage.GetBody());
-            var fabricTransportRequestBody = serializedMsgBody != null
-                ? new FabricTransportRequestBody(serializedMsgBody.GetSendBuffers(),
+            IServiceRemotingMessageHeaderSerializer headerSerialzier = this.serializersManager.GetHeaderSerializer();
+            IMessageHeader serialzedHeader = headerSerialzier.SerializeRequestHeader(requestMessage.GetHeader());
+            IServiceRemotingRequestMessageBodySerializer requestSerializer =
+                this.serializersManager.GetRequestBodySerializer(requestMessage.GetHeader().InterfaceId);
+            OutgoingMessageBody serializedMsgBody = requestSerializer.Serialize(requestMessage.GetBody());
+            FabricTransportRequestBody fabricTransportRequestBody = serializedMsgBody != null
+                ? new FabricTransportRequestBody(
+                    serializedMsgBody.GetSendBuffers(),
                     serializedMsgBody.Dispose)
                 : new FabricTransportRequestBody(new List<ArraySegment<byte>>(), null);
             this.fabricTransportCallbackClient.OneWayMessage(

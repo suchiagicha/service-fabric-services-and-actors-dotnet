@@ -6,10 +6,9 @@
 namespace Microsoft.ServiceFabric.Actors.Remoting.V1
 {
     using System.Runtime.Serialization;
-    using Microsoft.ServiceFabric.Actors.Remoting;
 
     /// <summary>
-    ///  Represents the body of the actor messages.
+    ///     Represents the body of the actor messages.
     /// </summary>
     [DataContract(Name = "msgBody", Namespace = Constants.Namespace)]
     internal class ActorMessageBody

@@ -2,29 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace FabActUtil
 {
     using FabActUtil.CommandLineParser;
 
     internal class ToolArguments
     {
-        public ToolArguments()
-        {
-            this.InputAssembly = null;
-            this.Recurse = false;
-            this.Actors = null;
-            this.Target = OutputTarget.Manifest;
-            this.OutputPath = null;
-            this.ApplicationPackagePath = null;
-            this.ServicePackagePath = null;
-            this.ApplicationPrefix = null;
-            this.ServicePackagePrefix = null;
-            this.Version = null;
-            this.Local5NodeAppParamFile = null;
-            this.Local1NodeAppParamFile = null;
-            this.AssemblyResolvePath = null;
-        }
-
         [CommandLineArgument(
             CommandLineArgumentType.AtMostOnce,
             Description =
@@ -107,7 +91,7 @@ namespace FabActUtil
         [CommandLineArgument(
             CommandLineArgumentType.AtMostOnce,
             Description =
-            "Path to application parameter file for five node cluster used for deployment by Visual Studio. It contains app name and parameter values.",
+                "Path to application parameter file for five node cluster used for deployment by Visual Studio. It contains app name and parameter values.",
             LongName = "Local5NodeAppParametersFile",
             ShortName = "local5nodeappparamfile")]
         public string Local5NodeAppParamFile;
@@ -115,7 +99,7 @@ namespace FabActUtil
         [CommandLineArgument(
             CommandLineArgumentType.AtMostOnce,
             Description =
-            "Path to application parameter file for one node cluster used for deployment by Visual Studio. It contains app name and parameter values.",
+                "Path to application parameter file for one node cluster used for deployment by Visual Studio. It contains app name and parameter values.",
             LongName = "Local1NodeAppParametersFile",
             ShortName = "local1nodeappparamfile")]
         public string Local1NodeAppParamFile;
@@ -123,16 +107,33 @@ namespace FabActUtil
         [CommandLineArgument(
             CommandLineArgumentType.AtMostOnce,
             Description =
-            "Path to folder containing required dependencies.",
+                "Path to folder containing required dependencies.",
             LongName = "AssemblyResolvePath",
             ShortName = "arp")]
         public string AssemblyResolvePath;
+
+        public ToolArguments()
+        {
+            this.InputAssembly = null;
+            this.Recurse = false;
+            this.Actors = null;
+            this.Target = OutputTarget.Manifest;
+            this.OutputPath = null;
+            this.ApplicationPackagePath = null;
+            this.ServicePackagePath = null;
+            this.ApplicationPrefix = null;
+            this.ServicePackagePrefix = null;
+            this.Version = null;
+            this.Local5NodeAppParamFile = null;
+            this.Local1NodeAppParamFile = null;
+            this.AssemblyResolvePath = null;
+        }
 
         internal bool IsValid()
         {
             if (this.Target == OutputTarget.Manifest)
             {
-                return (!string.IsNullOrEmpty(this.InputAssembly));
+                return !string.IsNullOrEmpty(this.InputAssembly);
             }
 
             return false;
@@ -141,6 +142,6 @@ namespace FabActUtil
 
     public enum OutputTarget
     {
-        Manifest,
+        Manifest
     }
 }

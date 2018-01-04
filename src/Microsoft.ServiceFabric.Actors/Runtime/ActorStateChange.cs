@@ -2,23 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
     using System.Fabric.Common;
 
     /// <summary>
-    /// Represents a change to an actor state with a given state name.
+    ///     Represents a change to an actor state with a given state name.
     /// </summary>
     public sealed class ActorStateChange
     {
-        private readonly string stateName;
-        private readonly Type type;
-        private readonly object value;
-        private readonly StateChangeKind changeKind;
-
         /// <summary>
-        /// Creates an instance of ActorStateChange class.
+        ///     Creates an instance of ActorStateChange class.
         /// </summary>
         /// <param name="stateName">The name of the actor state.</param>
         /// <param name="type">The type of value associated with given actor state name.</param>
@@ -28,54 +24,42 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             Requires.Argument("stateName", stateName).NotNull();
 
-            this.stateName = stateName;
-            this.type = type;
-            this.value = value;
-            this.changeKind = changeKind;
+            this.StateName = stateName;
+            this.Type = type;
+            this.Value = value;
+            this.ChangeKind = changeKind;
         }
 
         /// <summary>
-        /// Gets the name of the actor state.
+        ///     Gets the name of the actor state.
         /// </summary>
         /// <value>
-        /// The name of the actor state.
+        ///     The name of the actor state.
         /// </value>
-        public string StateName
-        {
-            get { return this.stateName; }
-        }
+        public string StateName { get; }
 
         /// <summary>
-        /// Gets the type of value associated with given actor state name.
+        ///     Gets the type of value associated with given actor state name.
         /// </summary>
         /// <value>
-        /// The type of value associated with given actor state name.
+        ///     The type of value associated with given actor state name.
         /// </value>
-        public Type Type
-        {
-            get { return this.type; }
-        }
+        public Type Type { get; }
 
         /// <summary>
-        /// Gets the value associated with given actor state name.
+        ///     Gets the value associated with given actor state name.
         /// </summary>
         /// <value>
-        /// The value associated with given actor state name.
+        ///     The value associated with given actor state name.
         /// </value>
-        public object Value
-        {
-            get { return this.value; }
-        }
+        public object Value { get; }
 
         /// <summary>
-        /// Gets the kind of state change for given actor state name.
+        ///     Gets the kind of state change for given actor state name.
         /// </summary>
         /// <value>
-        /// The kind of state change for given actor state name.
+        ///     The kind of state change for given actor state name.
         /// </value>
-        public StateChangeKind ChangeKind
-        {
-            get { return this.changeKind; }
-        }
+        public StateChangeKind ChangeKind { get; }
     }
 }

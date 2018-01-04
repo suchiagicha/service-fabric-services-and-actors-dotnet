@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Diagnostics
 {
     using System;
@@ -14,14 +15,13 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
     internal class PerformanceCounterProviderV2 : PerformanceCounterProvider
     {
-
         private readonly string counterInstanceDifferentiatorV2;
 
 
         private Dictionary<long, CounterInstanceData> actorMethodCounterInstanceDataV2;
 
         internal PerformanceCounterProviderV2(Guid partitionId, ActorTypeInformation actorTypeInformation)
-            :base(partitionId,actorTypeInformation)
+            : base(partitionId, actorTypeInformation)
         {
             // The counter instance names end with "_<TickCount>", where <TickCount> is the tick count when
             // the current object is created. 
@@ -35,49 +35,15 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             // it. By appending the <TickCount> portion, we ensure that the old and new primaries do not 
             // reference the same counter instance. Therefore, when the old primary cleans up its counter
             // instance, the new primary is not affected by it.
-            this.counterInstanceDifferentiatorV2 = String.Concat((object)DateTime.UtcNow.Ticks.ToString("D"), "_", "V2");
+            this.counterInstanceDifferentiatorV2 = string.Concat((object) DateTime.UtcNow.Ticks.ToString("D"), "_", "V2");
         }
 
-     
-   internal override void InitializeActorMethodInfo(DiagnosticsEventManager diagnosticsEventManager)
-        {
-            base.InitializeActorMethodInfo(diagnosticsEventManager);
-
-            this.actorMethodCounterInstanceDataV2 = new Dictionary<long, CounterInstanceData>();
-            
-            var methodInfoListV2 = new List<KeyValuePair<long, MethodInfo>>();
-            foreach (var actorInterfaceType in this.actorTypeInformation.InterfaceTypes)
-            {
-                int interfaceIdV2;
-                MethodDescription[] actorInterfaceMethodDescriptions;
-                diagnosticsEventManager.ActorMethodFriendlyNameBuilder.GetActorInterfaceMethodDescriptionsV2(actorInterfaceType,
-                    out interfaceIdV2,
-                    out actorInterfaceMethodDescriptions);
-                methodInfoListV2.AddRange(this.GetMethodInfo(actorInterfaceMethodDescriptions, interfaceIdV2));
-            }
-            var percCounterInstanceNameBuilderV2 =
-                new PerformanceCounterInstanceNameBuilder(this.partitionId, this.counterInstanceDifferentiatorV2, PerformanceCounterInstanceNameBuilder.DefaultMaxInstanceNameVariablePartsLen - 3);
-
-            this.actorMethodCounterInstanceDataV2 = this.CreateActorMethodCounterInstanceData(methodInfoListV2, percCounterInstanceNameBuilderV2);
-        }
-
-        internal  override MethodSpecificCounterWriters GetMethodSpecificCounterWriters(long interfaceMethodKey,RemotingListener remotingListener)
-        {
-            if (remotingListener.Equals(RemotingListener.V2Listener))
-            {
-                return this.actorMethodCounterInstanceDataV2[interfaceMethodKey].CounterWriters;
-            }
-            
-            return base.GetMethodSpecificCounterWriters(interfaceMethodKey,remotingListener);
-        }
-       
 
         public override void Dispose()
         {
-           
             if (null != this.actorMethodCounterInstanceDataV2)
             {
-                foreach (var counterInstanceData in this.actorMethodCounterInstanceDataV2.Values)
+                foreach (CounterInstanceData counterInstanceData in this.actorMethodCounterInstanceDataV2.Values)
                 {
                     if (null != counterInstanceData.CounterWriters)
                     {
@@ -89,7 +55,46 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
                     }
                 }
             }
+
             base.Dispose();
+        }
+
+
+        internal override void InitializeActorMethodInfo(DiagnosticsEventManager diagnosticsEventManager)
+        {
+            base.InitializeActorMethodInfo(diagnosticsEventManager);
+
+            this.actorMethodCounterInstanceDataV2 = new Dictionary<long, CounterInstanceData>();
+
+            var methodInfoListV2 = new List<KeyValuePair<long, MethodInfo>>();
+            foreach (Type actorInterfaceType in this.actorTypeInformation.InterfaceTypes)
+            {
+                int interfaceIdV2;
+                MethodDescription[] actorInterfaceMethodDescriptions;
+                diagnosticsEventManager.ActorMethodFriendlyNameBuilder.GetActorInterfaceMethodDescriptionsV2(
+                    actorInterfaceType,
+                    out interfaceIdV2,
+                    out actorInterfaceMethodDescriptions);
+                methodInfoListV2.AddRange(this.GetMethodInfo(actorInterfaceMethodDescriptions, interfaceIdV2));
+            }
+
+            var percCounterInstanceNameBuilderV2 =
+                new PerformanceCounterInstanceNameBuilder(
+                    this.partitionId,
+                    this.counterInstanceDifferentiatorV2,
+                    PerformanceCounterInstanceNameBuilder.DefaultMaxInstanceNameVariablePartsLen - 3);
+
+            this.actorMethodCounterInstanceDataV2 = this.CreateActorMethodCounterInstanceData(methodInfoListV2, percCounterInstanceNameBuilderV2);
+        }
+
+        internal override MethodSpecificCounterWriters GetMethodSpecificCounterWriters(long interfaceMethodKey, RemotingListener remotingListener)
+        {
+            if (remotingListener.Equals(RemotingListener.V2Listener))
+            {
+                return this.actorMethodCounterInstanceDataV2[interfaceMethodKey].CounterWriters;
+            }
+
+            return base.GetMethodSpecificCounterWriters(interfaceMethodKey, remotingListener);
         }
     }
 }

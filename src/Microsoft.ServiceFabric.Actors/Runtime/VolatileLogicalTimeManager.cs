@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -12,21 +13,16 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
     internal class VolatileLogicalTimeManager
     {
-        public interface ISnapshotHandler
-        {
-            Task OnSnapshotAsync(TimeSpan currentLogicalTime);
-        }
-
         private const long DefaultLogicalTimeSnapshotIntervalInSeconds = 5;
-
-        private TimeSpan lastSnapshot;
         private readonly Stopwatch stopwatch;
-        private bool isRunning;
         private readonly RwLock rwLock;
 
         private readonly ISnapshotHandler handler;
         private readonly TimeSpan snapshotInterval;
         private readonly Timer timer;
+
+        private TimeSpan lastSnapshot;
+        private bool isRunning;
 
         public VolatileLogicalTimeManager(ISnapshotHandler handler)
             : this(handler, TimeSpan.FromSeconds(DefaultLogicalTimeSnapshotIntervalInSeconds))
@@ -67,14 +63,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        internal TimeSpan Test_GetCurrentSnapshot()
-        {
-            using (this.rwLock.AcquireReadLock())
-            {
-                return this.lastSnapshot;
-            }
-        }
-
         public void Start()
         {
             using (this.rwLock.AcquireWriteLock())
@@ -95,6 +83,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
+        internal TimeSpan Test_GetCurrentSnapshot()
+        {
+            using (this.rwLock.AcquireReadLock())
+            {
+                return this.lastSnapshot;
+            }
+        }
+
         private void ArmTimer()
         {
             using (this.rwLock.AcquireWriteLock())
@@ -107,8 +103,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             if (this.isRunning)
             {
-                var elapsed = this.stopwatch.Elapsed;
-                var delay = (elapsed > this.snapshotInterval) ? TimeSpan.Zero : (this.snapshotInterval - elapsed);
+                TimeSpan elapsed = this.stopwatch.Elapsed;
+                TimeSpan delay = elapsed > this.snapshotInterval ? TimeSpan.Zero : this.snapshotInterval - elapsed;
                 this.timer.Change(delay, TimeSpan.FromMilliseconds(-1));
             }
             else
@@ -127,7 +123,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             using (this.rwLock.AcquireWriteLock())
             {
-                var snapshot = this.GetCurrentLogicalTime_CallerHoldsLock();
+                TimeSpan snapshot = this.GetCurrentLogicalTime_CallerHoldsLock();
                 this.lastSnapshot = snapshot;
                 this.stopwatch.Restart();
 
@@ -138,6 +134,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private TimeSpan GetCurrentLogicalTime_CallerHoldsLock()
         {
             return this.lastSnapshot + this.stopwatch.Elapsed;
+        }
+
+        public interface ISnapshotHandler
+        {
+            Task OnSnapshotAsync(TimeSpan currentLogicalTime);
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
 {
     using System;
@@ -27,17 +28,17 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
             this.proxyActivator = proxyActivator;
         }
 
-        private static IDictionary<int, DataContractSerializer> GetBodySerializers(IDictionary<int, IEnumerable<Type>> bodyTypes)
-        {
-            return bodyTypes.ToDictionary(item => item.Key, item => ActorMessageBodySerializer.GetActorMessageSerializer(item.Value));
-        }
-
         public ActorEventProxy CreateActorEventProxy()
         {
             var actorEventProxy = (ActorEventProxy) this.proxyActivator.CreateInstance();
             actorEventProxy.Initialize(this);
 
             return actorEventProxy;
+        }
+
+        private static IDictionary<int, DataContractSerializer> GetBodySerializers(IDictionary<int, IEnumerable<Type>> bodyTypes)
+        {
+            return bodyTypes.ToDictionary(item => item.Key, item => ActorMessageBodySerializer.GetActorMessageSerializer(item.Value));
         }
     }
 }

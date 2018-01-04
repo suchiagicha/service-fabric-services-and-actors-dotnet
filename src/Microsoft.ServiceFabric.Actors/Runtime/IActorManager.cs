@@ -37,7 +37,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         #region Actor Method Dispatch
 
 #if !DotNetCoreClr
-        Task<byte[]> InvokeAsync(ActorId actorId, int interfaceId, int methodId, string callContext,
+        Task<byte[]> InvokeAsync(
+            ActorId actorId, int interfaceId, int methodId, string callContext,
             byte[] requestMsgBody, CancellationToken cancellationToken);
 #endif
 
@@ -51,7 +52,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             CancellationToken cancellationToken);
 
         //V2 Stack Apis
-        Task<IServiceRemotingResponseMessageBody> InvokeAsync(ActorId actorId, int interfaceId, int methodId,
+        Task<IServiceRemotingResponseMessageBody> InvokeAsync(
+            ActorId actorId, int interfaceId, int methodId,
             string callContext,
             IServiceRemotingRequestMessageBody requestMsgBody,
             IServiceRemotingMessageBodyFactory remotingMessageBodyFactory,
@@ -73,7 +75,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         bool HasRemindersLoaded { get; }
 
-        Task<IActorReminder> RegisterOrUpdateReminderAsync(ActorId actorId, string reminderName, byte[] state,
+        Task<IActorReminder> RegisterOrUpdateReminderAsync(
+            ActorId actorId, string reminderName, byte[] state,
             TimeSpan dueTime, TimeSpan period, bool saveState = true);
 
         IActorReminder GetReminder(string reminderName, ActorId actorId);
@@ -90,7 +93,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Task DeleteActorAsync(string callContext, ActorId actorId, CancellationToken cancellationToken);
 
-        Task<PagedResult<ActorInformation>> GetActorsFromStateProvider(ContinuationToken continuationToken,
+        Task<PagedResult<ActorInformation>> GetActorsFromStateProvider(
+            ContinuationToken continuationToken,
             CancellationToken cancellationToken);
 
         #endregion

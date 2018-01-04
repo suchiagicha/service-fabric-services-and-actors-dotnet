@@ -8,7 +8,6 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors.Remoting;
     using Microsoft.ServiceFabric.Actors.Remoting.V2.Runtime;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Communication.Client;
@@ -25,7 +24,9 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
             ActorId actorId,
             string listenerName = null,
             OperationRetrySettings retrySettings = null)
-            : base(remotingClientFactory, serviceUri,
+            : base(
+                remotingClientFactory,
+                serviceUri,
                 new ServicePartitionKey(actorId.GetPartitionKey()),
                 TargetReplicaSelector.Default,
                 listenerName,
@@ -36,8 +37,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
         }
 
         /// <summary>
-        /// Actor id. Actor id is used to identify the partition of the service that this actor
-        /// belongs to.
+        ///     Actor id. Actor id is used to identify the partition of the service that this actor
+        ///     belongs to.
         /// </summary>
         /// <value>actor id</value>
         public ActorId ActorId { get; }
@@ -48,7 +49,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
             {
                 ActorId = this.ActorId,
                 InterfaceId = ActorEventSubscription.InterfaceId,
-                MethodId = ActorEventSubscription.SubscribeMethodId,
+                MethodId = ActorEventSubscription.SubscribeMethodId
             };
 
 
@@ -56,11 +57,14 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
             actorRemotingMessageHeaders.MethodId = ActorEventSubscription.SubscribeMethodId;
 
             var msgBody = new ServiceRemotingRequestMessageBody(1);
-            msgBody.SetParameter(0, "Value", new EventSubscriptionRequestBody()
-            {
-                eventInterfaceId = eventInterfaceId,
-                subscriptionId = subscriberId
-            });
+            msgBody.SetParameter(
+                0,
+                "Value",
+                new EventSubscriptionRequestBody
+                {
+                    eventInterfaceId = eventInterfaceId,
+                    subscriptionId = subscriberId
+                });
 
             return this.InvokeWithRetryAsync(
                 client => client.RequestResponseAsync(
@@ -75,17 +79,20 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
             {
                 ActorId = this.ActorId,
                 InterfaceId = ActorEventSubscription.InterfaceId,
-                MethodId = ActorEventSubscription.UnSubscribeMethodId,
+                MethodId = ActorEventSubscription.UnSubscribeMethodId
             };
 
 
             var msgBody = new ServiceRemotingRequestMessageBody(1);
 
-            msgBody.SetParameter(0, "Value", new EventSubscriptionRequestBody()
-            {
-                eventInterfaceId = eventInterfaceId,
-                subscriptionId = subscriberId
-            });
+            msgBody.SetParameter(
+                0,
+                "Value",
+                new EventSubscriptionRequestBody
+                {
+                    eventInterfaceId = eventInterfaceId,
+                    subscriptionId = subscriberId
+                });
 
             return this.InvokeWithRetryAsync(
                 client => client.RequestResponseAsync(new ServiceRemotingRequestMessage(headers, msgBody)),

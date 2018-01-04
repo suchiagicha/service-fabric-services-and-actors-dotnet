@@ -8,6 +8,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Fabric;
     using System.Globalization;
     using System.Linq;
@@ -18,6 +19,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using Microsoft.ServiceFabric.Actors.Diagnostics;
     using Microsoft.ServiceFabric.Actors.Query;
     using Microsoft.ServiceFabric.Actors.Remoting;
+    using Microsoft.ServiceFabric.Actors.Remoting.V1.Builder;
     using Microsoft.ServiceFabric.Services.Common;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
@@ -29,57 +31,51 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private const string ReceiveReminderMethodName = "ReceiveReminderAsync";
 
         private readonly string traceId;
-        private readonly ActorService actorService;
         private readonly Random random = new Random();
         private readonly ActorMethodContext reminderMethodContext;
         private readonly ConcurrentDictionary<ActorId, ActorBase> activeActors;
         private readonly ConcurrentDictionary<ActorId, ConcurrentDictionary<string, ActorReminder>> remindersByActorId;
-        private readonly DiagnosticsEventManager diagnosticsEventManager;
+        private readonly IActorEventManager eventManager;
 
         private IDiagnosticsManager diagnosticsManager;
-        private bool isClosed;
-        private readonly IActorEventManager eventManager;
 
         private Timer gcTimer;
         private Task loadRemindersTask;
 
         internal ActorManager(ActorService actorService)
         {
-            this.actorService = actorService;
+            this.ActorService = actorService;
             this.traceId = actorService.Context.TraceId;
             this.diagnosticsManager = new DiagnosticsManager(actorService);
-            this.diagnosticsEventManager = this.diagnosticsManager.DiagnosticsEventManager;
+            this.DiagnosticsEventManager = this.diagnosticsManager.DiagnosticsEventManager;
             this.eventManager = new ActorEventManager(actorService.ActorTypeInformation);
-            this.isClosed = false;
+            this.IsClosed = false;
             this.activeActors = new ConcurrentDictionary<ActorId, ActorBase>();
             this.remindersByActorId = new ConcurrentDictionary<ActorId, ConcurrentDictionary<string, ActorReminder>>();
             this.reminderMethodContext = ActorMethodContext.CreateForReminder(ReceiveReminderMethodName);
             this.gcTimer = new Timer(this.RunGarbageCollection, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        private IActorStateProvider StateProvider
+        private IActorStateProvider StateProvider => this.ActorService.StateProvider;
+
+        private IActorActivator ActorActivator => this.ActorService.ActorActivator;
+
+        #region Test Helpers
+
+        internal bool Test_HasAnyReminders()
         {
-            get { return this.actorService.StateProvider; }
+            return !this.remindersByActorId.IsEmpty;
         }
 
-        private IActorActivator ActorActivator
-        {
-            get { return this.actorService.ActorActivator; }
-        }
+        #endregion
 
         #region IActorManager Implementation
 
-        public ActorService ActorService
-        {
-            get { return this.actorService; }
-        }
+        public ActorService ActorService { get; }
 
         #region Actor Diagnostics
 
-        public DiagnosticsEventManager DiagnosticsEventManager
-        {
-            get { return this.diagnosticsEventManager; }
-        }
+        public DiagnosticsEventManager DiagnosticsEventManager { get; }
 
         #endregion
 
@@ -101,7 +97,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId, "Closing ...");
 
-            this.isClosed = true;
+            this.IsClosed = true;
 
             await this.CleanupRemindersAsync();
             this.DisposeDiagnosticsManager();
@@ -113,7 +109,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId, "Aborting...");
 
-            this.isClosed = true;
+            this.IsClosed = true;
 
             this.CleanupRemindersAsync().ContinueWith(t => t.Exception);
             this.DisposeDiagnosticsManager();
@@ -121,10 +117,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId, "Aborted.");
         }
 
-        public bool IsClosed
-        {
-            get { return this.isClosed; }
-        }
+        public bool IsClosed { get; private set; }
 
         #endregion
 
@@ -143,25 +136,29 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             this.ThrowIfClosed();
 
-            var methodDispatcher = this.actorService.MethodDispatcherMapV1.GetDispatcher(interfaceId, methodId);
-            var actorMethodName = methodDispatcher.GetMethodName(methodId);
-            var actorMethodContext = ActorMethodContext.CreateForActor(actorMethodName);
+            ActorMethodDispatcherBase methodDispatcher = this.ActorService.MethodDispatcherMapV1.GetDispatcher(interfaceId, methodId);
+            string actorMethodName = methodDispatcher.GetMethodName(methodId);
+            ActorMethodContext actorMethodContext = ActorMethodContext.CreateForActor(actorMethodName);
 
-            var deserializationStartTime = DateTime.UtcNow;
-            var requestBody = methodDispatcher.DeserializeRequestMessageBody(requestMsgBody);
+            DateTime deserializationStartTime = DateTime.UtcNow;
+            object requestBody = methodDispatcher.DeserializeRequestMessageBody(requestMsgBody);
             this.DiagnosticsEventManager.ActorRequestDeserializationFinish(deserializationStartTime);
 
-            return this.DispatchToActorAsync<byte[]>(
-                actorId: actorId,
-                actorMethodContext: actorMethodContext,
-                createIfRequired: true,
-                actorFunc:
-                    (actor, innerCancellationToken) =>
-                        this.ActorMethodDispatch(methodDispatcher, actor, interfaceId, methodId, requestBody,
-                            innerCancellationToken),
-                callContext: callContext,
-                timerCall: false,
-                cancellationToken: cancellationToken);
+            return this.DispatchToActorAsync(
+                actorId,
+                actorMethodContext,
+                true,
+                (actor, innerCancellationToken) =>
+                    this.ActorMethodDispatch(
+                        methodDispatcher,
+                        actor,
+                        interfaceId,
+                        methodId,
+                        requestBody,
+                        innerCancellationToken),
+                callContext,
+                false,
+                cancellationToken);
         }
 #endif
 
@@ -178,25 +175,27 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             ExceptionDispatchInfo exceptionInfo = null;
             Exception exception = null;
-            var retval = default(T);
+            T retval = default(T);
 
 
             // get activeActor from the activeActors table
-            using (var actorUseScope = this.GetActor(actorId, createIfRequired, timerCall))
+            using (ActorUseScope actorUseScope = this.GetActor(actorId, createIfRequired, timerCall))
             {
-                var actor = actorUseScope.Actor;
+                ActorBase actor = actorUseScope.Actor;
 
                 //
                 // START: CRITICAL CODE
                 //
                 // Emit diagnostic info - before acquiring actor lock
-                var lockAcquireStartTime = this.DiagnosticsEventManager.AcquireActorLockStart(actor);
+                DateTime lockAcquireStartTime = this.DiagnosticsEventManager.AcquireActorLockStart(actor);
                 DateTime? lockAcquireFinishTime = null;
                 try
                 {
                     await
-                        actor.ConcurrencyLock.Acquire(callContext,
-                            (async innerActor => await this.HandleDirtyStateAsync(innerActor)), cancellationToken);
+                        actor.ConcurrencyLock.Acquire(
+                            callContext,
+                            async innerActor => await this.HandleDirtyStateAsync(innerActor),
+                            cancellationToken);
                 }
                 catch
                 {
@@ -204,6 +203,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     this.DiagnosticsEventManager.AcquireActorLockFailed(actor);
                     throw;
                 }
+
                 //
                 // WARNING: DO NOT PUT ANY CODE BETWEEN CONCURRENCY LOCK ACQUIRE AND TRY
                 // THE LOCK NEEDS TO BE RELEASED IF THERE IS ANY EXCEPTION 
@@ -211,13 +211,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 try
                 {
                     // Emit diagnostic info - after acquiring actor lock
-                    lockAcquireFinishTime = this.DiagnosticsEventManager.AcquireActorLockFinish(actor,
+                    lockAcquireFinishTime = this.DiagnosticsEventManager.AcquireActorLockFinish(
+                        actor,
                         lockAcquireStartTime);
 
                     retval =
                         await
-                            this.DispatchToActorConcurrencyLockHeldAsync<T>(actorId, actorMethodContext, actor,
-                                actorFunc, callContext, cancellationToken);
+                            this.DispatchToActorConcurrencyLockHeldAsync(
+                                actorId,
+                                actorMethodContext,
+                                actor,
+                                actorFunc,
+                                callContext,
+                                cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -231,6 +237,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         // ignored
                     }
                 }
+
                 //
                 // WARNING: DO NOT PUT ANY CODE BELOW BEFORE THE LOCK IS RELEASED
                 // BECAUSE WE ARE NOT INSIDE A TRY-CATCH BLOCK
@@ -259,7 +266,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        public Task<IServiceRemotingResponseMessageBody> InvokeAsync(ActorId actorId, int interfaceId, int methodId,
+        public Task<IServiceRemotingResponseMessageBody> InvokeAsync(
+            ActorId actorId, int interfaceId, int methodId,
             string callContext,
             IServiceRemotingRequestMessageBody requestMsgBody,
             IServiceRemotingMessageBodyFactory remotingMessageBodyFactory,
@@ -269,23 +277,27 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             this.ThrowIfClosed();
 
-            var methodDispatcher = this.actorService.MethodDispatcherMapV2.GetDispatcher(interfaceId, methodId);
-            var actorMethodName = methodDispatcher.GetMethodName(methodId);
-            var actorMethodContext = ActorMethodContext.CreateForActor(actorMethodName);
+            Remoting.V2.Builder.ActorMethodDispatcherBase methodDispatcher = this.ActorService.MethodDispatcherMapV2.GetDispatcher(interfaceId, methodId);
+            string actorMethodName = methodDispatcher.GetMethodName(methodId);
+            ActorMethodContext actorMethodContext = ActorMethodContext.CreateForActor(actorMethodName);
 
 
-            return this.DispatchToActorAsync<IServiceRemotingResponseMessageBody>(
-                actorId: actorId,
-                actorMethodContext: actorMethodContext,
-                createIfRequired: true,
-                actorFunc:
-                    (actor, innerCancellationToken) =>
-                        this.ActorMethodDispatch(methodDispatcher, actor, interfaceId, methodId, requestMsgBody,
-                            remotingMessageBodyFactory,
-                            innerCancellationToken),
-                callContext: callContext,
-                timerCall: false,
-                cancellationToken: cancellationToken);
+            return this.DispatchToActorAsync(
+                actorId,
+                actorMethodContext,
+                true,
+                (actor, innerCancellationToken) =>
+                    this.ActorMethodDispatch(
+                        methodDispatcher,
+                        actor,
+                        interfaceId,
+                        methodId,
+                        requestMsgBody,
+                        remotingMessageBodyFactory,
+                        innerCancellationToken),
+                callContext,
+                false,
+                cancellationToken);
         }
 
         #endregion
@@ -312,10 +324,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region Actor Reminders
 
-        public bool HasRemindersLoaded
-        {
-            get { return (this.loadRemindersTask != null && this.loadRemindersTask.IsCompleted); }
-        }
+        public bool HasRemindersLoaded => this.loadRemindersTask != null && this.loadRemindersTask.IsCompleted;
 
         public async Task<IActorReminder> RegisterOrUpdateReminderAsync(
             ActorId actorId,
@@ -354,8 +363,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             this.ThrowIfClosed();
 
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                "Unregistering reminder for actor {0}, reminderName {1}", actorId, reminderName);
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "Unregistering reminder for actor {0}, reminderName {1}",
+                actorId,
+                reminderName);
 
             if (removeFromStateProvider)
             {
@@ -393,9 +406,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             try
             {
-                using (var actorScope = this.GetActor(reminder.OwnerActorId, true, false))
+                using (ActorUseScope actorScope = this.GetActor(reminder.OwnerActorId, true, false))
                 {
-                    var actorBase = actorScope.Actor;
+                    ActorBase actorBase = actorScope.Actor;
 
                     // if Actor is deleted, reminder should not be fired or armed again.
                     // Its an optimization so that we don't fire the reminder if the actor
@@ -406,7 +419,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         return;
                     }
 
-                    if (this.actorService.ActorTypeInformation.IsRemindable)
+                    if (this.ActorService.ActorTypeInformation.IsRemindable)
                     {
                         var actor = (IRemindable) actorBase;
 
@@ -414,14 +427,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                             reminder.OwnerActorId,
                             this.reminderMethodContext,
                             false,
-                            (async (a, cancellationTkn) =>
+                            async (a, cancellationTkn) =>
                             {
                                 await
-                                    actor.ReceiveReminderAsync(reminder.Name, reminder.State, reminder.DueTime,
+                                    actor.ReceiveReminderAsync(
+                                        reminder.Name,
+                                        reminder.State,
+                                        reminder.DueTime,
                                         reminder.Period);
 
                                 return null;
-                            }),
+                            },
                             Guid.NewGuid().ToString(),
                             false,
                             CancellationToken.None);
@@ -470,32 +486,44 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (!this.HasRemindersLoaded)
             {
-                throw new ReminderLoadInProgressException(string.Format(CultureInfo.CurrentCulture,
-                    SR.DeleteActorConflictWithLoadReminders, actorId));
+                throw new ReminderLoadInProgressException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        SR.DeleteActorConflictWithLoadReminders,
+                        actorId));
             }
 
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                "DeleteActorAsync: Delete call received for actor {0}", actorId);
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "DeleteActorAsync: Delete call received for actor {0}",
+                actorId);
 
 
             // Use ActorConcurrencyLock to synchronize with other actor calls.
             // If the Actor is active, its ActorConcurrencyLock is used for synchronization.
             // If the actor is inactive, a Dummy Actor instance is created and its ActorConcurrencyLock is used for synchronization.
             using (
-                var actorUseScope = this.GetActor(actorId: actorId, createIfRequired: true, timerCall: false,
-                    createDummyActor: true))
+                ActorUseScope actorUseScope = this.GetActor(
+                    actorId,
+                    true,
+                    false,
+                    true))
             {
-                var actor = actorUseScope.Actor;
+                ActorBase actor = actorUseScope.Actor;
 
                 await
                     actor.ConcurrencyLock.Acquire(
                         callContext,
-                        (async innerActor => await this.HandleDirtyStateAsync(innerActor)),
+                        async innerActor => await this.HandleDirtyStateAsync(innerActor),
                         ActorReentrancyMode.Disallowed,
                         cancellationToken);
 
-                ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                    "DeleteActorAsync: Acquired ReentrancyGuard for actor {0}.", actorId);
+                ActorTrace.Source.WriteInfoWithId(
+                    TraceType,
+                    this.traceId,
+                    "DeleteActorAsync: Acquired ReentrancyGuard for actor {0}.",
+                    actorId);
 
                 // If Actor is already marked for deletion by other delete call, do not try to delete it again.
                 if (actor.MarkedForDeletion)
@@ -524,22 +552,28 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                         await this.StateProvider.RemoveActorAsync(actorId, cancellationToken);
 
-                        ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                            "DeleteActorAsync: Unregistering all reminders for Actor {0}.", actor.Id);
+                        ActorTrace.Source.WriteInfoWithId(
+                            TraceType,
+                            this.traceId,
+                            "DeleteActorAsync: Unregistering all reminders for Actor {0}.",
+                            actor.Id);
 
                         ConcurrentDictionary<string, ActorReminder> actorReminders;
                         if (this.remindersByActorId.TryGetValue(actorId, out actorReminders))
                         {
-                            var reminderNames = actorReminders.Values.Select(r => r.Name).ToList().AsReadOnly();
+                            ReadOnlyCollection<string> reminderNames = actorReminders.Values.Select(r => r.Name).ToList().AsReadOnly();
 
-                            foreach (var reminderName in reminderNames)
+                            foreach (string reminderName in reminderNames)
                             {
                                 await this.UnregisterReminderAsync(reminderName, actor.Id, false);
                             }
                         }
 
-                        ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                            "DeleteActorAsync: Clearing event subscriptions for actor {0}.", actorId);
+                        ActorTrace.Source.WriteInfoWithId(
+                            TraceType,
+                            this.traceId,
+                            "DeleteActorAsync: Clearing event subscriptions for actor {0}.",
+                            actorId);
 
                         await this.eventManager.ClearAllSubscriptions(actorId);
                     }
@@ -564,13 +598,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         ActorBase removedActor;
                         if (this.activeActors.TryRemove(actorId, out removedActor))
                         {
-                            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                                "DeleteActorAsync: Deactivating actor {0}", actorId);
+                            ActorTrace.Source.WriteInfoWithId(
+                                TraceType,
+                                this.traceId,
+                                "DeleteActorAsync: Deactivating actor {0}",
+                                actorId);
 
                             await this.DeactivateActorAsync(removedActor);
 
-                            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                                "DeleteActorAsync: Completed Deactivation of actor {0}", actorId);
+                            ActorTrace.Source.WriteInfoWithId(
+                                TraceType,
+                                this.traceId,
+                                "DeleteActorAsync: Completed Deactivation of actor {0}",
+                                actorId);
                         }
                     }
                     catch (Exception e)
@@ -594,27 +634,26 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 {
                     exceptionInfo.Throw();
                 }
-
-                return;
             }
         }
 
         /// <summary>
-        /// Returns Actors list by querying state provider for Actors.
+        ///     Returns Actors list by querying state provider for Actors.
         /// </summary>
-        public async Task<PagedResult<ActorInformation>> GetActorsFromStateProvider(ContinuationToken continuationToken,
+        public async Task<PagedResult<ActorInformation>> GetActorsFromStateProvider(
+            ContinuationToken continuationToken,
             CancellationToken cancellationToken)
         {
             // Get the Actors list from State provider and mark them Active or Inactive
             const int maxCount = PagedResult<ActorInformation>.MaxItemsToReturn;
-            var queryResult = await this.StateProvider.GetActorsAsync(maxCount, continuationToken, cancellationToken);
+            PagedResult<ActorId> queryResult = await this.StateProvider.GetActorsAsync(maxCount, continuationToken, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var actorInfos =
+            List<ActorInformation> actorInfos =
                 queryResult.Items.Select(x => new ActorInformation(x, this.activeActors.ContainsKey(x))).ToList();
 
-            return new PagedResult<ActorInformation>()
+            return new PagedResult<ActorInformation>
             {
                 Items = actorInfos,
                 ContinuationToken = queryResult.ContinuationToken
@@ -627,8 +666,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public string GetActorTraceId(ActorId actorId)
         {
-            return ActorTrace.GetTraceIdForActor(this.actorService.Context.PartitionId,
-                this.actorService.Context.ReplicaId, actorId);
+            return ActorTrace.GetTraceIdForActor(
+                this.ActorService.Context.PartitionId,
+                this.ActorService.Context.ReplicaId,
+                actorId);
         }
 
         public ActorEventSource TraceSource => ActorTrace.Source;
@@ -642,14 +683,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 #if !DotNetCoreClr
 
         private Task<byte[]> ActorMethodDispatch(
-            Remoting.V1.Builder.ActorMethodDispatcherBase methodDispatcher,
+            ActorMethodDispatcherBase methodDispatcher,
             ActorBase actor,
             int interfaceId,
             int methodId,
             object requestBody,
             CancellationToken innerCancellationToken)
         {
-            var actorInterfaceMethodKey = DiagnosticsEventManager.GetInterfaceMethodKey((uint) interfaceId,
+            long actorInterfaceMethodKey = DiagnosticsEventManager.GetInterfaceMethodKey(
+                (uint) interfaceId,
                 (uint) methodId);
             this.DiagnosticsEventManager.ActorMethodStart(actorInterfaceMethodKey, actor, RemotingListener.V1Listener);
 
@@ -660,7 +702,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
             catch (Exception e)
             {
-                this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, e,
+                this.DiagnosticsEventManager.ActorMethodFinish(
+                    actorInterfaceMethodKey,
+                    actor,
+                    e,
                     RemotingListener.V1Listener);
                 throw;
             }
@@ -675,15 +720,22 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     }
                     catch (Exception e)
                     {
-                        this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, e,
+                        this.DiagnosticsEventManager.ActorMethodFinish(
+                            actorInterfaceMethodKey,
+                            actor,
+                            e,
                             RemotingListener.V1Listener);
                         throw;
                     }
-                    this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, null,
+
+                    this.DiagnosticsEventManager.ActorMethodFinish(
+                        actorInterfaceMethodKey,
+                        actor,
+                        null,
                         RemotingListener.V1Listener);
 
-                    var serializationStartTime = DateTime.UtcNow;
-                    var serializedResponse = methodDispatcher.SerializeResponseMessageBody(responseMsgBody);
+                    DateTime serializationStartTime = DateTime.UtcNow;
+                    byte[] serializedResponse = methodDispatcher.SerializeResponseMessageBody(responseMsgBody);
                     this.DiagnosticsEventManager.ActorResponseSerializationFinish(serializationStartTime);
 
                     return serializedResponse;
@@ -698,19 +750,26 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             IServiceRemotingRequestMessageBody requestBody,
             IServiceRemotingMessageBodyFactory remotingMessageBodyFactory, CancellationToken innerCancellationToken)
         {
-            var actorInterfaceMethodKey =
+            long actorInterfaceMethodKey =
                 DiagnosticsEventManager.GetInterfaceMethodKey((uint) interfaceId, (uint) methodId);
             this.DiagnosticsEventManager.ActorMethodStart(actorInterfaceMethodKey, actor, RemotingListener.V2Listener);
 
             Task<IServiceRemotingResponseMessageBody> dispatchTask;
             try
             {
-                dispatchTask = methodDispatcher.DispatchAsync(actor, methodId, requestBody, remotingMessageBodyFactory,
+                dispatchTask = methodDispatcher.DispatchAsync(
+                    actor,
+                    methodId,
+                    requestBody,
+                    remotingMessageBodyFactory,
                     innerCancellationToken);
             }
             catch (Exception e)
             {
-                this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, e,
+                this.DiagnosticsEventManager.ActorMethodFinish(
+                    actorInterfaceMethodKey,
+                    actor,
+                    e,
                     RemotingListener.V2Listener);
                 throw;
             }
@@ -725,11 +784,18 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     }
                     catch (Exception e)
                     {
-                        this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, e,
+                        this.DiagnosticsEventManager.ActorMethodFinish(
+                            actorInterfaceMethodKey,
+                            actor,
+                            e,
                             RemotingListener.V2Listener);
                         throw;
                     }
-                    this.DiagnosticsEventManager.ActorMethodFinish(actorInterfaceMethodKey, actor, null,
+
+                    this.DiagnosticsEventManager.ActorMethodFinish(
+                        actorInterfaceMethodKey,
+                        actor,
+                        null,
                         RemotingListener.V2Listener);
 
 
@@ -746,14 +812,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             string callContext,
             CancellationToken cancellationToken)
         {
-            var retval = default(T);
+            T retval = default(T);
 
             // if this actor has been deleted or is a dummy actor, then calls must be made on new object.
             if (actor.MarkedForDeletion || actor.IsDummy)
             {
                 // Deleted Actor, Method calls will be retried by Actor Proxy.
-                throw new ActorDeletedException(string.Format(CultureInfo.CurrentCulture,
-                    SR.ActorDeletedExceptionMessage, actorId));
+                throw new ActorDeletedException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        SR.ActorDeletedExceptionMessage,
+                        actorId));
             }
 
             this.ThrowIfClosed();
@@ -768,6 +837,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 await this.InitializeAsync(actor);
             }
+
             try
             {
                 // invoke the function of the actor
@@ -788,7 +858,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #region Actor Lifecycle and State Management Helper Methods
 
-        internal ActorUseScope GetActor(ActorId actorId, bool createIfRequired, bool timerCall,
+        internal ActorUseScope GetActor(
+            ActorId actorId, bool createIfRequired, bool timerCall,
             bool createDummyActor = false)
         {
             return createIfRequired
@@ -837,15 +908,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private ActorBase CreateActor(ActorId actorId, bool createDummyActor)
         {
-            var actor = createDummyActor
+            ActorBase actor = createDummyActor
                 ? this.CreateDummyActor(actorId)
-                : this.ActorActivator.Activate(this.actorService, actorId);
+                : this.ActorActivator.Activate(this.ActorService, actorId);
             return actor;
         }
 
         private static bool ShouldInitialize(ActorBase actor)
         {
-            return (actor.IsInitialized != true);
+            return actor.IsInitialized != true;
         }
 
         private async Task InitializeAsync(ActorBase actor)
@@ -876,8 +947,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal async Task HandleDirtyStateAsync(ActorBase actor)
         {
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                "Reloading state for Actor {0}, since IsDirty state is {1}", actor.Id, actor.IsDirty);
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "Reloading state for Actor {0}, since IsDirty state is {1}",
+                actor.Id,
+                actor.IsDirty);
 
             await ResetStateAsync(actor);
             actor.IsDirty = false;
@@ -895,10 +970,13 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal ActorBase CreateDummyActor(ActorId actorId)
         {
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                "Creating DummyActor to delete inactive actor {0}", actorId);
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "Creating DummyActor to delete inactive actor {0}",
+                actorId);
 
-            return new DummyActor(this.actorService, actorId);
+            return new DummyActor(this.ActorService, actorId);
         }
 
         internal Task OnPreInvokeAsync(ActorBase actor, ActorMethodContext actorMethodContext)
@@ -923,15 +1001,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             if (this.gcTimer != null)
             {
                 // if the host is closed, mark active actors for early collection rather than waiting till idleTimeout.
-                if (this.isClosed)
+                if (this.IsClosed)
                 {
-                    foreach (var activeActor in this.activeActors)
+                    foreach (KeyValuePair<ActorId, ActorBase> activeActor in this.activeActors)
                     {
                         activeActor.Value.GcHandler.MarkForEarlyCollection();
                     }
                 }
 
-                if (this.isClosed && (this.activeActors.Count == 0))
+                if (this.IsClosed && this.activeActors.Count == 0)
                 {
                     // all actors are garbaged collected and we are closed
                     // no need to schedule the timer again.
@@ -942,11 +1020,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 {
                     // Add some randomness to gcTimer firing to handle scenarios in which a Timer firing at exact same interval as
                     // gcTimer can potentially keep the Actor alive forever.
-                    double scanIntervalInMilliseconds = 1000*
-                                                        this.actorService.Settings.ActorGarbageCollectionSettings
+                    double scanIntervalInMilliseconds = 1000 *
+                                                        this.ActorService.Settings.ActorGarbageCollectionSettings
                                                             .ScanIntervalInSeconds;
-                    scanIntervalInMilliseconds += (scanIntervalInMilliseconds*this.random.Next(0, 10))/100;
-                    this.gcTimer.Change(TimeSpan.FromMilliseconds(scanIntervalInMilliseconds),
+                    scanIntervalInMilliseconds += scanIntervalInMilliseconds * this.random.Next(0, 10) / 100;
+                    this.gcTimer.Change(
+                        TimeSpan.FromMilliseconds(scanIntervalInMilliseconds),
                         TimeSpan.FromMilliseconds(-1));
                 }
             }
@@ -956,7 +1035,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             var deactivatedActors = new List<ActorBase>();
 
-            foreach (var activeActor in this.activeActors)
+            foreach (KeyValuePair<ActorId, ActorBase> activeActor in this.activeActors)
             {
                 if (activeActor.Value.GcHandler.TryCollect())
                 {
@@ -984,7 +1063,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private Task DeactivateActorsAsync(IEnumerable<ActorBase> deactivatedActors)
         {
             var deactivateTasks = new List<Task>();
-            foreach (var a in deactivatedActors)
+            foreach (ActorBase a in deactivatedActors)
             {
                 try
                 {
@@ -1006,7 +1085,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private async Task DeactivateActorAsync(ActorBase actor)
         {
-            if (actor.IsInitialized && !(actor.IsDummy))
+            if (actor.IsInitialized && !actor.IsDummy)
             {
                 await actor.OnDeactivateInternalAsync();
 
@@ -1022,7 +1101,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private void ThrowIfClosed()
         {
-            if (this.isClosed)
+            if (this.IsClosed)
             {
                 throw new FabricNotPrimaryException();
             }
@@ -1043,57 +1122,76 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 if (this.loadRemindersTask != null)
                 {
-
-                    ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
+                    ActorTrace.Source.WriteInfoWithId(
+                        TraceType,
+                        this.traceId,
                         "CleanupRemindersAsync: Waiting for Load reminder task to be finished.");
 
                     await this.loadRemindersTask;
 
-                    ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
+                    ActorTrace.Source.WriteInfoWithId(
+                        TraceType,
+                        this.traceId,
                         "CleanupRemindersAsync: Load reminder task has finished.");
                 }
             }
             catch (Exception e)
             {
-                ActorTrace.Source.WriteErrorWithId(TraceType, this.traceId,
-                    "CleanupRemindersAsync: Wait for loadRemindersTask failed, exception {0}", e.ToString());
+                ActorTrace.Source.WriteErrorWithId(
+                    TraceType,
+                    this.traceId,
+                    "CleanupRemindersAsync: Wait for loadRemindersTask failed, exception {0}",
+                    e.ToString());
             }
 
-            var remindersForActor = this.remindersByActorId.Values;
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                    "CleanupRemindersAsync: Disposing reminders for {0} actors.", remindersForActor.Count);
+            ICollection<ConcurrentDictionary<string, ActorReminder>> remindersForActor = this.remindersByActorId.Values;
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "CleanupRemindersAsync: Disposing reminders for {0} actors.",
+                remindersForActor.Count);
 
-            foreach (var reminders in this.remindersByActorId.Values)
+            foreach (ConcurrentDictionary<string, ActorReminder> reminders in this.remindersByActorId.Values)
             {
-                var allReminders = reminders.Values;
+                ICollection<ActorReminder> allReminders = reminders.Values;
 
                 if (allReminders.Count > 0)
                 {
-                    var actorId = allReminders.First().OwnerActorId;
-                    ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                    "CleanupRemindersAsync: Disposing {0} reminders for actor with Id {1}", allReminders.Count, actorId.ToString());
+                    ActorId actorId = allReminders.First().OwnerActorId;
+                    ActorTrace.Source.WriteInfoWithId(
+                        TraceType,
+                        this.traceId,
+                        "CleanupRemindersAsync: Disposing {0} reminders for actor with Id {1}",
+                        allReminders.Count,
+                        actorId.ToString());
 
-                    foreach (var reminder in allReminders)
+                    foreach (ActorReminder reminder in allReminders)
                     {
                         reminder.Dispose();
                     }
 
-                    ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                        "CleanupRemindersAsync: Disposed {0} reminders for actor with id {1}", allReminders.Count, actorId.ToString());
+                    ActorTrace.Source.WriteInfoWithId(
+                        TraceType,
+                        this.traceId,
+                        "CleanupRemindersAsync: Disposed {0} reminders for actor with id {1}",
+                        allReminders.Count,
+                        actorId.ToString());
                 }
             }
 
             this.remindersByActorId.Clear();
 
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.traceId,
-                    "CleanupRemindersAsync: Disposing of reminders completed for all actors.");
+            ActorTrace.Source.WriteInfoWithId(
+                TraceType,
+                this.traceId,
+                "CleanupRemindersAsync: Disposing of reminders completed for all actors.");
         }
 
         private async Task LoadRemindersAsync(CancellationToken cancellationToken)
         {
-            var reminders = await this.StateProvider.LoadRemindersAsync(cancellationToken);
+            IActorReminderCollection reminders = await this.StateProvider.LoadRemindersAsync(cancellationToken);
 
-            if (reminders.Count > 0 && !this.actorService.ActorTypeInformation.IsRemindable)
+            if (reminders.Count > 0 && !this.ActorService.ActorTypeInformation.IsRemindable)
             {
                 ActorTrace.Source.WriteWarningWithId(
                     TraceType,
@@ -1104,15 +1202,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return;
             }
 
-            foreach (var actorReminders in reminders)
+            foreach (KeyValuePair<ActorId, IReadOnlyCollection<IActorReminderState>> actorReminders in reminders)
             {
-                var actorId = actorReminders.Key;
+                ActorId actorId = actorReminders.Key;
 
                 try
                 {
                     var remindersToDelete = new List<string>();
 
-                    foreach (var reminderState in actorReminders.Value)
+                    foreach (IActorReminderState reminderState in actorReminders.Value)
                     {
                         if (this.ActorService.Settings.ReminderSettings.AutoDeleteOneTimeReminders &&
                             reminderState.RemainingDueTime < TimeSpan.Zero &&
@@ -1127,7 +1225,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                     await this.DeleteRemindersSafeAsync(actorId, remindersToDelete, cancellationToken);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ActorTrace.Source.WriteWarningWithId(
                         TraceType,
@@ -1139,14 +1237,16 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        private Task RegisterOrUpdateReminderAsync(ActorId actorId, IActorReminderState reminderState,
+        private Task RegisterOrUpdateReminderAsync(
+            ActorId actorId, IActorReminderState reminderState,
             bool saveState = true)
         {
             var reminder = new ActorReminder(actorId, this, reminderState);
             return this.RegisterOrUpdateReminderAsync(reminder, reminderState.RemainingDueTime, saveState);
         }
 
-        private async Task RegisterOrUpdateReminderAsync(ActorReminder actorReminder, TimeSpan remainingDueTime,
+        private async Task RegisterOrUpdateReminderAsync(
+            ActorReminder actorReminder, TimeSpan remainingDueTime,
             bool saveState = true)
         {
             this.ThrowIfClosed();
@@ -1160,7 +1260,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 remainingDueTime,
                 saveState);
 
-            var reminderDictionary = this.remindersByActorId.GetOrAdd(actorReminder.OwnerActorId,
+            ConcurrentDictionary<string, ActorReminder> reminderDictionary = this.remindersByActorId.GetOrAdd(
+                actorReminder.OwnerActorId,
                 k => new ConcurrentDictionary<string, ActorReminder>());
 
             reminderDictionary.AddOrUpdate(
@@ -1209,10 +1310,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 this.ThrowIfClosed();
 
                 await
-                    this.StateProvider.ReminderCallbackCompletedAsync(reminder.OwnerActorId, reminder,
+                    this.StateProvider.ReminderCallbackCompletedAsync(
+                        reminder.OwnerActorId,
+                        reminder,
                         CancellationToken.None);
             }
-            catch(FabricNotPrimaryException)
+            catch (FabricNotPrimaryException)
             {
                 // Ignore.
             }
@@ -1230,7 +1333,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private bool IsOneTimeReminder(IActorReminder reminder)
         {
-            return (reminder.DueTime > TimeSpan.Zero && reminder.Period < TimeSpan.Zero);
+            return reminder.DueTime > TimeSpan.Zero && reminder.Period < TimeSpan.Zero;
         }
 
         private async Task UnregisterOneTimeReminderAsync(ActorReminder reminder)
@@ -1243,7 +1346,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 // User already unregistered the reminder.
             }
-            catch(FabricNotPrimaryException)
+            catch (FabricNotPrimaryException)
             {
                 // Ignore.
             }
@@ -1259,7 +1362,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        private async Task DeleteRemindersSafeAsync(ActorId actorId, List<string> remindersToDelete,
+        private async Task DeleteRemindersSafeAsync(
+            ActorId actorId, List<string> remindersToDelete,
             CancellationToken cancellationToken)
         {
             if (remindersToDelete.Count == 0)
@@ -1291,20 +1395,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                 ActorTrace.Source.WriteWarningWithId(TraceType, this.traceId, msg.ToString());
 
-                foreach (var reminderName in remindersToDelete)
+                foreach (string reminderName in remindersToDelete)
                 {
                     await this.StateProvider.DeleteReminderAsync(actorId, reminderName, cancellationToken);
                 }
             }
-        }
-
-        #endregion
-
-        #region Test Helpers
-
-        internal bool Test_HasAnyReminders()
-        {
-            return !(this.remindersByActorId.IsEmpty);
         }
 
         #endregion

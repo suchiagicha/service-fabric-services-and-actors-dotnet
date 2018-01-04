@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -14,80 +15,43 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private const string TraceType = "ActorReminder";
 
         private readonly TimeSpan MinTimePeriod = Timeout.InfiniteTimeSpan;
-        private readonly ActorId ownerActorId;
         private readonly IActorManager actorManager;
-        private readonly string name;
-        private readonly TimeSpan dueTime;
-        private readonly TimeSpan period;
-        private readonly byte[] state;
-        
+
         private Timer timer;
 
-        public ActorReminder(ActorId actorId, IActorManager actorManager, IActorReminder reminder) 
+        public ActorReminder(ActorId actorId, IActorManager actorManager, IActorReminder reminder)
             : this(
-                  actorId,
-                  actorManager,
-                  reminder.Name,
-                  reminder.State,
-                  reminder.DueTime,
-                  reminder.Period)
+                actorId,
+                actorManager,
+                reminder.Name,
+                reminder.State,
+                reminder.DueTime,
+                reminder.Period)
         {
         }
 
         public ActorReminder(
-            ActorId actorId, 
-            IActorManager actorManager, 
+            ActorId actorId,
+            IActorManager actorManager,
             string reminderName,
             byte[] reminderState,
             TimeSpan reminderDueTime,
             TimeSpan reminderPeriod)
         {
-            ValidateDueTime("DueTime", reminderDueTime);
-            ValidatePeriod("Period", reminderPeriod);
+            this.ValidateDueTime("DueTime", reminderDueTime);
+            this.ValidatePeriod("Period", reminderPeriod);
 
             this.actorManager = actorManager;
-            this.ownerActorId = actorId;
-            this.name = reminderName;
-            this.dueTime = reminderDueTime;
-            this.period = reminderPeriod;
-            this.state = reminderState;
+            this.OwnerActorId = actorId;
+            this.Name = reminderName;
+            this.DueTime = reminderDueTime;
+            this.Period = reminderPeriod;
+            this.State = reminderState;
 
             this.timer = new Timer(this.OnReminderCallback);
         }
 
-        internal ActorId OwnerActorId
-        {
-            get { return this.ownerActorId; }
-        }
-
-        internal bool IsValid()
-        {
-            return (this.timer != null);
-        }
-
-        #region IActorReminder Members
-
-        public string Name
-        {
-            get { return this.name; }
-        }
-
-        public byte[] State
-        {
-            get { return this.state; }
-        }
-
-        public TimeSpan DueTime
-        {
-            get { return this.dueTime; }
-        }
-
-        public TimeSpan Period
-        {
-            get { return this.period; }
-        }
-
-        #endregion
+        internal ActorId OwnerActorId { get; }
 
         public void Dispose()
         {
@@ -95,15 +59,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             GC.SuppressFinalize(this);
         }
 
-        ~ActorReminder()
+        internal bool IsValid()
         {
-            this.Dispose(false);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (!disposing) return;
-            this.CancelTimer();
+            return this.timer != null;
         }
 
         internal void CancelTimer()
@@ -115,14 +73,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        private void OnReminderCallback(object reminderState)
-        {
-            Task.Run(() => { this.actorManager.FireReminderAsync(this); });
-        }
-
         internal void ArmTimer(TimeSpan newDueTime)
         {
-            var snap = this.timer;
+            Timer snap = this.timer;
             if (snap != null)
             {
                 try
@@ -141,6 +94,21 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
+        private void Dispose(bool disposing)
+        {
+            if (!disposing)
+            {
+                return;
+            }
+
+            this.CancelTimer();
+        }
+
+        private void OnReminderCallback(object reminderState)
+        {
+            Task.Run(() => { this.actorManager.FireReminderAsync(this); });
+        }
+
         private void ValidateDueTime(string argName, TimeSpan value)
         {
             if (value < TimeSpan.Zero)
@@ -148,25 +116,42 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 throw new ArgumentOutOfRangeException(
                     argName,
                     string.Format(
-                        CultureInfo.CurrentCulture, 
-                        SR.TimerArgumentOutOfRange, 
-                        MinTimePeriod.TotalMilliseconds, 
+                        CultureInfo.CurrentCulture,
+                        SR.TimerArgumentOutOfRange,
+                        this.MinTimePeriod.TotalMilliseconds,
                         TimeSpan.MaxValue.TotalMilliseconds));
             }
         }
 
         private void ValidatePeriod(string argName, TimeSpan value)
         {
-            if (value < MinTimePeriod)
+            if (value < this.MinTimePeriod)
             {
                 throw new ArgumentOutOfRangeException(
                     argName,
                     string.Format(
                         CultureInfo.CurrentCulture,
                         SR.TimerArgumentOutOfRange,
-                        MinTimePeriod.TotalMilliseconds,
+                        this.MinTimePeriod.TotalMilliseconds,
                         TimeSpan.MaxValue.TotalMilliseconds));
             }
         }
+
+        ~ActorReminder()
+        {
+            this.Dispose(false);
+        }
+
+        #region IActorReminder Members
+
+        public string Name { get; }
+
+        public byte[] State { get; }
+
+        public TimeSpan DueTime { get; }
+
+        public TimeSpan Period { get; }
+
+        #endregion
     }
 }

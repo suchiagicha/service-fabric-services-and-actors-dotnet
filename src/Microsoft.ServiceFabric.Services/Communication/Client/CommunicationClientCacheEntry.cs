@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Client
 {
     using System;
@@ -10,13 +11,26 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
     using System.Threading;
 
     /// <summary>
-    /// This represents the cache entry that stores the communication channel to an endpoint of a replica or instance.
+    ///     This represents the cache entry that stores the communication channel to an endpoint of a replica or instance.
     /// </summary>
     /// <typeparam name="TCommunicationClient"></typeparam>
     internal class CommunicationClientCacheEntry<TCommunicationClient>
         where TCommunicationClient : ICommunicationClient
     {
         public ResolvedServiceEndpoint Endpoint;
+
+        /// <summary>
+        ///     The IsInCache and IsCommunicationClientValid properties are used to synchronize the code using
+        ///     the cache client entry and the cache clean up code - to ensure that a valid client isn't cleaned up
+        ///     and also a client entry that is removed from cache is not used by the communication factory.
+        /// </summary>
+
+        //
+        // If this property is true, it means the cache entry is still in the cache. The cache clean up code sets
+        // this to false before purging the entry from cache.
+        //        
+        public bool IsInCache;
+
         //
         // The endpoint that a replica or instance returns is a JSON string of the form {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
         // This property caches the address corresponding the listener name given in the ListenerName property.
@@ -31,18 +45,29 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         //
         private TCommunicationClient client;
         private WeakReference clientWRef;
-        
+
+        public CommunicationClientCacheEntry()
+        {
+            this.Endpoint = null;
+            this.Semaphore = new SemaphoreSlim(1, 1);
+            this.client = default(TCommunicationClient);
+            this.clientWRef = null;
+            this.rsp = null;
+            this.address = null;
+            this.IsInCache = true;
+        }
+
         /// <summary>
-        /// This lock protects the members of the cache entry. Users of the this object
-        /// should acquire this lock before accessing the properties of the object.
+        ///     This lock protects the members of the cache entry. Users of the this object
+        ///     should acquire this lock before accessing the properties of the object.
         /// </summary>
-        public SemaphoreSlim Semaphore { get; private set; }
+        public SemaphoreSlim Semaphore { get; }
 
         public string ListenerName { get; set; }
 
         public ResolvedServicePartition Rsp
         {
-            get { return this.rsp; }
+            get => this.rsp;
             set
             {
                 this.rsp = value;
@@ -50,17 +75,37 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             }
         }
 
-        /// <summary>
-        /// The IsInCache and IsCommunicationClientValid properties are used to synchronize the code using
-        /// the cache client entry and the cache clean up code - to ensure that a valid client isn't cleaned up
-        /// and also a client entry that is removed from cache is not used by the communication factory.
-        /// </summary>
+        public TCommunicationClient Client
+        {
+            get
+            {
+                if (this.client != null)
+                {
+                    return this.client;
+                }
 
-        //
-        // If this property is true, it means the cache entry is still in the cache. The cache clean up code sets
-        // this to false before purging the entry from cache.
-        //        
-        public bool IsInCache;
+                if (this.clientWRef != null)
+                {
+                    return (TCommunicationClient) this.clientWRef.Target;
+                }
+
+                return default(TCommunicationClient);
+            }
+            set
+            {
+                this.clientWRef = ReferenceEquals(value, default(TCommunicationClient)) ? null : new WeakReference(value);
+                if (ReferenceEquals(value, default(TCommunicationClient)))
+                {
+                    this.client = default(TCommunicationClient);
+                    this.clientWRef = null;
+                }
+                else
+                {
+                    this.client = value;
+                    this.clientWRef = new WeakReference(value);
+                }
+            }
+        }
 
         public bool IsCommunicationClientValid()
         {
@@ -77,52 +122,8 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             {
                 isAlive = this.clientWRef.IsAlive;
             }
+
             return isAlive;
-        }
-
-        public TCommunicationClient Client
-        {
-            get
-            {
-                if (this.client != null)
-                {
-                    return this.client;
-                }
-
-                if (this.clientWRef != null)
-                {
-                    return (TCommunicationClient)this.clientWRef.Target;
-                }
-                else
-                {
-                    return default(TCommunicationClient);
-                }
-            }
-            set
-            {
-                this.clientWRef = object.ReferenceEquals(value, default(TCommunicationClient)) ? null : new WeakReference(value);
-                if (object.ReferenceEquals(value, default(TCommunicationClient)))
-                {
-                    this.client = default(TCommunicationClient);
-                    this.clientWRef = null;
-                }
-                else
-                {
-                    this.client = value;
-                    this.clientWRef = new WeakReference(value);
-                }
-            }
-        }
-
-        public CommunicationClientCacheEntry()
-        {
-            this.Endpoint = null;
-            this.Semaphore = new SemaphoreSlim(1, 1);
-            this.client = default(TCommunicationClient);
-            this.clientWRef = null;
-            this.rsp = null;
-            this.address = null;
-            this.IsInCache = true;
         }
 
         public string GetEndpoint()
@@ -156,15 +157,13 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                 {
                     return this.Endpoint.Address;
                 }
-                else
-                {
-                    throw new FabricInvalidAddressException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            SR.ErrorInvalidPartitionEndpointAddress,
-                            this.Endpoint.Address,
-                            this.rsp.Info.Id));
-                }
+
+                throw new FabricInvalidAddressException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.ErrorInvalidPartitionEndpointAddress,
+                        this.Endpoint.Address,
+                        this.rsp.Info.Id));
             }
 
             string parsedEndpointAddress;
@@ -176,15 +175,13 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                 {
                     return parsedEndpointAddress;
                 }
-                else
-                {
-                    throw new FabricInvalidAddressException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            SR.ErrorInvalidPartitionEndpointAddress,
-                            this.Endpoint.Address,
-                            this.rsp.Info.Id));
-                }
+
+                throw new FabricInvalidAddressException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.ErrorInvalidPartitionEndpointAddress,
+                        this.Endpoint.Address,
+                        this.rsp.Info.Id));
             }
 
             if (!endpointCollection.TryGetEndpointAddress(this.ListenerName, out parsedEndpointAddress))

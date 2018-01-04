@@ -2,10 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Fabric;
+    using System.Fabric.Common;
+    using System.Fabric.Description;
     using System.Globalization;
     using System.ServiceModel;
     using System.ServiceModel.Channels;
@@ -16,13 +20,12 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
 
     /// <summary>
-    /// A Windows Communication Foundation based listener for Service Fabric based stateless or stateful service.
+    ///     A Windows Communication Foundation based listener for Service Fabric based stateless or stateful service.
     /// </summary>
     /// <typeparam name="TServiceContract">Type of the WCF service contract.</typeparam>
     public class WcfCommunicationListener<TServiceContract> : ICommunicationListener
     {
         private readonly ServiceEndpoint endpoint;
-        private readonly ServiceHost host;
         private readonly string listenAddress;
         private readonly string publishAddress;
 
@@ -37,12 +40,15 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         /// </param>
         /// <remarks>
         ///     <para>
-        ///         The default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method.
+        ///         The default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method.
         ///     </para>
         ///     <para>
-        ///         The default endpoint address is created using the endpoint resource defined in the service manifest. The name of the endpoint resource is 
-        ///         derived from the WCF service contract type using <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName"/> method.
-        ///         If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with port zero is used.
+        ///         The default endpoint address is created using the endpoint resource defined in the service manifest. The name
+        ///         of the endpoint resource is
+        ///         derived from the WCF service contract type using
+        ///         <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName" /> method.
+        ///         If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with
+        ///         port zero is used.
         ///     </para>
         /// </remarks>
         public WcfCommunicationListener(
@@ -53,7 +59,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         }
 
         /// <summary>
-        ///     Constructs a WCF based communication listener that uses specified listener binding and 
+        ///     Constructs a WCF based communication listener that uses specified listener binding and
         ///     endpoint address derived from the specified endpoint resource name.
         /// </summary>
         /// <param name="serviceContext">
@@ -63,14 +69,18 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         ///     WCF service implementing the specified WCF service contract.
         /// </param>
         /// <param name="listenerBinding">
-        ///     The binding to use for the WCF endpoint. If the listenerBinding is not specified or it is null, a default listener binding is 
-        ///     created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method.
+        ///     The binding to use for the WCF endpoint. If the listenerBinding is not specified or it is null, a default listener
+        ///     binding is
+        ///     created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method.
         /// </param>
         /// <param name="endpointResourceName">
-        ///     The name of the endpoint resource defined in the service manifest that should be used to create the address for the listener. 
-        ///     If the endpointResourceName is not specified or it is null, its name is derived from the WCF service contract type using
-        ///     <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName"/> method.
-        ///     If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with port zero is used.
+        ///     The name of the endpoint resource defined in the service manifest that should be used to create the address for the
+        ///     listener.
+        ///     If the endpointResourceName is not specified or it is null, its name is derived from the WCF service contract type
+        ///     using
+        ///     <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName" /> method.
+        ///     If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with
+        ///     port zero is used.
         /// </param>
         public WcfCommunicationListener(
             ServiceContext serviceContext,
@@ -82,7 +92,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         }
 
         /// <summary>
-        ///     Constructs a WCF based communication listener that uses specified listener binding and 
+        ///     Constructs a WCF based communication listener that uses specified listener binding and
         ///     endpoint address derived from the specified endpoint address.
         /// </summary>
         /// <param name="serviceContext">
@@ -92,14 +102,18 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         ///     WCF service implementing the specified WCF service contract.
         /// </param>
         /// <param name="listenerBinding">
-        ///     The binding to use for the WCF endpoint. If the listenerBinding is not specified or it is null, a default listener binding is 
-        ///     created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method.
+        ///     The binding to use for the WCF endpoint. If the listenerBinding is not specified or it is null, a default listener
+        ///     binding is
+        ///     created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method.
         /// </param>
         /// <param name="address">
-        ///     The listen address for the WCF endpoint. If the address is not specified or it is null, a default address is created by 
-        ///     looking up the endpoint resource from the service manifest. The endpoint resource name is derived from the WCF 
-        ///     service contract type using <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName"/> method.
-        ///     If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with port zero is used.
+        ///     The listen address for the WCF endpoint. If the address is not specified or it is null, a default address is
+        ///     created by
+        ///     looking up the endpoint resource from the service manifest. The endpoint resource name is derived from the WCF
+        ///     service contract type using <see cref="Microsoft.ServiceFabric.Services.ServiceNameFormat.GetEndpointName" />
+        ///     method.
+        ///     If matching endpoint resource is not found in the service manifest, a default endpoint resource definition with
+        ///     port zero is used.
         /// </param>
         public WcfCommunicationListener(
             ServiceContext serviceContext,
@@ -133,87 +147,87 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
                     endpointResourceName);
 
                 this.listenAddress = serviceContext.ListenAddress;
-                this.publishAddress = serviceContext.PublishAddress;                
+                this.publishAddress = serviceContext.PublishAddress;
             }
 
             this.endpoint = CreateServiceEndpoint(typeof(TServiceContract), listenerBinding, address);
-            this.host = CreateServiceHost(wcfServiceObject, this.endpoint);
+            this.ServiceHost = CreateServiceHost(wcfServiceObject, this.endpoint);
         }
 
         /// <summary>
-        ///     Gets the <see cref="System.ServiceModel.ServiceHost"/> used by this listener to host the 
+        ///     Gets the <see cref="System.ServiceModel.ServiceHost" /> used by this listener to host the
         ///     WCF service implementation.
         /// </summary>
         /// <value>
-        ///     A <see cref="System.ServiceModel.ServiceHost"/> used by this listener to host the 
+        ///     A <see cref="System.ServiceModel.ServiceHost" /> used by this listener to host the
         ///     WCF service implementation.
         /// </value>
         /// <remarks>
         ///     The service host is created by the listener in its constructor. Before this communication
-        ///     listener is opened by the runtime via <see cref="ICommunicationListener.OpenAsync(CancellationToken)"/> method,
+        ///     listener is opened by the runtime via <see cref="ICommunicationListener.OpenAsync(CancellationToken)" /> method,
         ///     the service host can be customized by accessing it via this property.
         /// </remarks>
-        public ServiceHost ServiceHost
-        {
-            get { return this.host; }
-        }
+        public ServiceHost ServiceHost { get; }
 
         /// <summary>
-        /// This method causes the communication listener to be opened. Once the Open
-        /// completes, the communication listener becomes usable - accepts and sends messages.
+        ///     This method causes the communication listener to be opened. Once the Open
+        ///     completes, the communication listener becomes usable - accepts and sends messages.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task is
-        /// the endpoint string.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task
+        ///     is
+        ///     the endpoint string.
         /// </returns>
         Task<string> ICommunicationListener.OpenAsync(CancellationToken cancellationToken)
         {
             return Task.Factory.FromAsync(
-              this.host.BeginOpen(this.endpoint.Binding.OpenTimeout, null, null),
-              ar =>
-              {
-                  this.host.EndOpen(ar);
-                  var listenUri = this.endpoint.Behaviors.Find<ListenUriEndpointBehavior>().ListenUri.ToString();
-                  var publishUri = string.IsNullOrWhiteSpace(this.listenAddress) && string.IsNullOrWhiteSpace(this.publishAddress) ? listenUri : listenUri.Replace(this.listenAddress, this.publishAddress);
+                this.ServiceHost.BeginOpen(this.endpoint.Binding.OpenTimeout, null, null),
+                ar =>
+                {
+                    this.ServiceHost.EndOpen(ar);
+                    string listenUri = this.endpoint.Behaviors.Find<ListenUriEndpointBehavior>().ListenUri.ToString();
+                    string publishUri = string.IsNullOrWhiteSpace(this.listenAddress) && string.IsNullOrWhiteSpace(this.publishAddress)
+                        ? listenUri
+                        : listenUri.Replace(this.listenAddress, this.publishAddress);
 
-                  System.Fabric.Common.AppTrace.TraceSource.WriteInfo("WcfCommunicationListener.OpenAsync", "ListenURI = {0} PublishURI = {1}", listenUri, publishUri);
+                    AppTrace.TraceSource.WriteInfo("WcfCommunicationListener.OpenAsync", "ListenURI = {0} PublishURI = {1}", listenUri, publishUri);
 
-                  return publishUri;
-              });
+                    return publishUri;
+                });
         }
 
         /// <summary>
-        /// This method causes the communication listener to close. Close is a terminal state and 
-        /// this method allows the communication listener to transition to this state in a
-        /// graceful manner.
+        ///     This method causes the communication listener to close. Close is a terminal state and
+        ///     this method allows the communication listener to transition to this state in a
+        ///     graceful manner.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation.
         /// </returns>
         async Task ICommunicationListener.CloseAsync(CancellationToken cancellationToken)
         {
             try
             {
                 await Task.Factory.FromAsync(
-                    this.host.BeginClose(this.endpoint.Binding.CloseTimeout, null, null),
-                    ar => this.host.EndClose(ar));
+                    this.ServiceHost.BeginClose(this.endpoint.Binding.CloseTimeout, null, null),
+                    ar => this.ServiceHost.EndClose(ar));
             }
             catch
             {
-                this.host.Abort();
+                this.ServiceHost.Abort();
             }
         }
 
         /// <summary>
-        /// This method causes the communication listener to close. Close is a terminal state and
-        /// this method causes the transition to close ungracefully. Any outstanding operations
-        /// (including close) should be canceled when this method is called.
+        ///     This method causes the communication listener to close. Close is a terminal state and
+        ///     this method causes the transition to close ungracefully. Any outstanding operations
+        ///     (including close) should be canceled when this method is called.
         /// </summary>
         void ICommunicationListener.Abort()
         {
-            this.host.Abort();
+            this.ServiceHost.Abort();
         }
 
         private static ServiceEndpoint CreateServiceEndpoint(Type contractType, Binding binding, EndpointAddress address)
@@ -240,6 +254,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
                 serviceBehavior = new ServiceBehaviorAttribute();
                 host.Description.Behaviors.Add(serviceBehavior);
             }
+
             serviceBehavior.InstanceContextMode = InstanceContextMode.Single;
             serviceBehavior.ConcurrencyMode = ConcurrencyMode.Multiple;
 
@@ -254,6 +269,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
                 serviceDebug = new ServiceDebugBehavior();
                 host.Description.Behaviors.Add(serviceDebug);
             }
+
             serviceDebug.IncludeExceptionDetailInFaults = true;
 
             // set throttling behavior
@@ -263,6 +279,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
                 serviceThrottle = new ServiceThrottlingBehavior();
                 host.Description.Behaviors.Add(serviceThrottle);
             }
+
             serviceThrottle.MaxConcurrentCalls = int.MaxValue;
             serviceThrottle.MaxConcurrentInstances = int.MaxValue;
             serviceThrottle.MaxConcurrentSessions = int.MaxValue;
@@ -272,6 +289,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
                 endpoint.ListenUriMode = ListenUriMode.Unique;
                 serviceBehavior.AddressFilterMode = AddressFilterMode.Any;
             }
+
             host.AddServiceEndpoint(endpoint);
             //Exception Handler for Background Threads
             ExceptionHandler.AsynchronousThreadExceptionHandler = new WcfAsyncThreadExceptionHandler();
@@ -283,7 +301,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
             Binding binding,
             string endpointResourceName)
         {
-            var listenAddress = GetListenAddress(
+            Uri listenAddress = GetListenAddress(
                 serviceContext,
                 binding.Scheme,
                 GetEndpointPort(
@@ -295,20 +313,20 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
         }
 
         private static int GetEndpointPort(
-           ICodePackageActivationContext codePackageActivationContext,
-           Type serviceContactType,
-           string endpointResourceName)
+            ICodePackageActivationContext codePackageActivationContext,
+            Type serviceContactType,
+            string endpointResourceName)
         {
             var port = 0;
 
-            var endpointName = endpointResourceName;
-            if (string.IsNullOrEmpty(endpointName) && (serviceContactType != null))
+            string endpointName = endpointResourceName;
+            if (string.IsNullOrEmpty(endpointName) && serviceContactType != null)
             {
                 endpointName = ServiceNameFormat.GetEndpointName(serviceContactType);
             }
 
-            var endpoints = codePackageActivationContext.GetEndpoints();
-            foreach (var endpoint in endpoints)
+            KeyedCollection<string, EndpointResourceDescription> endpoints = codePackageActivationContext.GetEndpoints();
+            foreach (EndpointResourceDescription endpoint in endpoints)
             {
                 if (string.Compare(endpoint.Name, endpointName, StringComparison.InvariantCultureIgnoreCase) == 0)
                 {

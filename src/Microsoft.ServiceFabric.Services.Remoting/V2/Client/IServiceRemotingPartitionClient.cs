@@ -6,12 +6,10 @@
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
 {
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Communication.Client;
 
     /// <summary>
-    /// Defines the interface for the client that communicate over remoting to a particular replica of a service partition.
+    ///     Defines the interface for the client that communicate over remoting to a particular replica of a service partition.
     /// </summary>
     public interface IServiceRemotingPartitionClient : IServicePartitionClient<IServiceRemotingClient>
     {

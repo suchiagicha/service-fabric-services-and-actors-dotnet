@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
 {
     using System;
@@ -20,25 +21,12 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
         private readonly ConcurrentDictionary<Subscriber, SubscriptionInfo> eventKeyToInfoMap;
         private readonly ConcurrentDictionary<Guid, SubscriptionInfo> subscriptionIdToInfoMap;
         private readonly ConcurrentDictionary<int, ActorMethodDispatcherBase> eventIdToDispatchersMap;
-        
+
         private ActorEventSubscriberManager()
         {
             this.eventIdToDispatchersMap = new ConcurrentDictionary<int, ActorMethodDispatcherBase>();
             this.eventKeyToInfoMap = new ConcurrentDictionary<Subscriber, SubscriptionInfo>();
             this.subscriptionIdToInfoMap = new ConcurrentDictionary<Guid, SubscriptionInfo>();
-        }
-
-        public void RegisterEventDispatchers(IEnumerable<ActorMethodDispatcherBase> eventDispatchers)
-        {
-            if (eventDispatchers != null)
-            {
-                foreach (var dispatcher in eventDispatchers)
-                {
-                    this.eventIdToDispatchersMap.GetOrAdd(
-                        dispatcher.InterfaceId,
-                        dispatcher);
-                }
-            }
         }
 
         public Task<byte[]> RequestResponseAsync(ServiceRemotingMessageHeaders messageHeaders, byte[] requestBody)
@@ -55,8 +43,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
             }
 
             ActorMethodDispatcherBase eventDispatcher;
-            if ((this.eventIdToDispatchersMap == null) ||
-                (!this.eventIdToDispatchersMap.TryGetValue(actorHeaders.InterfaceId, out eventDispatcher)))
+            if (this.eventIdToDispatchersMap == null ||
+                !this.eventIdToDispatchersMap.TryGetValue(actorHeaders.InterfaceId, out eventDispatcher))
             {
                 return;
             }
@@ -74,7 +62,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
 
             try
             {
-                var eventMsgBody = eventDispatcher.DeserializeRequestMessageBody(requestBody);
+                object eventMsgBody = eventDispatcher.DeserializeRequestMessageBody(requestBody);
                 eventDispatcher.Dispatch(info.Subscriber.Instance, actorHeaders.MethodId, eventMsgBody);
             }
             catch
@@ -83,12 +71,25 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
             }
         }
 
+        public void RegisterEventDispatchers(IEnumerable<ActorMethodDispatcherBase> eventDispatchers)
+        {
+            if (eventDispatchers != null)
+            {
+                foreach (ActorMethodDispatcherBase dispatcher in eventDispatchers)
+                {
+                    this.eventIdToDispatchersMap.GetOrAdd(
+                        dispatcher.InterfaceId,
+                        dispatcher);
+                }
+            }
+        }
+
         public SubscriptionInfo RegisterSubscriber(ActorId actorId, Type eventInterfaceType, object instance)
         {
-            var eventId = this.GetAndEnsureEventId(eventInterfaceType);
+            int eventId = this.GetAndEnsureEventId(eventInterfaceType);
 
             var key = new Subscriber(actorId, eventId, instance);
-            var info = this.eventKeyToInfoMap.GetOrAdd(key, k => new SubscriptionInfo(k));
+            SubscriptionInfo info = this.eventKeyToInfoMap.GetOrAdd(key, k => new SubscriptionInfo(k));
             this.subscriptionIdToInfoMap.GetOrAdd(info.Id, i => info);
 
             return info;
@@ -96,7 +97,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
 
         public bool TryUnregisterSubscriber(ActorId actorId, Type eventInterfaceType, object instance, out SubscriptionInfo info)
         {
-            var eventId = this.GetAndEnsureEventId(eventInterfaceType);
+            int eventId = this.GetAndEnsureEventId(eventInterfaceType);
 
             var key = new Subscriber(actorId, eventId, instance);
             if (this.eventKeyToInfoMap.TryRemove(key, out info))
@@ -115,7 +116,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Client
         {
             if (this.eventIdToDispatchersMap != null)
             {
-                var eventId = IdUtil.ComputeId(eventInterfaceType);
+                int eventId = IdUtil.ComputeId(eventInterfaceType);
                 if (this.eventIdToDispatchersMap.ContainsKey(eventId))
                 {
                     return eventId;

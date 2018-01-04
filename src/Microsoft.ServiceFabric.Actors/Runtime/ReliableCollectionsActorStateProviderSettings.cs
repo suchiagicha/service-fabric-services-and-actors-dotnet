@@ -6,14 +6,9 @@
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System.Fabric;
-    using System.Fabric.Description;
 
     internal sealed class ReliableCollectionsActorStateProviderSettings : ActorStateProviderSettings
     {
-        public ReliableCollectionsActorStateProviderSettings()
-        {
-        }
-        
         public static ReliableCollectionsActorStateProviderSettings LoadFrom(
             ICodePackageActivationContext activationContext,
             string configPackageName,

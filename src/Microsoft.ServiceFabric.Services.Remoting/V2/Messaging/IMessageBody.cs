@@ -10,18 +10,18 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Messaging
     using System.IO;
 
     /// <summary>
-    /// Defines an interface that must be implemented to provide message body for the serialized Message.
+    ///     Defines an interface that must be implemented to provide message body for the serialized Message.
     /// </summary>
     public interface IMessageBody : IDisposable
     {
         /// <summary>
-        /// Gets the Send Buffers 
+        ///     Gets the Send Buffers
         /// </summary>
         /// <returns></returns>
         IEnumerable<ArraySegment<byte>> GetSendBuffers();
 
         /// <summary>
-        /// Get the Received Stream
+        ///     Get the Received Stream
         /// </summary>
         /// <returns></returns>
         Stream GetReceivedBuffer();

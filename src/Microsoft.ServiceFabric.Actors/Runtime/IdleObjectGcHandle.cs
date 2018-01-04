@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -9,16 +10,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     internal class IdleObjectGcHandle
     {
         private readonly long maxIdleCount;
+        private readonly object locker = new object();
         private long idleCount;
         private long useCount;
         private long timerCount; // tracks calls from timers.
-        private readonly object locker = new object();
-        private bool collected;
 
         /// <summary>
-        /// Signals that object can be collected early rather than waiting until idleCount == maxIdleCount
+        ///     Signals that object can be collected early rather than waiting until idleCount == maxIdleCount
         /// </summary>
-        private bool collectEarly;        
+        private bool collectEarly;
 
         public IdleObjectGcHandle(long maxIdleCount)
         {
@@ -33,11 +33,13 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.timerCount = 0;
         }
 
+        public bool IsGarbageCollected { get; private set; }
+
         public bool TryUse(bool timerCall)
         {
             lock (this.locker)
             {
-                if (this.collected)
+                if (this.IsGarbageCollected)
                 {
                     return false;
                 }
@@ -85,14 +87,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 // Object can be collected when its not in Use and is Marked For Early Collection
                 if (this.collectEarly)
                 {
-                    this.collected = true;
+                    this.IsGarbageCollected = true;
                     return true;
                 }
 
                 // Object can be collected when its not in Use and idleCount == maxIdleCount
                 if (this.idleCount == this.maxIdleCount)
                 {
-                    this.collected = true;
+                    this.IsGarbageCollected = true;
                     return true;
                 }
 
@@ -105,11 +107,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             // Mark for early collection, so that TryCollect can return true for early collection rather than waiting until idleCount == maxIdleCount.
             this.collectEarly = true;
-        }
-
-        public bool IsGarbageCollected
-        {
-            get { return this.collected; }
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -22,13 +23,13 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal byte[] Serialize<T>(Type stateType, T state)
         {
-            var serializer = this.actorStateSerializerCache.GetOrAdd(
+            DataContractSerializer serializer = this.actorStateSerializerCache.GetOrAdd(
                 stateType,
                 CreateDataContractSerializer);
 
             using (var stream = new MemoryStream())
             {
-                using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                 {
                     serializer.WriteObject(writer, state);
                     writer.Flush();
@@ -39,20 +40,20 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal T Deserialize<T>(byte[] buffer)
         {
-            if ((buffer == null) || (buffer.Length == 0))
+            if (buffer == null || buffer.Length == 0)
             {
                 return default(T);
             }
 
-            var serializer = this.actorStateSerializerCache.GetOrAdd(
+            DataContractSerializer serializer = this.actorStateSerializerCache.GetOrAdd(
                 typeof(T),
                 CreateDataContractSerializer);
 
             using (var stream = new MemoryStream(buffer))
             {
-                using (var reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+                using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
                 {
-                    return (T)serializer.ReadObject(reader);
+                    return (T) serializer.ReadObject(reader);
                 }
             }
         }
@@ -67,7 +68,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 #if !DotNetCoreClr
                     DataContractSurrogate = ActorDataContractSurrogate.Singleton,
 #endif
-                    KnownTypes = new[] { typeof(ActorReference) }
+                    KnownTypes = new[] {typeof(ActorReference)}
                 });
         }
     }

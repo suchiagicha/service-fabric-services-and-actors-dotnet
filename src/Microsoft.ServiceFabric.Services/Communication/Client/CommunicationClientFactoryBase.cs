@@ -15,9 +15,11 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
     using Microsoft.ServiceFabric.Services.Client;
 
     /// <summary>
-    /// Provides the base implementation of ICommunicationClientFactory for creating communication clients to talk to service fabric services. Extend the
-    /// CommunicationClientFactoryBase class to create communication clients for custom transport implementations. This class maintains a cache of communication
-    /// clients and attempts to reuse the clients for requests to the same service endpoint.
+    ///     Provides the base implementation of ICommunicationClientFactory for creating communication clients to talk to
+    ///     service fabric services. Extend the
+    ///     CommunicationClientFactoryBase class to create communication clients for custom transport implementations. This
+    ///     class maintains a cache of communication
+    ///     clients and attempts to reuse the clients for requests to the same service endpoint.
     /// </summary>
     /// <typeparam name="TCommunicationClient">The type of communication client</typeparam>
     public abstract class CommunicationClientFactoryBase<TCommunicationClient> :
@@ -25,58 +27,33 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         where TCommunicationClient : ICommunicationClient
     {
         private const string TraceType = "CommunicationClientFactoryBase";
-        private readonly IServicePartitionResolver servicePartitionResolver;
         private readonly List<IExceptionHandler> exceptionHandlers;
         private readonly CommunicationClientCache<TCommunicationClient> cache;
-        private readonly string traceId;
         private readonly Random random;
         private readonly object randomLock;
         private readonly bool fireConnectEvents;
 
         /// <summary>
-        /// Gets the ServicePartitionResolver used by the client factory for resolving the service endpoint.
-        /// </summary>
-        /// <value>ServicePartitionResolver</value>
-        public IServicePartitionResolver ServiceResolver
-        {
-            get { return this.servicePartitionResolver; }
-        }
-
-        /// <summary>
-        /// Gets the custom exception handlers for handling exceptions on the client to service communication channel.
-        /// </summary>
-        /// <value>List of Exception handlers</value>
-        public IEnumerable<IExceptionHandler> ExceptionHandlers
-        {
-            get { return this.exceptionHandlers; }
-        }
-
-        /// <summary>
-        /// Gets the diagnostics trace identifier for this component.
-        /// </summary>
-        /// <value>Trace identifier</value>
-        protected string TraceId
-        {
-            get { return this.traceId; }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the communication client factory.
+        ///     Initializes a new instance of the communication client factory.
         /// </summary>
         /// <param name="servicePartitionResolver">Optional ServicePartitionResolver</param>
-        /// <param name="exceptionHandlers">Optional Custom exception handlers for the exceptions on the Client to Service communication channel</param>
+        /// <param name="exceptionHandlers">
+        ///     Optional Custom exception handlers for the exceptions on the Client to Service
+        ///     communication channel
+        /// </param>
         /// <param name="traceId">Identifier to use in diagnostics traces from this component </param>
         protected CommunicationClientFactoryBase(
             IServicePartitionResolver servicePartitionResolver = null,
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
-            string traceId = null)            
-        :this(false,
-        servicePartitionResolver,
-        exceptionHandlers,
-        traceId)
+            string traceId = null)
+            : this(
+                false,
+                servicePartitionResolver,
+                exceptionHandlers,
+                traceId)
         {
         }
-        
+
         internal CommunicationClientFactoryBase(
             bool fireConnectEvents,
             IServicePartitionResolver servicePartitionResolver = null,
@@ -87,9 +64,9 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             this.fireConnectEvents = fireConnectEvents;
             this.random = new Random();
             this.randomLock = new object();
-            this.traceId = traceId ?? Guid.NewGuid().ToString();
+            this.TraceId = traceId ?? Guid.NewGuid().ToString();
 
-            this.servicePartitionResolver = servicePartitionResolver ?? ServicePartitionResolver.GetDefault();
+            this.ServiceResolver = servicePartitionResolver ?? ServicePartitionResolver.GetDefault();
 
             this.exceptionHandlers = new List<IExceptionHandler>();
             if (exceptionHandlers != null)
@@ -97,39 +74,67 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                 this.exceptionHandlers.AddRange(exceptionHandlers);
             }
 
-            this.cache = new CommunicationClientCache<TCommunicationClient>(this.traceId);
+            this.cache = new CommunicationClientCache<TCommunicationClient>(this.TraceId);
 
             ServiceTrace.Source.WriteInfo(
                 TraceType,
                 "{0} constructor",
-                this.traceId);
+                this.TraceId);
         }
 
         /// <summary>
-        /// Event handler that is fired when the Communication client connects to the service endpoint.
+        ///     Gets the ServicePartitionResolver used by the client factory for resolving the service endpoint.
+        /// </summary>
+        /// <value>ServicePartitionResolver</value>
+        public IServicePartitionResolver ServiceResolver { get; }
+
+        /// <summary>
+        ///     Gets the custom exception handlers for handling exceptions on the client to service communication channel.
+        /// </summary>
+        /// <value>List of Exception handlers</value>
+        public IEnumerable<IExceptionHandler> ExceptionHandlers => this.exceptionHandlers;
+
+        /// <summary>
+        ///     Gets the diagnostics trace identifier for this component.
+        /// </summary>
+        /// <value>Trace identifier</value>
+        protected string TraceId { get; }
+
+        /// <summary>
+        ///     Event handler that is fired when the Communication client connects to the service endpoint.
         /// </summary>
         public event EventHandler<CommunicationClientEventArgs<TCommunicationClient>> ClientConnected;
 
         /// <summary>
-        /// Event handler that is fired when the Communication client disconnects from the service endpoint.
+        ///     Event handler that is fired when the Communication client disconnects from the service endpoint.
         /// </summary>
         public event EventHandler<CommunicationClientEventArgs<TCommunicationClient>> ClientDisconnected;
 
         /// <summary>
-        /// Resolves a partition of the specified service containing one or more communication listeners and returns a client to communicate 
-        /// to the endpoint corresponding to the given listenerName. 
-        /// 
-        /// The endpoint of the service is of the form - {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
+        ///     Resolves a partition of the specified service containing one or more communication listeners and returns a client
+        ///     to communicate
+        ///     to the endpoint corresponding to the given listenerName.
+        ///     The endpoint of the service is of the form - {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
         /// </summary>
         /// <param name="serviceUri">Uri of the service to resolve</param>
         /// <param name="partitionKey">Key that identifies the partition to resolve</param>
-        /// <param name="targetReplicaSelector">Specifies which replica in the partition identified by the partition key, the client should connect to</param>
-        /// <param name="listenerName">Specifies which listener in the endpoint of the chosen replica, to which the client should connect to</param>
-        /// <param name="retrySettings">Specifies the retry policy that should be used for exceptions that occur when creating the client.</param>
+        /// <param name="targetReplicaSelector">
+        ///     Specifies which replica in the partition identified by the partition key, the
+        ///     client should connect to
+        /// </param>
+        /// <param name="listenerName">
+        ///     Specifies which listener in the endpoint of the chosen replica, to which the client should
+        ///     connect to
+        /// </param>
+        /// <param name="retrySettings">
+        ///     Specifies the retry policy that should be used for exceptions that occur when creating the
+        ///     client.
+        /// </param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task is
-        /// the CommunicationClient(<see cref="ICommunicationClient" />) object.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task
+        ///     is
+        ///     the CommunicationClient(<see cref="ICommunicationClient" />) object.
         /// </returns>
         public async Task<TCommunicationClient> GetClientAsync(
             Uri serviceUri,
@@ -139,7 +144,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             OperationRetrySettings retrySettings,
             CancellationToken cancellationToken)
         {
-            var previousRsp = await this.ServiceResolver.ResolveAsync(
+            ResolvedServicePartition previousRsp = await this.ServiceResolver.ResolveAsync(
                 serviceUri,
                 partitionKey,
                 ServicePartitionResolver.DefaultResolveTimeout,
@@ -156,16 +161,27 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         }
 
         /// <summary>
-        /// Gets or Creates the CommunicationClient for the specified listener name by resolving based on the given previousRsp.
+        ///     Gets or Creates the CommunicationClient for the specified listener name by resolving based on the given
+        ///     previousRsp.
         /// </summary>
         /// <param name="previousRsp">Previous ResolvedServicePartition value</param>
-        /// <param name="targetReplica">Specifies which replica in the partition identified by the partition key, the client should connect to</param>
-        /// <param name="listenerName">Specifies which listener in the endpoint of the chosen replica, to which the client should connect to</param>
-        /// <param name="retrySettings">Specifies the retry policy that should be used for exceptions that occur when creating the client.</param>
+        /// <param name="targetReplica">
+        ///     Specifies which replica in the partition identified by the partition key, the client should
+        ///     connect to
+        /// </param>
+        /// <param name="listenerName">
+        ///     Specifies which listener in the endpoint of the chosen replica, to which the client should
+        ///     connect to
+        /// </param>
+        /// <param name="retrySettings">
+        ///     Specifies the retry policy that should be used for exceptions that occur when creating the
+        ///     client.
+        /// </param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task is
-        /// the CommunicationClient(<see cref="ICommunicationClient" />) object.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task
+        ///     is
+        ///     the CommunicationClient(<see cref="ICommunicationClient" />) object.
         /// </returns>
         public async Task<TCommunicationClient> GetClientAsync(
             ResolvedServicePartition previousRsp,
@@ -174,8 +190,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             OperationRetrySettings retrySettings,
             CancellationToken cancellationToken)
         {
-
-            var newClient = await this.CreateClientWithRetriesAsync(
+            TCommunicationClient newClient = await this.CreateClientWithRetriesAsync(
                 previousRsp,
                 targetReplica,
                 listenerName,
@@ -187,16 +202,17 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         }
 
         /// <summary>
-        /// Handles the exceptions that occur in the CommunicationClient when sending a message to the Service
+        ///     Handles the exceptions that occur in the CommunicationClient when sending a message to the Service
         /// </summary>
         /// <param name="client">Communication client</param>
         /// <param name="exceptionInformation">Information about the exception that occurred when communicating with the service.</param>
         /// <param name="retrySettings">Specifies the retry policy that should be used for handling the reported exception.</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task is
-        /// a <see cref="OperationRetryControl" /> object that determines
-        /// how the retry policy for this exception.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task
+        ///     is
+        ///     a <see cref="OperationRetryControl" /> object that determines
+        ///     how the retry policy for this exception.
         /// </returns>
         public async Task<OperationRetryControl> ReportOperationExceptionAsync(
             TCommunicationClient client,
@@ -204,29 +220,29 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             OperationRetrySettings retrySettings,
             CancellationToken cancellationToken)
         {
-            var partitionId = client.ResolvedServicePartition.Info.Id;
-            var entry = this.cache.GetOrAddClientCacheEntry(
+            Guid partitionId = client.ResolvedServicePartition.Info.Id;
+            CommunicationClientCacheEntry<TCommunicationClient> entry = this.cache.GetOrAddClientCacheEntry(
                 partitionId,
                 client.Endpoint,
                 client.ListenerName,
                 client.ResolvedServicePartition);
 
-            var faultedClient = default(TCommunicationClient);
+            TCommunicationClient faultedClient = default(TCommunicationClient);
             OperationRetryControl retval;
 
             await entry.Semaphore.WaitAsync(cancellationToken);
             try
             {
                 ExceptionHandlingResult exceptionHandlingResult;
-                var handled = this.HandleReportedException(
+                bool handled = this.HandleReportedException(
                     exceptionInformation,
                     retrySettings,
                     out exceptionHandlingResult);
-                if (handled && (exceptionHandlingResult is ExceptionHandlingRetryResult))
+                if (handled && exceptionHandlingResult is ExceptionHandlingRetryResult)
                 {
-                    var retryResult = (ExceptionHandlingRetryResult)exceptionHandlingResult;
+                    var retryResult = (ExceptionHandlingRetryResult) exceptionHandlingResult;
 
-                    if (!retryResult.IsTransient && (ReferenceEquals(client, entry.Client)))
+                    if (!retryResult.IsTransient && ReferenceEquals(client, entry.Client))
                     {
                         // The endpoint isn't valid if it is a re-triable error and not transient.
                         this.AbortClient(entry.Client);
@@ -235,7 +251,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                         entry.Rsp = null;
                     }
 
-                    retval = new OperationRetryControl()
+                    retval = new OperationRetryControl
                     {
                         ShouldRetry = true,
                         IsTransient = retryResult.IsTransient,
@@ -247,7 +263,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                 }
                 else
                 {
-                    retval = new OperationRetryControl()
+                    retval = new OperationRetryControl
                     {
                         ShouldRetry = false,
                         RetryDelay = Timeout.InfiniteTimeSpan,
@@ -255,7 +271,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     };
 
                     var throwResult = exceptionHandlingResult as ExceptionHandlingThrowResult;
-                    if ((throwResult != null) && (throwResult.ExceptionToThrow != null))
+                    if (throwResult != null && throwResult.ExceptionToThrow != null)
                     {
                         retval.Exception = throwResult.ExceptionToThrow;
                     }
@@ -275,15 +291,16 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         }
 
         /// <summary>
-        /// Returns true if the client is still valid. Connection oriented transports can use this method to indicate that the client is no longer
-        /// connected to the service.
+        ///     Returns true if the client is still valid. Connection oriented transports can use this method to indicate that the
+        ///     client is no longer
+        ///     connected to the service.
         /// </summary>
         /// <param name="client">the communication client</param>
         /// <returns>true if the client is valid, false otherwise</returns>
         protected abstract bool ValidateClient(TCommunicationClient client);
 
         /// <summary>
-        /// Returns true if the client is still valid and connected to the endpoint specified in the parameter.
+        ///     Returns true if the client is still valid and connected to the endpoint specified in the parameter.
         /// </summary>
         /// <param name="endpoint">Specifies the expected endpoint to which we think the client is connected to</param>
         /// <param name="client">the communication client</param>
@@ -293,7 +310,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             TCommunicationClient client);
 
         /// <summary>
-        /// Creates a communication client for the given endpoint address.
+        ///     Creates a communication client for the given endpoint address.
         /// </summary>
         /// <param name="endpoint">listener address where the replica is listening</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -303,11 +320,39 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// Aborts the given client
+        ///     Aborts the given client
         /// </summary>
         /// <param name="client">Communication client</param>
         protected abstract void AbortClient(
             TCommunicationClient client);
+
+        internal void OnClientDisconnected(TCommunicationClient faultedClient)
+        {
+            EventHandler<CommunicationClientEventArgs<TCommunicationClient>> clientDisconnectedEvent = this.ClientDisconnected;
+            if (clientDisconnectedEvent != null)
+            {
+                clientDisconnectedEvent(
+                    this,
+                    new CommunicationClientEventArgs<TCommunicationClient>
+                    {
+                        Client = faultedClient
+                    });
+            }
+        }
+
+        internal void OnClientConnected(TCommunicationClient newClient)
+        {
+            EventHandler<CommunicationClientEventArgs<TCommunicationClient>> clientCreatedEvent = this.ClientConnected;
+            if (clientCreatedEvent != null)
+            {
+                clientCreatedEvent(
+                    this,
+                    new CommunicationClientEventArgs<TCommunicationClient>
+                    {
+                        Client = newClient
+                    });
+            }
+        }
 
         private async Task<TCommunicationClient> CreateClientWithRetriesAsync(
             ResolvedServicePartition previousRsp,
@@ -317,7 +362,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             bool doInitialResolve,
             CancellationToken cancellationToken)
         {
-            var doResolve = doInitialResolve;
+            bool doResolve = doInitialResolve;
             var currentRetryCount = 0;
             string currentExceptionId = null;
 
@@ -325,12 +370,12 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             {
                 ExceptionHandlingResult result;
                 Exception actualException;
-                bool newClient = false;
+                var newClient = false;
                 try
                 {
                     if (doResolve)
                     {
-                        var rsp = await this.ServiceResolver.ResolveAsync(
+                        ResolvedServicePartition rsp = await this.ServiceResolver.ResolveAsync(
                             previousRsp,
                             ServicePartitionResolver.DefaultResolveTimeout,
                             retrySettings.MaxRetryBackoffIntervalOnTransientErrors,
@@ -339,10 +384,14 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     }
 
 
-                    var endpoint = this.GetEndpoint(previousRsp, targetReplicaSelector);
-                    var cacheEntry =
+                    ResolvedServiceEndpoint endpoint = this.GetEndpoint(previousRsp, targetReplicaSelector);
+                    CommunicationClientCacheEntry<TCommunicationClient> cacheEntry =
                         await
-                            this.GetAndLockClientCacheEntryAsync(previousRsp.Info.Id, endpoint, listenerName, previousRsp,
+                            this.GetAndLockClientCacheEntryAsync(
+                                previousRsp.Info.Id,
+                                endpoint,
+                                listenerName,
+                                previousRsp,
                                 cancellationToken);
 
                     TCommunicationClient client;
@@ -359,7 +408,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                             ServiceTrace.Source.WriteInfo(
                                 TraceType,
                                 "{0} Creating Client for connecting to ListenerName : {1} Address : {2} Role : {3}",
-                                this.traceId,
+                                this.TraceId,
                                 listenerName,
                                 cacheEntry.GetEndpoint(),
                                 cacheEntry.Endpoint.Role);
@@ -375,7 +424,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
 
                         else
                         {
-                            var clientValid = this.ValidateLockedClientCacheEntry(
+                            bool clientValid = this.ValidateLockedClientCacheEntry(
                                 cacheEntry,
                                 previousRsp,
                                 out client);
@@ -384,7 +433,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                                 ServiceTrace.Source.WriteInfo(
                                     TraceType,
                                     "{0} Invalid Client found in Cache for  ListenerName : {1} Address : {2} Role : {3}",
-                                    this.traceId,
+                                    this.TraceId,
                                     listenerName,
                                     cacheEntry.GetEndpoint(),
                                     cacheEntry.Endpoint.Role);
@@ -396,7 +445,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                                 ServiceTrace.Source.WriteInfo(
                                     TraceType,
                                     "{0} Found valid client for ListenerName : {1} Address : {2} Role : {3}",
-                                    this.traceId,
+                                    this.TraceId,
                                     listenerName,
                                     endpoint.Address,
                                     endpoint.Role);
@@ -421,7 +470,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     ServiceTrace.Source.WriteInfo(
                         TraceType,
                         "{0} Exception While CreatingClient {1}",
-                        this.traceId,
+                        this.TraceId,
                         e);
 
                     if (!this.HandleReportedException(
@@ -435,7 +484,11 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     var throwResult = result as ExceptionHandlingThrowResult;
                     if (throwResult != null)
                     {
-                        if (ReferenceEquals(e, throwResult.ExceptionToThrow)) throw;
+                        if (ReferenceEquals(e, throwResult.ExceptionToThrow))
+                        {
+                            throw;
+                        }
+
                         throw throwResult.ExceptionToThrow;
                     }
 
@@ -443,7 +496,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     actualException = e;
                 }
 
-                var retryResult = (ExceptionHandlingRetryResult)result;
+                var retryResult = (ExceptionHandlingRetryResult) result;
                 if (!Utility.ShouldRetryOperation(
                     retryResult.ExceptionId,
                     retryResult.MaxRetryCount,
@@ -453,7 +506,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     ServiceTrace.Source.WriteInfo(
                         TraceType,
                         "{0} Retry count for exception id {1} exceeded the retry limit : {2}, throwing exception - {3}",
-                        this.traceId,
+                        this.TraceId,
                         retryResult.ExceptionId,
                         retryResult.MaxRetryCount,
                         actualException);
@@ -480,7 +533,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     out result);
             }
 
-            foreach (var innerException in aggregateException.Flatten().InnerExceptions)
+            foreach (Exception innerException in aggregateException.Flatten().InnerExceptions)
             {
                 if (this.TryHandleException(
                     new ExceptionInformation(innerException, exceptionInformation.TargetReplica),
@@ -500,7 +553,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             OperationRetrySettings retrySettings,
             out ExceptionHandlingResult result)
         {
-            foreach (var handler in this.exceptionHandlers)
+            foreach (IExceptionHandler handler in this.exceptionHandlers)
             {
                 if (handler.TryHandleException(
                     exceptionInformation,
@@ -513,34 +566,6 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
 
             result = null;
             return false;
-        }
-
-        internal void OnClientDisconnected(TCommunicationClient faultedClient)
-        {
-            var clientDisconnectedEvent = this.ClientDisconnected;
-            if (clientDisconnectedEvent != null)
-            {
-                clientDisconnectedEvent(
-                    this,
-                    new CommunicationClientEventArgs<TCommunicationClient>()
-                    {
-                        Client = faultedClient
-                    });
-            }
-        }
-
-        internal void OnClientConnected(TCommunicationClient newClient)
-        {
-            var clientCreatedEvent = this.ClientConnected;
-            if (clientCreatedEvent != null)
-            {
-                clientCreatedEvent(
-                    this,
-                    new CommunicationClientEventArgs<TCommunicationClient>()
-                    {
-                        Client = newClient
-                    });
-            }
         }
 
         private ResolvedServiceEndpoint GetEndpoint(
@@ -558,7 +583,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                         rsp.ServiceName));
             }
 
-            var endpoint = rsp.Endpoints.First();
+            ResolvedServiceEndpoint endpoint = rsp.Endpoints.First();
             if (endpoint.Role == ServiceEndpointRole.Stateless)
             {
                 if (targetReplica != TargetReplicaSelector.RandomInstance)
@@ -587,7 +612,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
 
             if (targetReplica == TargetReplicaSelector.RandomSecondaryReplica)
             {
-                var secondaryEndpoints =
+                IEnumerable<ResolvedServiceEndpoint> secondaryEndpoints =
                     rsp.Endpoints.Where(rsEndpoint => rsEndpoint.Role != ServiceEndpointRole.StatefulPrimary);
                 if (!secondaryEndpoints.Any())
                 {
@@ -633,7 +658,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var entry = this.cache.GetOrAddClientCacheEntry(partitionId, endpoint, listenerName, rsp);
+                CommunicationClientCacheEntry<TCommunicationClient> entry = this.cache.GetOrAddClientCacheEntry(partitionId, endpoint, listenerName, rsp);
 
                 await entry.Semaphore.WaitAsync(cancellationToken);
                 if (entry.IsInCache)
@@ -660,7 +685,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             out TCommunicationClient client)
         {
             client = cacheEntry.Client;
-            var faultedClient = default(TCommunicationClient);
+            TCommunicationClient faultedClient = default(TCommunicationClient);
 
             // check if we have a cached client
             if (client != null)
@@ -698,14 +723,12 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                         client.ResolvedServicePartition = rsp;
                         return true;
                     }
-                    else
-                    {
-                        // the client is not valid, abort the client
-                        this.AbortClient(client);
-                        faultedClient = client;
-                        cacheEntry.Client = default(TCommunicationClient);
-                        client = default(TCommunicationClient);
-                    }
+
+                    // the client is not valid, abort the client
+                    this.AbortClient(client);
+                    faultedClient = client;
+                    cacheEntry.Client = default(TCommunicationClient);
+                    client = default(TCommunicationClient);
                 }
             }
 

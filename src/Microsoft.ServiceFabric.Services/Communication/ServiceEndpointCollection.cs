@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication
 {
     using System;
@@ -15,7 +16,8 @@ namespace Microsoft.ServiceFabric.Services.Communication
     using System.Text;
 
     /// <summary>
-    /// This class represents the endpoints of a Reliable service. Each endpoint has a listener name and the address of that listener.
+    ///     This class represents the endpoints of a Reliable service. Each endpoint has a listener name and the address of
+    ///     that listener.
     /// </summary>
     [DataContract]
     public sealed class ServiceEndpointCollection
@@ -25,7 +27,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
         private object endpointsLock;
 
         /// <summary>
-        /// Instantiates an empty ServiceEndpointsCollection.
+        ///     Instantiates an empty ServiceEndpointsCollection.
         /// </summary>
         public ServiceEndpointCollection()
         {
@@ -34,7 +36,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Instantiates the ServiceEndpointsCollection with a single endpoint, identified by the listener name.
+        ///     Instantiates the ServiceEndpointsCollection with a single endpoint, identified by the listener name.
         /// </summary>
         /// <param name="listenerName">Listener name of the endpoint</param>
         /// <param name="endpointAddress">Address of the endpoint</param>
@@ -45,14 +47,14 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Adds the endpoints in the input EndpointsCollection class to the EndpointsCollection.
+        ///     Adds the endpoints in the input EndpointsCollection class to the EndpointsCollection.
         /// </summary>
         /// <param name="newEndpoints">input EndpointsCollection</param>
         public void AddEndpoints(ServiceEndpointCollection newEndpoints)
         {
             lock (this.endpointsLock)
             {
-                foreach (var item in newEndpoints.endpoints)
+                foreach (KeyValuePair<string, string> item in newEndpoints.endpoints)
                 {
                     this.AddEndpointCallerHoldsLock(item.Key, item.Value);
                 }
@@ -60,7 +62,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Adds an endpoint to the EndpointsCollection.
+        ///     Adds an endpoint to the EndpointsCollection.
         /// </summary>
         /// <param name="listenerName">Listener name of the endpoint</param>
         /// <param name="endpointAddress">Address of the endpoint</param>
@@ -73,7 +75,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Gets the first endpoint address in the EndpointsCollection.
+        ///     Gets the first endpoint address in the EndpointsCollection.
         /// </summary>
         /// <param name="endpointAddress">First endpoint in the EndpointsCollection</param>
         /// <returns>True if there is at-least one endpoint in the EndpointsCollection, false otherwise</returns>
@@ -87,7 +89,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
                     return false;
                 }
 
-                var enumerator = this.endpoints.GetEnumerator();
+                Dictionary<string, string>.Enumerator enumerator = this.endpoints.GetEnumerator();
                 enumerator.MoveNext();
                 endpointAddress = enumerator.Current.Value;
                 return true;
@@ -95,7 +97,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Gets the endpoint identified by the listener name.
+        ///     Gets the endpoint identified by the listener name.
         /// </summary>
         /// <param name="listenerName">Listener name</param>
         /// <param name="endpointAddress">Address of the endpoint if an endpoint with that listener name exists.</param>
@@ -116,15 +118,19 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Constructs an EndpointsCollection from a string version of the endpoints. String form of EndpointsCollection is of the form
-        /// {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
+        ///     Constructs an EndpointsCollection from a string version of the endpoints. String form of EndpointsCollection is of
+        ///     the form
+        ///     {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
         /// </summary>
         /// <param name="endpointsString">string form of endpointsCollection</param>
-        /// <param name="serviceEndpoints">ServiceEndpointCollection object if the string can be parsed to a valid ServiceEndpointCollection object</param>
+        /// <param name="serviceEndpoints">
+        ///     ServiceEndpointCollection object if the string can be parsed to a valid
+        ///     ServiceEndpointCollection object
+        /// </param>
         /// <returns>True if the string can be parsed to a valid EndpointsCollection, False otherwise</returns>
         public static bool TryParseEndpointsString(string endpointsString, out ServiceEndpointCollection serviceEndpoints)
         {
-            if (endpointsString == String.Empty)
+            if (endpointsString == string.Empty)
             {
                 serviceEndpoints = new ServiceEndpointCollection();
                 return true;
@@ -133,7 +139,7 @@ namespace Microsoft.ServiceFabric.Services.Communication
             serviceEndpoints = null;
             var deserializer = new DataContractJsonSerializer(
                 typeof(ServiceEndpointCollection),
-                new DataContractJsonSerializerSettings() {UseSimpleDictionaryFormat = true});
+                new DataContractJsonSerializerSettings {UseSimpleDictionaryFormat = true});
             try
             {
                 var stream = new MemoryStream(Encoding.UTF8.GetBytes(endpointsString));
@@ -149,8 +155,8 @@ namespace Microsoft.ServiceFabric.Services.Communication
         }
 
         /// <summary>
-        /// Converts the endpointsCollection to a JSON string of the form 
-        /// {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
+        ///     Converts the endpointsCollection to a JSON string of the form
+        ///     {"Endpoints":{"Listener1":"Endpoint1","Listener2":"Endpoint2" ...}}
         /// </summary>
         /// <returns>String form of the endpointsCollection</returns>
         public override string ToString()
@@ -159,21 +165,19 @@ namespace Microsoft.ServiceFabric.Services.Communication
             {
                 var serializer = new DataContractJsonSerializer(
                     typeof(ServiceEndpointCollection),
-                    new DataContractJsonSerializerSettings() {UseSimpleDictionaryFormat = true});
+                    new DataContractJsonSerializerSettings {UseSimpleDictionaryFormat = true});
 
                 var stream = new MemoryStream();
                 serializer.WriteObject(stream, this);
 
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
-            else
-            {
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
 
         /// <summary>
-        /// Returns a ReadOnlyDictionary of the endpointsCollection.
+        ///     Returns a ReadOnlyDictionary of the endpointsCollection.
         /// </summary>
         /// <returns>EndpointsCollection as a ReadOnlyDictionary</returns>
         public IReadOnlyDictionary<string, string> ToReadOnlyDictionary()
@@ -189,14 +193,12 @@ namespace Microsoft.ServiceFabric.Services.Communication
                 {
                     throw new FabricElementAlreadyExistsException(SR.ErrorListenerNameNotSpecified);
                 }
-                else
-                {
-                    throw new FabricElementAlreadyExistsException(
-                        string.Format(
-                            CultureInfo.CurrentCulture,
-                            SR.ErrorListenerAlreadyExists,
-                            listenerName));
-                }
+
+                throw new FabricElementAlreadyExistsException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        SR.ErrorListenerAlreadyExists,
+                        listenerName));
             }
 
             this.endpoints[listenerName] = endpointAddress;

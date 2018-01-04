@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
 {
     using System.Collections.Concurrent;
@@ -10,14 +11,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Maintains cancellation tokens associated with the method calls being dispatched.
+    ///     Maintains cancellation tokens associated with the method calls being dispatched.
     /// </summary>
     internal class ServiceRemotingCancellationTracker
     {
         /// <summary>
-        /// Maintains the information about the method calls that are in-flight.
+        ///     Maintains the information about the method calls that are in-flight.
         /// </summary>
-        private ConcurrentDictionary<int, MethodCallTracker> methodCallTrackerDictionary;
+        private readonly ConcurrentDictionary<int, MethodCallTracker> methodCallTrackerDictionary;
 
         public ServiceRemotingCancellationTracker()
         {
@@ -25,52 +26,53 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
         }
 
         /// <summary>
-        /// Returns the cancellation token associated with the specified callId. A new token one is created if the
-        /// callId is not tracked already.
+        ///     Returns the cancellation token associated with the specified callId. A new token one is created if the
+        ///     callId is not tracked already.
         /// </summary>
         /// <param name="methodId">The method ID.</param>
         /// <param name="callId">The call ID.</param>
         /// <returns>The cancellation token.</returns>
         public Task<CancellationTokenSource> GetOrAddCancellationTokenSource(int methodId, string callId)
         {
-            var methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId) {});
+            MethodCallTracker methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId));
 
             return methodCallTracker.GetOrAddCancellationTokenSourceAsync(callId);
         }
 
         /// <summary>
-        /// Gets a cancellation token if it exists for the specified callId.
+        ///     Gets a cancellation token if it exists for the specified callId.
         /// </summary>
         /// <param name="methodId">The method ID.</param>
         /// <param name="callId">The call ID.</param>
         /// <returns>The cancellation token.</returns>
         public Task<CancellationTokenResult> TryGetCancellationTokenSource(int methodId, string callId)
         {
-            var methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId) {});
+            MethodCallTracker methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId));
 
             return methodCallTracker.TryGetCancellationTokenSource(callId);
         }
 
         /// <summary>
-        /// Removes the cancellation token associated with the callId specified.
+        ///     Removes the cancellation token associated with the callId specified.
         /// </summary>
         /// <param name="methodId">The method ID.</param>
         /// <param name="callId">The call ID.</param>
         public Task TryRemoveCancellationTokenSource(int methodId, string callId)
         {
-            var methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId) {});
+            MethodCallTracker methodCallTracker = this.methodCallTrackerDictionary.GetOrAdd(methodId, obj => new MethodCallTracker(methodId));
 
             return methodCallTracker.TryRemoveCancellationToken(callId);
         }
 
         /// <summary>
-        /// Maintains the information related to the currently inflight calls for a service Method - identified by the methodId property.
+        ///     Maintains the information related to the currently inflight calls for a service Method - identified by the methodId
+        ///     property.
         /// </summary>
         private sealed class MethodCallTracker
         {
             private int methodId;
-            private Dictionary<string, MethodCallTrackerEntry> callTracker;
-            private SemaphoreSlim callTrackerLock;
+            private readonly Dictionary<string, MethodCallTrackerEntry> callTracker;
+            private readonly SemaphoreSlim callTrackerLock;
 
             public MethodCallTracker(int methodId)
             {
@@ -123,7 +125,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
                     this.callTrackerLock.Release();
                 }
 
-                return new CancellationTokenResult()
+                return new CancellationTokenResult
                 {
                     CancellationTokenValid = ret,
                     CancellationTknSource = cancellationToken
@@ -131,7 +133,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
             }
 
             /// <summary>
-            /// Removes the cancellation token with a specified callID..
+            ///     Removes the cancellation token with a specified callID..
             /// </summary>
             /// <param name="callId">The method call identifier.</param>
             /// <returns>The cancellation token.</returns>
@@ -154,24 +156,24 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
 
         private sealed class MethodCallTrackerEntry
         {
-            public CancellationTokenSource CancellationTknSource { get; set; }
-
-            public int NumberOfInflightCalls { get; set; }
-
-            public string CallId { get; set; }
-
             public MethodCallTrackerEntry(string callId)
             {
                 this.CancellationTknSource = new CancellationTokenSource();
                 this.NumberOfInflightCalls = 1;
                 this.CallId = callId;
             }
+
+            public CancellationTokenSource CancellationTknSource { get; }
+
+            public int NumberOfInflightCalls { get; set; }
+
+            public string CallId { get; }
         }
     }
 
     /// <summary>
-    /// Represents wrapper object that is used to get the result of querying the cancellation token for a
-    /// particular method call via Async api's.
+    ///     Represents wrapper object that is used to get the result of querying the cancellation token for a
+    ///     particular method call via Async api's.
     /// </summary>
     internal class CancellationTokenResult
     {

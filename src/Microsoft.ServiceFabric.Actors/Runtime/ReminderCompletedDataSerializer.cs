@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System.Fabric.Common;
@@ -16,7 +17,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal static byte[] Serialize(ReminderCompletedData reminderCompletedData)
         {
-            var dataSizeInBytes = ComputeSizeInBytes(reminderCompletedData);
+            int dataSizeInBytes = ComputeSizeInBytes(reminderCompletedData);
 
             using (var stream = new MemoryStream(dataSizeInBytes))
             {
@@ -43,7 +44,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal static ReminderCompletedData Deserialize(byte[] reminderDataBytes)
         {
-            if ((reminderDataBytes == null) || (reminderDataBytes.Length == 0))
+            if (reminderDataBytes == null || reminderDataBytes.Length == 0)
             {
                 return null;
             }
@@ -52,7 +53,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 using (var reader = new BinaryReader(stream, DataEncoding))
                 {
-                    var dataVersion = reader.ReadUInt16();
+                    ushort dataVersion = reader.ReadUInt16();
                     ReleaseAssert.AssertIfNot(dataVersion >= DataVersionOne, "Invalid data version: {0}", dataVersion);
 
                     if (reader.ReadByte() == BinaryReaderWriterExtensions.NullPrefixByte)

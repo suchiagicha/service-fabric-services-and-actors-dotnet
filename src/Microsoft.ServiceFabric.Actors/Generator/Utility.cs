@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Generator
 {
     using System.Collections.Generic;
@@ -12,6 +13,9 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
     internal static class Utility
     {
+        private const int FileAttributeDirectory = 0x10;
+        private const int FileAttributeNormal = 0x80;
+
         public static StreamReader CreateStreamReader(FileStream fileStream)
         {
             return new StreamReader(fileStream, Encoding.UTF8, true, 4096, true);
@@ -29,11 +33,14 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 return string.Empty;
             }
 
-            using (var fileStream = ExclusiveFileStream.Acquire(filePath, FileMode.Open, FileShare.Read,
+            using (ExclusiveFileStream fileStream = ExclusiveFileStream.Acquire(
+                filePath,
+                FileMode.Open,
+                FileShare.Read,
                 FileAccess.Read))
             {
                 fileStream.Value.Seek(0, SeekOrigin.Begin);
-                using (var reader = CreateStreamReader(fileStream.Value))
+                using (StreamReader reader = CreateStreamReader(fileStream.Value))
                 {
                     return reader.ReadToEnd();
                 }
@@ -48,12 +55,12 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             contents = sb.ToString();
 
             stream.Seek(0, SeekOrigin.Begin);
-            using (var writer = CreateStreamWriter(stream))
+            using (StreamWriter writer = CreateStreamWriter(stream))
             {
                 writer.Write(contents);
                 writer.Flush();
 
-                var contentLegnth = writer.Encoding.GetByteCount(contents);
+                int contentLegnth = writer.Encoding.GetByteCount(contents);
                 stream.SetLength(contentLegnth);
                 stream.Flush();
             }
@@ -66,17 +73,21 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 return;
             }
 
-            using (var fileStream = ExclusiveFileStream.Acquire(filePath, FileMode.OpenOrCreate, FileShare.Read,
+            using (ExclusiveFileStream fileStream = ExclusiveFileStream.Acquire(
+                filePath,
+                FileMode.OpenOrCreate,
+                FileShare.Read,
                 FileAccess.ReadWrite))
             {
                 WriteContents(fileStream.Value, newContents);
             }
         }
 
-        public static void PerformPlaceholderReplacements(StringBuilder template,
+        public static void PerformPlaceholderReplacements(
+            StringBuilder template,
             IDictionary<string, string> placeHolders)
         {
-            foreach (var p in placeHolders)
+            foreach (KeyValuePair<string, string> p in placeHolders)
             {
                 template.Replace(p.Key, p.Value);
             }
@@ -91,8 +102,8 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
         public static void EnsureParentFolder(string filePath)
         {
-            var folderPath = Path.GetDirectoryName(filePath);
-            if ((folderPath != null) && (!Directory.Exists(folderPath)))
+            string folderPath = Path.GetDirectoryName(filePath);
+            if (folderPath != null && !Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
@@ -108,16 +119,16 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
         public static string GetRelativePath(string fromPath, string toPath)
         {
-            var fromAttr = GetPathAttribute(fromPath);
-            var toAttr = GetPathAttribute(toPath);
+            int fromAttr = GetPathAttribute(fromPath);
+            int toAttr = GetPathAttribute(toPath);
 
             var path = new StringBuilder(256);
             return PathRelativePathTo(
-                path,
-                fromPath,
-                fromAttr,
-                toPath,
-                toAttr) == 0
+                       path,
+                       fromPath,
+                       fromAttr,
+                       toPath,
+                       toAttr) == 0
                 ? toPath
                 : path.ToString();
         }
@@ -139,11 +150,9 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             throw new FileNotFoundException();
         }
 
-        private const int FileAttributeDirectory = 0x10;
-        private const int FileAttributeNormal = 0x80;
-
         [DllImport("shlwapi.dll", SetLastError = true)]
-        private static extern int PathRelativePathTo(StringBuilder pszPath,
+        private static extern int PathRelativePathTo(
+            StringBuilder pszPath,
             string pszFrom, int dwAttrFrom, string pszTo, int dwAttrTo);
     }
 }

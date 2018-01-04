@@ -2,23 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
 {
-    using Microsoft.ServiceFabric.Services.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Runtime;
 
-    class WcfServiceRemotingCallbackClient : IServiceRemotingCallbackClient
+    internal class WcfServiceRemotingCallbackClient : IServiceRemotingCallbackClient
     {
         private readonly ServiceRemotingMessageSerializersManager serializersManager;
-        private IServiceRemotingMessageBodyFactory remotingMessageBodyFactory;
         private readonly IServiceRemotingCallbackContract callbackChannel;
+        private readonly IServiceRemotingMessageBodyFactory remotingMessageBodyFactory;
 
         public WcfServiceRemotingCallbackClient(
             IServiceRemotingCallbackContract callbackChannel,
@@ -30,19 +24,19 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         }
 
 
-
         public void SendOneWay(IServiceRemotingRequestMessage requestMessage)
         {
             IMessageBody outgoingMessageBody = null;
             IMessageHeader outgoingMessageHeader = null;
             try
             {
-                var headerSerialzier = this.serializersManager.GetHeaderSerializer();
+                IServiceRemotingMessageHeaderSerializer headerSerialzier = this.serializersManager.GetHeaderSerializer();
                 outgoingMessageHeader = headerSerialzier.SerializeRequestHeader(requestMessage.GetHeader());
-                var requestSerializer =
+                IServiceRemotingRequestMessageBodySerializer requestSerializer =
                     this.serializersManager.GetRequestBodySerializer(requestMessage.GetHeader().InterfaceId);
                 outgoingMessageBody = requestSerializer.Serialize(requestMessage.GetBody());
-                this.callbackChannel.SendOneWay(outgoingMessageHeader.GetSendBuffer(),
+                this.callbackChannel.SendOneWay(
+                    outgoingMessageHeader.GetSendBuffer(),
                     outgoingMessageBody.GetSendBuffers());
             }
             finally
@@ -51,6 +45,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
                 {
                     outgoingMessageHeader.Dispose();
                 }
+
                 if (outgoingMessageBody != null)
                 {
                     outgoingMessageBody.Dispose();
@@ -62,6 +57,5 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             return this.remotingMessageBodyFactory;
         }
-        
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
 {
     using System;
@@ -14,30 +15,31 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
     using Microsoft.ServiceFabric.Services.Communication.Wcf;
     using Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.V1;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Runtime;
 
     /// <summary>
-    /// An <see cref="IServiceRemotingListener"/> that uses
-    /// Windows Communication Foundation to provide interface remoting for stateless and stateful services.
+    ///     An <see cref="IServiceRemotingListener" /> that uses
+    ///     Windows Communication Foundation to provide interface remoting for stateless and stateful services.
     /// </summary>
     public class WcfServiceRemotingListener : IServiceRemotingListener
     {
         private readonly IServiceRemotingMessageHandler messageHandler;
-        private ICommunicationListener wcfListener;
+        private readonly ICommunicationListener wcfListener;
 
         /// <summary>
-        /// Constructs a WCF based service remoting listener. 
+        ///     Constructs a WCF based service remoting listener.
         /// </summary>
         /// <param name="serviceContext">The context of the service for which the remoting listener is being constructed.</param>
         /// <param name="serviceImplementation">The service implementation object.</param>
-        /// <param name="listenerBinding">WCF binding to use for the listener. If the listener binding is not specified or null,
-        /// a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method which creates
-        /// a <see cref="System.ServiceModel.NetTcpBinding"/> with no security.
+        /// <param name="listenerBinding">
+        ///     WCF binding to use for the listener. If the listener binding is not specified or null,
+        ///     a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method which creates
+        ///     a <see cref="System.ServiceModel.NetTcpBinding" /> with no security.
         /// </param>
-        /// <param name="endpointResourceName">The name of the endpoint resource defined in the service manifest that 
-        /// should be used to create the address for the listener. If the endpointResourceName is not specified or null,
-        /// the default value "ServiceEndpoint" is used.
+        /// <param name="endpointResourceName">
+        ///     The name of the endpoint resource defined in the service manifest that
+        ///     should be used to create the address for the listener. If the endpointResourceName is not specified or null,
+        ///     the default value "ServiceEndpoint" is used.
         /// </param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
@@ -55,19 +57,22 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
         }
 
         /// <summary>
-        /// Constructs a WCF based service remoting listener. 
+        ///     Constructs a WCF based service remoting listener.
         /// </summary>
         /// <param name="serviceContext">The context of the service for which the remoting listener is being constructed.</param>
-        /// <param name="messageHandler">The handler for receiving and processing remoting messages. As the messages are received
-        /// the listener delivers the messages to the handler.
+        /// <param name="messageHandler">
+        ///     The handler for receiving and processing remoting messages. As the messages are received
+        ///     the listener delivers the messages to the handler.
         /// </param>
-        /// <param name="listenerBinding">WCF binding to use for the listener. If the listener binding is not specified or null,
-        /// a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method which creates
-        /// a <see cref="System.ServiceModel.NetTcpBinding"/> with no security.
+        /// <param name="listenerBinding">
+        ///     WCF binding to use for the listener. If the listener binding is not specified or null,
+        ///     a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method which creates
+        ///     a <see cref="System.ServiceModel.NetTcpBinding" /> with no security.
         /// </param>
-        /// <param name="endpointResourceName">The name of the endpoint resource defined in the service manifest that 
-        /// should be used to create the address for the listener. If the endpointResourceName is not specified or it is null,
-        /// the default value "ServiceEndpoint" is used.
+        /// <param name="endpointResourceName">
+        ///     The name of the endpoint resource defined in the service manifest that
+        ///     should be used to create the address for the listener. If the endpointResourceName is not specified or it is null,
+        ///     the default value "ServiceEndpoint" is used.
         /// </param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
@@ -85,17 +90,20 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
 
 
         /// <summary>
-        /// Constructs a WCF based service remoting listener. 
+        ///     Constructs a WCF based service remoting listener.
         /// </summary>
         /// <param name="serviceContext">The context of the service for which the remoting listener is being constructed.</param>
-        /// <param name="messageHandler">The handler for receiving and processing remoting messages. As the messages are received
-        /// the listener delivers the messages to the handler.
+        /// <param name="messageHandler">
+        ///     The handler for receiving and processing remoting messages. As the messages are received
+        ///     the listener delivers the messages to the handler.
         /// </param>
-        /// <param name="listenerBinding">WCF binding to use for the listener. If the listener binding is not specified or null,
-        /// a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding"/> method.
+        /// <param name="listenerBinding">
+        ///     WCF binding to use for the listener. If the listener binding is not specified or null,
+        ///     a default listener binding is created using <see cref="WcfUtility.CreateTcpListenerBinding" /> method.
         /// </param>
-        /// <param name="address">The endpoint address to use for the WCF listener. If not specified or null, the endpoint
-        /// address is created using the default endpoint resource named "ServiceEndpoint" defined in the service manifest. 
+        /// <param name="address">
+        ///     The endpoint address to use for the WCF listener. If not specified or null, the endpoint
+        ///     address is created using the default endpoint resource named "ServiceEndpoint" defined in the service manifest.
         /// </param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
@@ -123,31 +131,29 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
         }
 
         /// <summary>
-        ///     Gets the <see cref="System.ServiceModel.ServiceHost"/> used by this listener to host the 
+        ///     Gets the <see cref="System.ServiceModel.ServiceHost" /> used by this listener to host the
         ///     WCF service implementation.
         /// </summary>
         /// <value>
-        ///     A <see cref="System.ServiceModel.ServiceHost"/> used by this listener to host the 
+        ///     A <see cref="System.ServiceModel.ServiceHost" /> used by this listener to host the
         ///     WCF service implementation.
         /// </value>
         /// <remarks>
         ///     The service host is created by the listener in it's constructor. Before this communication
-        ///     listener is opened by the runtime via <see cref="ICommunicationListener.OpenAsync(CancellationToken)"/> method,
+        ///     listener is opened by the runtime via <see cref="ICommunicationListener.OpenAsync(CancellationToken)" /> method,
         ///     the service host can be customized by accessing it via this property.
         /// </remarks>
-        public ServiceHost ServiceHost
-        {
-            get { return ((WcfCommunicationListener<IServiceRemotingContract>) this.wcfListener).ServiceHost; }
-        }
+        public ServiceHost ServiceHost => ((WcfCommunicationListener<IServiceRemotingContract>) this.wcfListener).ServiceHost;
 
         /// <summary>
-        /// This method causes the communication listener to be opened. Once the Open
-        /// completes, the communication listener becomes usable - accepts and sends messages.
+        ///     This method causes the communication listener to be opened. Once the Open
+        ///     completes, the communication listener becomes usable - accepts and sends messages.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task is
-        /// the endpoint string.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation. The result of the Task
+        ///     is
+        ///     the endpoint string.
         /// </returns>
         Task<string> ICommunicationListener.OpenAsync(CancellationToken cancellationToken)
         {
@@ -155,13 +161,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
         }
 
         /// <summary>
-        /// This method causes the communication listener to close. Close is a terminal state and 
-        /// this method allows the communication listener to transition to this state in a
-        /// graceful manner.
+        ///     This method causes the communication listener to close. Close is a terminal state and
+        ///     this method allows the communication listener to transition to this state in a
+        ///     graceful manner.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation.
+        ///     A <see cref="System.Threading.Tasks.Task">Task</see> that represents outstanding operation.
         /// </returns>
         Task ICommunicationListener.CloseAsync(CancellationToken cancellationToken)
         {
@@ -170,14 +176,23 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
         }
 
         /// <summary>
-        /// This method causes the communication listener to close. Close is a terminal state and
-        /// this method causes the transition to close ungracefully. Any outstanding operations
-        /// (including close) should be canceled when this method is called.
+        ///     This method causes the communication listener to close. Close is a terminal state and
+        ///     this method causes the transition to close ungracefully. Any outstanding operations
+        ///     (including close) should be canceled when this method is called.
         /// </summary>
         void ICommunicationListener.Abort()
         {
             this.DisposeIfNeeded();
             this.wcfListener.Abort();
+        }
+
+        private void DisposeIfNeeded()
+        {
+            var disposableItem = this.messageHandler as IDisposable;
+            if (null != disposableItem)
+            {
+                disposableItem.Dispose();
+            }
         }
 
         [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple)]
@@ -215,15 +230,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Wcf.Runtime
             public void OneWayMessage(ServiceRemotingMessageHeaders messageHeaders, byte[] requestBody)
             {
                 this.messageHandler.HandleOneWay(this.requestContext, messageHeaders, requestBody);
-            }
-        }
-
-        private void DisposeIfNeeded()
-        {
-            var disposableItem = this.messageHandler as IDisposable;
-            if (null != disposableItem)
-            {
-                disposableItem.Dispose();
             }
         }
     }

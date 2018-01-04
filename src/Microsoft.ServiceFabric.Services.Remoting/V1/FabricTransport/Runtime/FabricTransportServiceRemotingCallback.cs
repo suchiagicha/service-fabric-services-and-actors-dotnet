@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 {
     using System;
@@ -12,9 +13,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
     internal class FabricTransportServiceRemotingCallback : IServiceRemotingCallbackClient, IDisposable
     {
         private readonly TimeSpan defaultTimeout = TimeSpan.FromMinutes(2);
-        private FabricTransportCallbackClient transportCallbackClient;
-        private DataContractSerializer serializer = new DataContractSerializer(typeof(ServiceRemotingMessageHeaders));
-        private string clientId;
+        private readonly FabricTransportCallbackClient transportCallbackClient;
+        private readonly DataContractSerializer serializer = new DataContractSerializer(typeof(ServiceRemotingMessageHeaders));
+        private readonly string clientId;
 
         public FabricTransportServiceRemotingCallback(FabricTransportCallbackClient transportCallbackClient)
         {
@@ -24,13 +25,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 
         public Task<byte[]> RequestResponseAsync(ServiceRemotingMessageHeaders messageHeaders, byte[] requestBody)
         {
-            var header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
+            byte[] header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
             return this.transportCallbackClient.RequestResponseAsync(header, requestBody);
         }
 
         public void OneWayMessage(ServiceRemotingMessageHeaders messageHeaders, byte[] requestBody)
         {
-            var header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
+            byte[] header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
 
             this.transportCallbackClient.OneWayMessage(header, requestBody);
         }
@@ -40,10 +41,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
             return this.clientId;
         }
 
-        
+
         #region IDisposable Support
 
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
@@ -58,6 +59,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
                         this.transportCallbackClient.Dispose();
                     }
                 }
+
                 this.disposedValue = true;
             }
         }

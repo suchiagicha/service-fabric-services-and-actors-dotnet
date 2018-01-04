@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -10,11 +11,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     [DataContract]
     internal sealed class ReminderCompletedData
     {
-        [DataMember]
-        private readonly TimeSpan logicalTime;
+        [DataMember] private readonly TimeSpan logicalTime;
 
-        [DataMember]
-        private readonly DateTime utcTime;
+        [DataMember] private readonly DateTime utcTime;
 
         public ReminderCompletedData(TimeSpan logicalTime, DateTime utcTime)
         {
@@ -22,20 +21,13 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.utcTime = utcTime;
         }
 
-        public TimeSpan LogicalTime
-        {
-            get { return this.logicalTime; }
+        public TimeSpan LogicalTime => this.logicalTime;
 
-        }
-
-        public DateTime UtcTime
-        {
-            get { return this.utcTime; }
-        }
+        public DateTime UtcTime => this.utcTime;
 
         public long EstimateDataLength()
         {
-            return 2*sizeof(long); // LogicalTime + UtcTime
+            return 2 * sizeof(long); // LogicalTime + UtcTime
         }
     }
 }
