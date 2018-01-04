@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 {
     using System;
@@ -19,16 +20,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
     internal class FabricTransportServiceRemotingClientFactoryImpl :
         CommunicationClientFactoryBase<FabricTransportServiceRemotingClient>
     {
-        private readonly Remoting.FabricTransport.FabricTransportRemotingSettings settings;
+        private readonly FabricTransportRemotingSettings settings;
         private readonly FabricTransportRemotingCallbackMessageHandler fabricTransportRemotingCallbackMessageHandler;
-        //We don't need implementation of ClientConnection handler provided in base class , hence creating new eventHandler here.Using FabricTransport Connectionhandler implementation.
-        public event EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>> FabricTransportClientConnected;
-        //We don't need impl of ClientConnection handler provided in base class , hence creating new eventHandler here.Using FabricTransport Connectionhandler implementation.
-        public event EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>>
-            FabricTransportClientDisconnected;
 
         public FabricTransportServiceRemotingClientFactoryImpl(
-            Remoting.FabricTransport.FabricTransportRemotingSettings fabricTransportRemotingSettings = null,
+            FabricTransportRemotingSettings fabricTransportRemotingSettings = null,
             IServiceRemotingCallbackClient callbackHandler = null,
             IServicePartitionResolver servicePartitionResolver = null,
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
@@ -43,18 +39,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
                 new FabricTransportRemotingCallbackMessageHandler(callbackHandler);
         }
 
-        private static IEnumerable<IExceptionHandler> GetExceptionHandlers(
-            IEnumerable<IExceptionHandler> exceptionHandlers)
-        {
-            var handlers = new List<IExceptionHandler>();
-            if (exceptionHandlers != null)
-            {
-                handlers.AddRange(exceptionHandlers);
-            }
+        //We don't need implementation of ClientConnection handler provided in base class , hence creating new eventHandler here.Using FabricTransport Connectionhandler implementation.
+        public event EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>> FabricTransportClientConnected;
 
-            handlers.Add(new ExceptionHandler());
-            return handlers;
-        }
+        //We don't need impl of ClientConnection handler provided in base class , hence creating new eventHandler here.Using FabricTransport Connectionhandler implementation.
+        public event EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>>
+            FabricTransportClientDisconnected;
 
         protected override Task<FabricTransportServiceRemotingClient> CreateClientAsync(
             string endpoint,
@@ -63,7 +53,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
             try
             {
                 var remotingHandler = new FabricTransportRemotingClientConnectionHandler();
-                var nativeClient = new FabricTransportClient(this.settings.GetInternalSettings(), endpoint,
+                var nativeClient = new FabricTransportClient(
+                    this.settings.GetInternalSettings(),
+                    endpoint,
                     remotingHandler,
                     this.fabricTransportRemotingCallbackMessageHandler);
                 var client = new FabricTransportServiceRemotingClient(nativeClient, remotingHandler);
@@ -78,7 +70,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
                         CultureInfo.CurrentCulture,
                         SR.ErrorInvalidAddress,
                         endpoint
-                        ));
+                    ));
             }
         }
 
@@ -97,26 +89,39 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
             return remotingClient.IsValid && remotingClient.ConnectionAddress.Equals(endpoint);
         }
 
-        private void OnFabricTransportClientConnected(object sender,
+        private static IEnumerable<IExceptionHandler> GetExceptionHandlers(
+            IEnumerable<IExceptionHandler> exceptionHandlers)
+        {
+            var handlers = new List<IExceptionHandler>();
+            if (exceptionHandlers != null)
+            {
+                handlers.AddRange(exceptionHandlers);
+            }
+
+            handlers.Add(new ExceptionHandler());
+            return handlers;
+        }
+
+        private void OnFabricTransportClientConnected(
+            object sender,
             CommunicationClientEventArgs<IServiceRemotingClient> e)
         {
-            var handlers = this.FabricTransportClientConnected;
+            EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>> handlers = this.FabricTransportClientConnected;
             if (handlers != null)
             {
-                handlers(this, new CommunicationClientEventArgs<IServiceRemotingClient>() {Client = e.Client});
+                handlers(this, new CommunicationClientEventArgs<IServiceRemotingClient> {Client = e.Client});
             }
         }
 
-        private void OnFabricTransportClientDisconnected(object sender,
+        private void OnFabricTransportClientDisconnected(
+            object sender,
             CommunicationClientEventArgs<IServiceRemotingClient> e)
         {
-            var handlers = this.FabricTransportClientDisconnected;
+            EventHandler<CommunicationClientEventArgs<IServiceRemotingClient>> handlers = this.FabricTransportClientDisconnected;
             if (handlers != null)
             {
-                handlers(this, new CommunicationClientEventArgs<IServiceRemotingClient>() {Client = e.Client});
+                handlers(this, new CommunicationClientEventArgs<IServiceRemotingClient> {Client = e.Client});
             }
         }
-
-      
     }
 }

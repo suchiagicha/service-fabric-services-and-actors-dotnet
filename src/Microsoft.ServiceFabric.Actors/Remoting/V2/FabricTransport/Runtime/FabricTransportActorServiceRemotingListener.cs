@@ -15,12 +15,11 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Runtime;
 
     /// <summary>
-    ///     An <see cref="IServiceRemotingListener"/> 
-    ///     that uses fabric TCP transport to provide remoting of actor and service interfaces for actor 
+    ///     An <see cref="IServiceRemotingListener" />
+    ///     that uses fabric TCP transport to provide remoting of actor and service interfaces for actor
     ///     service.
     /// </summary>
     public class FabricTransportActorServiceRemotingListener : FabricTransportServiceRemotingListener
@@ -65,25 +64,29 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
             : base(
                 serviceContext,
                 messageHandler,
-               InitializeSerializerManager(listenerSettings,
-                   serializationProvider),
+                InitializeSerializerManager(
+                    listenerSettings,
+                    serializationProvider),
                 listenerSettings)
         {
         }
 
-        private static ActorRemotingSerializationManager InitializeSerializerManager(FabricTransportRemotingListenerSettings listenerSettings,
+        private static ActorRemotingSerializationManager InitializeSerializerManager(
+            FabricTransportRemotingListenerSettings listenerSettings,
             IServiceRemotingMessageSerializationProvider serializationProvider)
         {
-             listenerSettings = listenerSettings ?? FabricTransportRemotingListenerSettings.GetDefault();
-         
-            return new ActorRemotingSerializationManager(serializationProvider,
-                new ActorRemotingMessageHeaderSerializer(listenerSettings.HeaderBufferSize,
+            listenerSettings = listenerSettings ?? FabricTransportRemotingListenerSettings.GetDefault();
+
+            return new ActorRemotingSerializationManager(
+                serializationProvider,
+                new ActorRemotingMessageHeaderSerializer(
+                    listenerSettings.HeaderBufferSize,
                     listenerSettings.HeaderMaxBufferCount));
         }
 
         private static ServiceContext GetContext(ActorService actorService)
         {
-            Requires.ThrowIfNull(actorService, "actorService");
+            actorService.ThrowIfNull("actorService");
             return actorService.Context;
         }
 
@@ -95,12 +98,14 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
                 listenerSettings = FabricTransportActorRemotingProviderAttribute.GetActorListenerSettings(actorService);
             }
 
-            if (listenerSettings.EndpointResourceName.Equals(FabricTransportRemotingListenerSettings
-                .DefaultEndpointResourceName))
+            if (listenerSettings.EndpointResourceName.Equals(
+                FabricTransportRemotingListenerSettings
+                    .DefaultEndpointResourceName))
             {
                 listenerSettings.EndpointResourceName = ActorNameFormat.GetFabricServiceV2EndpointName(
                     actorService.ActorTypeInformation.ImplementationType);
             }
+
             return listenerSettings;
         }
     }

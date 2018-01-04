@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 {
     using System;
@@ -12,7 +13,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 
     internal class FabricTransportServiceRemotingConnectionHandler : IFabricTransportConnectionHandler
     {
-        private ConcurrentDictionary<string, FabricTransportCallbackClient> clientCallbackConnection;
+        private readonly ConcurrentDictionary<string, FabricTransportCallbackClient> clientCallbackConnection;
 
         public FabricTransportServiceRemotingConnectionHandler()
         {

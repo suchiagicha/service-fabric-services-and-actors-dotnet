@@ -2,20 +2,22 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Client
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Fabric;
     using System.Globalization;
     using System.Threading;
 
     /// <summary>
-    /// This is the cache used by CommunicationClientFactory base class to store the communication channel's
-    /// for the replicas or instances of a partition. 
-    /// This is a 2 level cache of Partition Id->Endpoint Address->Client channel. The client channels are
-    /// maintained as a weak reference and the cache entries whose weak references are not alive are cleaned
-    /// up periodically.
+    ///     This is the cache used by CommunicationClientFactory base class to store the communication channel's
+    ///     for the replicas or instances of a partition.
+    ///     This is a 2 level cache of Partition Id->Endpoint Address->Client channel. The client channels are
+    ///     maintained as a weak reference and the cache entries whose weak references are not alive are cleaned
+    ///     up periodically.
     /// </summary>
     /// <typeparam name="TCommunicationClient"></typeparam>
     internal class CommunicationClientCache<TCommunicationClient>
@@ -23,11 +25,11 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
     {
         private const string TraceType = "CommunicationClientCache";
         private readonly string traceId;
-        private ConcurrentDictionary<Guid, PartitionClientCache> clientCache;
-        private Timer cacheCleanupTimer;
-        private double cleanupTimerIntervalSeconds = 120; // 2 minutes
-        private int cleanupTimerMaxRandomizationInterval = 30;
-        private Random random;
+        private readonly ConcurrentDictionary<Guid, PartitionClientCache> clientCache;
+        private readonly Timer cacheCleanupTimer;
+        private readonly double cleanupTimerIntervalSeconds = 120; // 2 minutes
+        private readonly int cleanupTimerMaxRandomizationInterval = 30;
+        private readonly Random random;
 
         public CommunicationClientCache(string traceId)
         {
@@ -49,7 +51,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             string listenerName,
             ResolvedServicePartition rsp)
         {
-            var partitionClientCache = this.clientCache.GetOrAdd(
+            PartitionClientCache partitionClientCache = this.clientCache.GetOrAdd(
                 partitionId,
                 new PartitionClientCache(partitionId, this.traceId));
 
@@ -62,7 +64,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             string listenerName,
             out CommunicationClientCacheEntry<TCommunicationClient> cacheEntry)
         {
-            var partitionClientCache = this.clientCache.GetOrAdd(
+            PartitionClientCache partitionClientCache = this.clientCache.GetOrAdd(
                 partitionId,
                 new PartitionClientCache(partitionId, this.traceId));
 
@@ -84,7 +86,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
         {
             var totalItemsInCache = 0;
             var totalItemsCleaned = 0;
-            foreach (var item in this.clientCache)
+            foreach (KeyValuePair<Guid, PartitionClientCache> item in this.clientCache)
             {
                 var itemsCleanedPerEntry = 0;
                 var totalItemsPerEntry = 0;
@@ -114,20 +116,23 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                     totalItemsCleaned,
                     totalItemsInCache);
             }
+
             // Re-arm the clean-up timer.
             this.cacheCleanupTimer.Change(this.GetNextCleanupTimerDueTimeSeconds(), TimeSpan.FromMilliseconds(-1));
         }
 
         private sealed class PartitionClientCache
         {
-            private TimeSpan cacheEntryLockWaitTimeForCleanup = TimeSpan.FromMilliseconds(500);
             private readonly string traceId;
             private readonly Guid partitionId;
+
+            private readonly TimeSpan cacheEntryLockWaitTimeForCleanup = TimeSpan.FromMilliseconds(500);
+
             //
             // The max size of the dictionary is 
             // the number of Listeners per replica * number of replicas in a partition.
             //
-            private ConcurrentDictionary<PartitionClientCacheKey, CommunicationClientCacheEntry<TCommunicationClient>> cache;
+            private readonly ConcurrentDictionary<PartitionClientCacheKey, CommunicationClientCacheEntry<TCommunicationClient>> cache;
 
             public PartitionClientCache(Guid partitionId, string traceId)
             {
@@ -145,7 +150,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
 
                 return this.cache.GetOrAdd(
                     key,
-                    new CommunicationClientCacheEntry<TCommunicationClient>()
+                    new CommunicationClientCacheEntry<TCommunicationClient>
                     {
                         Endpoint = endpoint,
                         ListenerName = listenerName,
@@ -173,7 +178,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             {
                 totalNumberOfItems = 0;
                 numberOfEntriesCleaned = 0;
-                foreach (var entry in this.cache)
+                foreach (KeyValuePair<PartitionClientCacheKey, CommunicationClientCacheEntry<TCommunicationClient>> entry in this.cache)
                 {
                     ++totalNumberOfItems;
                     if (!entry.Value.Semaphore.Wait(this.cacheEntryLockWaitTimeForCleanup))
@@ -199,6 +204,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
                         this.cache.TryRemove(entry.Key, out removedValue);
                         ++numberOfEntriesCleaned;
                     }
+
                     entry.Value.Semaphore.Release();
                 }
             }
@@ -218,11 +224,11 @@ namespace Microsoft.ServiceFabric.Services.Communication.Client
             public override bool Equals(object obj)
             {
                 var other = obj as PartitionClientCacheKey;
-                
-                return (other != null)
-                    && (this.Endpoint.Role == other.Endpoint.Role)
-                    && (CultureInfo.InvariantCulture.CompareInfo.Compare(this.ListenerName, other.ListenerName, CompareOptions.IgnoreCase) == 0)
-                    && (CultureInfo.InvariantCulture.CompareInfo.Compare(this.Endpoint.Address, other.Endpoint.Address, CompareOptions.IgnoreCase) == 0);
+
+                return other != null
+                       && this.Endpoint.Role == other.Endpoint.Role
+                       && CultureInfo.InvariantCulture.CompareInfo.Compare(this.ListenerName, other.ListenerName, CompareOptions.IgnoreCase) == 0
+                       && CultureInfo.InvariantCulture.CompareInfo.Compare(this.Endpoint.Address, other.Endpoint.Address, CompareOptions.IgnoreCase) == 0;
             }
 
             public override int GetHashCode()

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Remoting.V1
 {
     using System.IO;
@@ -10,18 +11,27 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1
     using Microsoft.ServiceFabric.Services.Remoting.V1;
 
     /// <summary>
-    /// Represents the header for the actor messages.
+    ///     Represents the header for the actor messages.
     /// </summary>
-    [DataContract(Name = "addr", Namespace = Actors.Remoting.Constants.Namespace)]
+    [DataContract(Name = "addr", Namespace = Constants.Namespace)]
     internal class ActorMessageHeaders
     {
-        private static readonly DataContractSerializer Serializer = 
-            new DataContractSerializer(typeof(ActorMessageHeaders));
         private const string ActorMessageHeaderName = "ActorMessageHeader";
-        [DataMember(IsRequired = true, Order = 0)] public int InterfaceId;
-        [DataMember(IsRequired = true, Order = 1)] public int MethodId;
-        [DataMember(IsRequired = false, Order = 2)] public ActorId ActorId;
-        [DataMember(IsRequired = false, Order = 3)] public string CallContext;
+
+        private static readonly DataContractSerializer Serializer =
+            new DataContractSerializer(typeof(ActorMessageHeaders));
+
+        [DataMember(IsRequired = true, Order = 0)]
+        public int InterfaceId;
+
+        [DataMember(IsRequired = true, Order = 1)]
+        public int MethodId;
+
+        [DataMember(IsRequired = false, Order = 2)]
+        public ActorId ActorId;
+
+        [DataMember(IsRequired = false, Order = 3)]
+        public string CallContext;
 
         public ServiceRemotingMessageHeaders ToServiceMessageHeaders()
         {
@@ -48,7 +58,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1
         {
             using (var memoryStream = new MemoryStream())
             {
-                var writer = XmlDictionaryWriter.CreateBinaryWriter(memoryStream);
+                XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(memoryStream);
                 Serializer.WriteObject(writer, this);
                 writer.Flush();
 
@@ -60,8 +70,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1
         {
             using (var memoryStream = new MemoryStream(headerBytes))
             {
-                var reader = XmlDictionaryReader.CreateBinaryReader(memoryStream, XmlDictionaryReaderQuotas.Max);
-                return (ActorMessageHeaders)Serializer.ReadObject(reader);
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(memoryStream, XmlDictionaryReaderQuotas.Max);
+                return (ActorMessageHeaders) Serializer.ReadObject(reader);
             }
         }
     }

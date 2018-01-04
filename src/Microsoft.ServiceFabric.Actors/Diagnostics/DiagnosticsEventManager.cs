@@ -2,20 +2,18 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Diagnostics
 {
     using System;
+    using System.Diagnostics;
     using System.Fabric;
     using System.Threading;
-    using Microsoft.ServiceFabric.Actors.Remoting;
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting;
 
     internal class DiagnosticsEventManager
     {
-        internal delegate void OnDiagnosticEvent();
-        internal delegate void OnDiagnosticEvent<T>(T eventData);
-
         internal OnDiagnosticEvent<ChangeRoleDiagnosticData> OnActorChangeRole;
         internal OnDiagnosticEvent<ActivationDiagnosticData> OnActorActivated;
         internal OnDiagnosticEvent<ActivationDiagnosticData> OnActorDeactivated;
@@ -34,33 +32,34 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
         internal OnDiagnosticEvent<TimeSpan> OnLoadActorStateFinish;
 
         private ChangeRoleDiagnosticData changeRoleDiagnosticData;
-        internal ActorMethodFriendlyNameBuilder ActorMethodFriendlyNameBuilder { get; private set; }
 
         internal DiagnosticsEventManager(ActorMethodFriendlyNameBuilder methodFriendlyNameBuilder)
         {
             this.ActorMethodFriendlyNameBuilder = methodFriendlyNameBuilder;
         }
 
+        internal ActorMethodFriendlyNameBuilder ActorMethodFriendlyNameBuilder { get; }
+
         public static long GetInterfaceMethodKey(uint interfaceId, uint methodId)
         {
-            var key = (ulong)methodId;
-            key = key | (((ulong)interfaceId) << 32);
-            return (long)key;
+            var key = (ulong) methodId;
+            key = key | ((ulong) interfaceId << 32);
+            return (long) key;
         }
 
         internal void ActorRequestProcessingStart()
         {
-            var callbacks = this.OnActorRequestProcessingStart;
+            OnDiagnosticEvent callbacks = this.OnActorRequestProcessingStart;
             if (null != callbacks)
             {
                 callbacks();
             }
         }
-        
+
         internal void ActorRequestProcessingFinish(DateTime startTime)
         {
-            var processingTime = DateTime.UtcNow - startTime;
-            var callbacks = this.OnActorRequestProcessingFinish;
+            TimeSpan processingTime = DateTime.UtcNow - startTime;
+            OnDiagnosticEvent<TimeSpan> callbacks = this.OnActorRequestProcessingFinish;
             if (null != callbacks)
             {
                 callbacks(processingTime);
@@ -69,8 +68,8 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorRequestDeserializationFinish(DateTime startTime)
         {
-            var processingTime = DateTime.UtcNow - startTime;
-            var callbacks = this.OnActorRequestDeserializationFinish;
+            TimeSpan processingTime = DateTime.UtcNow - startTime;
+            OnDiagnosticEvent<TimeSpan> callbacks = this.OnActorRequestDeserializationFinish;
             if (null != callbacks)
             {
                 callbacks(processingTime);
@@ -79,8 +78,8 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorResponseSerializationFinish(DateTime startTime)
         {
-            var processingTime = DateTime.UtcNow - startTime;
-            var callbacks = this.OnActorResponseSerializationFinish;
+            TimeSpan processingTime = DateTime.UtcNow - startTime;
+            OnDiagnosticEvent<TimeSpan> callbacks = this.OnActorResponseSerializationFinish;
             if (null != callbacks)
             {
                 callbacks(processingTime);
@@ -89,17 +88,17 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorOnActivateAsyncStart(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
             diagCtx.OnActivateAsyncStopwatch.Restart();
         }
 
         internal void ActorOnActivateAsyncFinish(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var onActivateAsyncStopwatch = diagCtx.OnActivateAsyncStopwatch;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            Stopwatch onActivateAsyncStopwatch = diagCtx.OnActivateAsyncStopwatch;
             onActivateAsyncStopwatch.Stop();
 
-            var callbacks = this.OnActorOnActivateAsyncFinish;
+            OnDiagnosticEvent<TimeSpan> callbacks = this.OnActorOnActivateAsyncFinish;
             if (null != callbacks)
             {
                 callbacks(onActivateAsyncStopwatch.Elapsed);
@@ -108,18 +107,18 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             onActivateAsyncStopwatch.Reset();
         }
 
-        internal void ActorMethodStart(long interfaceMethodKey, ActorBase actor,RemotingListener remotingListener)
+        internal void ActorMethodStart(long interfaceMethodKey, ActorBase actor, RemotingListener remotingListener)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var mtdEvtArgs = diagCtx.MethodData;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            ActorMethodDiagnosticData mtdEvtArgs = diagCtx.MethodData;
             mtdEvtArgs.ActorId = actor.Id;
             mtdEvtArgs.InterfaceMethodKey = interfaceMethodKey;
             mtdEvtArgs.MethodExecutionTime = null;
             mtdEvtArgs.RemotingListener = remotingListener;
-            var methodStopwatch = diagCtx.GetOrCreateActorMethodStopwatch();
+            Stopwatch methodStopwatch = diagCtx.GetOrCreateActorMethodStopwatch();
             methodStopwatch.Restart();
 
-            var callbacks = this.OnActorMethodStart;
+            OnDiagnosticEvent<ActorMethodDiagnosticData> callbacks = this.OnActorMethodStart;
             if (null != callbacks)
             {
                 callbacks(mtdEvtArgs);
@@ -130,13 +129,13 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             diagCtx.PushActorMethodStopwatch(methodStopwatch);
         }
 
-        internal void ActorMethodFinish(long interfaceMethodKey, ActorBase actor, Exception e,RemotingListener remotingListener)
+        internal void ActorMethodFinish(long interfaceMethodKey, ActorBase actor, Exception e, RemotingListener remotingListener)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var mtdEvtArgs = diagCtx.MethodData;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            ActorMethodDiagnosticData mtdEvtArgs = diagCtx.MethodData;
 
             // Pop the stopwatch from the stopwatch stack.
-            var mtdStopwatch = diagCtx.PopActorMethodStopwatch();
+            Stopwatch mtdStopwatch = diagCtx.PopActorMethodStopwatch();
 
             mtdStopwatch.Stop();
             mtdEvtArgs.ActorId = actor.Id;
@@ -146,7 +145,7 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
             mtdEvtArgs.RemotingListener = remotingListener;
             mtdStopwatch.Reset();
 
-            var callbacks = this.OnActorMethodFinish;
+            OnDiagnosticEvent<ActorMethodDiagnosticData> callbacks = this.OnActorMethodFinish;
             if (null != callbacks)
             {
                 callbacks(mtdEvtArgs);
@@ -155,17 +154,17 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void LoadActorStateStart(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
             diagCtx.StateStopwatch.Restart();
         }
 
         internal void LoadActorStateFinish(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var stateStopwatch = diagCtx.StateStopwatch;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            Stopwatch stateStopwatch = diagCtx.StateStopwatch;
             stateStopwatch.Stop();
 
-            var callbacks = this.OnLoadActorStateFinish;
+            OnDiagnosticEvent<TimeSpan> callbacks = this.OnLoadActorStateFinish;
             if (null != callbacks)
             {
                 callbacks(stateStopwatch.Elapsed);
@@ -176,13 +175,13 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void SaveActorStateStart(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var stateEvtArgs = diagCtx.StateData;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            ActorStateDiagnosticData stateEvtArgs = diagCtx.StateData;
             stateEvtArgs.ActorId = actor.Id;
             stateEvtArgs.OperationTime = null;
             diagCtx.StateStopwatch.Restart();
 
-            var callbacks = this.OnSaveActorStateStart;
+            OnDiagnosticEvent<ActorStateDiagnosticData> callbacks = this.OnSaveActorStateStart;
             if (null != callbacks)
             {
                 callbacks(stateEvtArgs);
@@ -191,15 +190,15 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void SaveActorStateFinish(ActorBase actor)
         {
-            var diagCtx = actor.DiagnosticsContext;
-            var stateEvtArgs = diagCtx.StateData;
-            var stateStopwatch = diagCtx.StateStopwatch;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
+            ActorStateDiagnosticData stateEvtArgs = diagCtx.StateData;
+            Stopwatch stateStopwatch = diagCtx.StateStopwatch;
             stateStopwatch.Stop();
             stateEvtArgs.ActorId = actor.Id;
             stateEvtArgs.OperationTime = stateStopwatch.Elapsed;
             stateStopwatch.Reset();
 
-            var callbacks = this.OnSaveActorStateFinish;
+            OnDiagnosticEvent<ActorStateDiagnosticData> callbacks = this.OnSaveActorStateFinish;
             if (null != callbacks)
             {
                 callbacks(stateEvtArgs);
@@ -210,7 +209,7 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
         {
             // Use DateTime instead of StopWatch to measure elapsed time. We do this in order to avoid allocating a
             // StopWatch object for each operation that acquires the actor lock.
-            var startTime = DateTime.UtcNow;
+            DateTime startTime = DateTime.UtcNow;
             Interlocked.Increment(ref actor.DiagnosticsContext.PendingActorMethodCalls);
             return startTime;
         }
@@ -223,28 +222,28 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
         internal DateTime AcquireActorLockFinish(ActorBase actor, DateTime actorLockAcquireStartTime)
         {
             // Record the current time
-            var currentTime = DateTime.UtcNow;
+            DateTime currentTime = DateTime.UtcNow;
 
             // Update number of pending actor method calls
-            var diagCtx = actor.DiagnosticsContext;
+            DiagnosticsManagerActorContext diagCtx = actor.DiagnosticsContext;
             long pendingActorMethodCalls = Interlocked.Decrement(ref diagCtx.PendingActorMethodCalls);
             long delta = pendingActorMethodCalls - diagCtx.LastReportedPendingActorMethodCalls;
             diagCtx.LastReportedPendingActorMethodCalls = pendingActorMethodCalls;
 
-            var pendingMtdEvtArgs = diagCtx.PendingMethodDiagnosticData;
+            PendingActorMethodDiagnosticData pendingMtdEvtArgs = diagCtx.PendingMethodDiagnosticData;
             pendingMtdEvtArgs.ActorId = actor.Id;
             pendingMtdEvtArgs.PendingActorMethodCalls = pendingActorMethodCalls;
             pendingMtdEvtArgs.PendingActorMethodCallsDelta = delta;
 
-            var callbacks1 = this.OnPendingActorMethodCallsUpdated;
+            OnDiagnosticEvent<PendingActorMethodDiagnosticData> callbacks1 = this.OnPendingActorMethodCallsUpdated;
             if (null != callbacks1)
             {
                 callbacks1(pendingMtdEvtArgs);
             }
 
             // Update time taken to acquire actor lock
-            var lockAcquireTime = currentTime - actorLockAcquireStartTime;
-            var callbacks2 = this.OnActorLockAcquired;
+            TimeSpan lockAcquireTime = currentTime - actorLockAcquireStartTime;
+            OnDiagnosticEvent<TimeSpan> callbacks2 = this.OnActorLockAcquired;
             if (null != callbacks2)
             {
                 callbacks2(lockAcquireTime);
@@ -257,10 +256,10 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
         {
             if (actorLockHoldStartTime.HasValue)
             {
-                var callbacks = this.OnActorLockReleased;
+                OnDiagnosticEvent<TimeSpan> callbacks = this.OnActorLockReleased;
                 if (null != callbacks)
                 {
-                    var lockHoldTime = DateTime.UtcNow - actorLockHoldStartTime.Value;
+                    TimeSpan lockHoldTime = DateTime.UtcNow - actorLockHoldStartTime.Value;
                     callbacks(lockHoldTime);
                 }
             }
@@ -268,7 +267,7 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorChangeRole(ReplicaRole currentRole, ReplicaRole newRole)
         {
-            var callbacks = this.OnActorChangeRole;
+            OnDiagnosticEvent<ChangeRoleDiagnosticData> callbacks = this.OnActorChangeRole;
             if (null != callbacks)
             {
                 this.changeRoleDiagnosticData.CurrentRole = currentRole;
@@ -279,11 +278,11 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorActivated(ActorBase actor)
         {
-            var activationEvtArgs = actor.DiagnosticsContext.ActivationDiagnosticData;
+            ActivationDiagnosticData activationEvtArgs = actor.DiagnosticsContext.ActivationDiagnosticData;
             activationEvtArgs.IsActivationEvent = true;
             activationEvtArgs.ActorId = actor.Id;
 
-            var callbacks = this.OnActorActivated;
+            OnDiagnosticEvent<ActivationDiagnosticData> callbacks = this.OnActorActivated;
             if (null != callbacks)
             {
                 callbacks(activationEvtArgs);
@@ -292,15 +291,19 @@ namespace Microsoft.ServiceFabric.Actors.Diagnostics
 
         internal void ActorDeactivated(ActorBase actor)
         {
-            var activationEvtArgs = actor.DiagnosticsContext.ActivationDiagnosticData;
+            ActivationDiagnosticData activationEvtArgs = actor.DiagnosticsContext.ActivationDiagnosticData;
             activationEvtArgs.IsActivationEvent = false;
             activationEvtArgs.ActorId = actor.Id;
 
-            var callbacks = this.OnActorDeactivated;
+            OnDiagnosticEvent<ActivationDiagnosticData> callbacks = this.OnActorDeactivated;
             if (null != callbacks)
             {
                 callbacks(activationEvtArgs);
             }
         }
+
+        internal delegate void OnDiagnosticEvent();
+
+        internal delegate void OnDiagnosticEvent<T>(T eventData);
     }
 }

@@ -2,9 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
 {
-    using System;
     using System.Globalization;
     using Microsoft.ServiceFabric.FabricTransport.V2.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime;
@@ -14,10 +14,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
     {
         private readonly FabricTransportRequestContext requestContext;
         private readonly ServiceRemotingMessageSerializersManager serializersManager;
-        private string id;
-        private IServiceRemotingCallbackClient callback = null;
+        private readonly string id;
+        private IServiceRemotingCallbackClient callback;
 
-        public FabricTransportServiceRemotingRequestContext(FabricTransportRequestContext requestContext,
+        public FabricTransportServiceRemotingRequestContext(
+            FabricTransportRequestContext requestContext,
             ServiceRemotingMessageSerializersManager serializersManager)
         {
             this.requestContext = requestContext;
@@ -29,8 +30,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
         {
             if (this.callback == null)
             {
-                var nativeCallback = this.requestContext.GetCallbackClient();
-                this.callback = new FabricTransportServiceRemotingCallbackClient(nativeCallback, serializersManager);
+                FabricTransportCallbackClient nativeCallback = this.requestContext.GetCallbackClient();
+                this.callback = new FabricTransportServiceRemotingCallbackClient(nativeCallback, this.serializersManager);
             }
 
             if (this.callback == null)

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
 {
     using System;
@@ -9,16 +10,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Services.Remoting;
 
     /// <summary>
-    /// Provides cancellation support for remote method dispatching.
+    ///     Provides cancellation support for remote method dispatching.
     /// </summary>
     internal sealed class ServiceRemotingCancellationHelper
     {
-        private ConcurrentDictionary<int, ServiceRemotingCancellationTracker> requestCancellationTracker;
         private const string traceType = "ServiceRemotingCancellationHelper";
-        private string traceId;
+        private readonly ConcurrentDictionary<int, ServiceRemotingCancellationTracker> requestCancellationTracker;
+        private readonly string traceId;
 
         public ServiceRemotingCancellationHelper(string traceId)
         {
@@ -33,9 +33,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
         {
             if (callContext != null)
             {
-                var cancellationTracker = this.GetCancellationTracker(interfaceId);
+                ServiceRemotingCancellationTracker cancellationTracker = this.GetCancellationTracker(interfaceId);
 
-                var cancellationTokenResult = await cancellationTracker.TryGetCancellationTokenSource(
+                CancellationTokenResult cancellationTokenResult = await cancellationTracker.TryGetCancellationTokenSource(
                     methodId,
                     callContext);
 
@@ -72,7 +72,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
                     interfaceId,
                     methodId);
             }
-
         }
 
         public async Task<T> DispatchRequest<T>(
@@ -81,15 +80,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
             string callContext,
             Func<CancellationToken, Task<T>> dispatchFunc)
         {
-            var cancellationToken = CancellationToken.None;
+            CancellationToken cancellationToken = CancellationToken.None;
             if (callContext != null)
             {
-                var cancellationTracker = this.GetCancellationTracker(interfaceId);
+                ServiceRemotingCancellationTracker cancellationTracker = this.GetCancellationTracker(interfaceId);
                 //
                 // A cancellation token is created only when the remoting client specifies a callcontext to track
                 // the call.
                 //
-                var cancellationTokenSource = await cancellationTracker.GetOrAddCancellationTokenSource(
+                CancellationTokenSource cancellationTokenSource = await cancellationTracker.GetOrAddCancellationTokenSource(
                     methodId,
                     callContext);
 

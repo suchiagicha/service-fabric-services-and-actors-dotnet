@@ -11,8 +11,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
     using Microsoft.ServiceFabric.Services.Remoting.V1.Builder;
 
     /// <summary>
-    /// The class is used by actor remoting code generator to generate a type that dispatches requests to actor 
-    /// object by invoking right method on it.
+    ///     The class is used by actor remoting code generator to generate a type that dispatches requests to actor
+    ///     object by invoking right method on it.
     /// </summary>
     public abstract class ActorMethodDispatcherBase : MethodDispatcherBaseWithSerializer
     {
@@ -35,7 +35,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
 
         internal override object CreateResponseMessageBody(object responseMessageBodyValue)
         {
-            return new ActorMessageBody() {Value = responseMessageBodyValue};
+            return new ActorMessageBody {Value = responseMessageBodyValue};
         }
     }
 }

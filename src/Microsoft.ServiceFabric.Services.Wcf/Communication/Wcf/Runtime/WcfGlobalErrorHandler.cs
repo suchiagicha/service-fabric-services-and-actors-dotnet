@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 {
     using System;
@@ -11,7 +12,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 
     internal class WcfGlobalErrorHandler : IErrorHandler
     {
-        private ChannelDispatcher channelDisp;
+        private readonly ChannelDispatcher channelDisp;
 
         public WcfGlobalErrorHandler(ChannelDispatcher channelDispatcher)
         {
@@ -37,10 +38,10 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime
 
             if (this.channelDisp.Listener.State != CommunicationState.Opened)
             {
-                var faultCodeToUse = WcfRemoteExceptionInformation.FaultCodeRetry;
+                FaultCode faultCodeToUse = WcfRemoteExceptionInformation.FaultCodeRetry;
                 var faultReason = new FaultReason(WcfRemoteExceptionInformation.ToString(error));
                 var faultException = new FaultException(faultReason, faultCodeToUse);
-                var mssgFault = faultException.CreateMessageFault();
+                MessageFault mssgFault = faultException.CreateMessageFault();
                 fault = Message.CreateMessage(version, mssgFault, null);
             }
         }

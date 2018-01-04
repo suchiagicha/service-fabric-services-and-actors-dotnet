@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.Client
 {
     using System;
@@ -9,38 +10,63 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
     using Microsoft.ServiceFabric.Services.Communication.Client;
 
     /// <summary>
-    /// Provides handling of exceptions encountered in communicating with 
-    /// a service fabric service over remoted interfaces. 
+    ///     Provides handling of exceptions encountered in communicating with
+    ///     a service fabric service over remoted interfaces.
     /// </summary>
     /// <remarks>
-    /// The exceptions are handled as per the description below:
-    /// <list type="table">
-    /// <item>
-    /// <description>
-    ///     The following exceptions indicate service failover. These exceptions are handled by returning <see cref="ExceptionHandlingRetryResult"/> from the 
-    ///     <see cref="IExceptionHandler.TryHandleException(ExceptionInformation, OperationRetrySettings, out ExceptionHandlingResult)"/> method.
-    ///     The <see cref="ExceptionHandlingRetryResult.IsTransient"/> property of the <see cref="ExceptionHandlingRetryResult"/> is set to false, 
-    ///     the <see cref="ExceptionHandlingRetryResult.RetryDelay"/>  property is set to a random value up to <see cref="OperationRetrySettings.MaxRetryBackoffIntervalOnNonTransientErrors"/> 
-    ///     and <see cref="ExceptionHandlingRetryResult.MaxRetryCount"/> property is set to <see cref="int.MaxValue"/>.
-    ///     <list type="bullet">
-    ///         <item><description><see cref="FabricNotPrimaryException"/>, when the target replica is <see cref="TargetReplicaSelector.PrimaryReplica"/>.</description></item>
-    ///         <item><description><see cref="FabricNotReadableException"/></description> </item>
+    ///     The exceptions are handled as per the description below:
+    ///     <list type="table">
+    ///         <item>
+    ///             <description>
+    ///                 The following exceptions indicate service failover. These exceptions are handled by returning
+    ///                 <see cref="ExceptionHandlingRetryResult" /> from the
+    ///                 <see
+    ///                     cref="IExceptionHandler.TryHandleException(ExceptionInformation, OperationRetrySettings, out ExceptionHandlingResult)" />
+    ///                 method.
+    ///                 The <see cref="ExceptionHandlingRetryResult.IsTransient" /> property of the
+    ///                 <see cref="ExceptionHandlingRetryResult" /> is set to false,
+    ///                 the <see cref="ExceptionHandlingRetryResult.RetryDelay" />  property is set to a random value up to
+    ///                 <see cref="OperationRetrySettings.MaxRetryBackoffIntervalOnNonTransientErrors" />
+    ///                 and <see cref="ExceptionHandlingRetryResult.MaxRetryCount" /> property is set to
+    ///                 <see cref="int.MaxValue" />.
+    ///                 <list type="bullet">
+    ///                     <item>
+    ///                         <description>
+    ///                             <see cref="FabricNotPrimaryException" />, when the target replica is
+    ///                             <see cref="TargetReplicaSelector.PrimaryReplica" />.
+    ///                         </description>
+    ///                     </item>
+    ///                     <item>
+    ///                         <description>
+    ///                             <see cref="FabricNotReadableException" />
+    ///                         </description>
+    ///                     </item>
+    ///                 </list>
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 The following exceptions indicate transient error conditions and handled by returning
+    ///                 <see cref="ExceptionHandlingRetryResult" /> from the
+    ///                 <see
+    ///                     cref="IExceptionHandler.TryHandleException(ExceptionInformation, OperationRetrySettings, out ExceptionHandlingResult)" />
+    ///                 method.
+    ///                 The <see cref="ExceptionHandlingRetryResult.IsTransient" /> property of the
+    ///                 <see cref="ExceptionHandlingRetryResult" /> is set to true,
+    ///                 the <see cref="ExceptionHandlingRetryResult.RetryDelay" />  property is set to a random value up to
+    ///                 <see cref="OperationRetrySettings.MaxRetryBackoffIntervalOnTransientErrors" />
+    ///                 and <see cref="ExceptionHandlingRetryResult.MaxRetryCount" /> property is set to
+    ///                 <see cref="int.MaxValue" />.
+    ///                 <list type="bullet">
+    ///                     <item>
+    ///                         <description>
+    ///                             <see cref="FabricTransientException" />
+    ///                         </description>
+    ///                     </item>
+    ///                 </list>
+    ///             </description>
+    ///         </item>
     ///     </list>
-    /// </description>
-    /// </item>
-    /// <item>
-    /// <description>
-    ///     The following exceptions indicate transient error conditions and handled by returning <see cref="ExceptionHandlingRetryResult"/> from the 
-    ///     <see cref="IExceptionHandler.TryHandleException(ExceptionInformation, OperationRetrySettings, out ExceptionHandlingResult)"/> method.
-    ///     The <see cref="ExceptionHandlingRetryResult.IsTransient"/> property of the <see cref="ExceptionHandlingRetryResult"/> is set to true, 
-    ///     the <see cref="ExceptionHandlingRetryResult.RetryDelay"/>  property is set to a random value up to <see cref="OperationRetrySettings.MaxRetryBackoffIntervalOnTransientErrors"/> 
-    ///     and <see cref="ExceptionHandlingRetryResult.MaxRetryCount"/> property is set to <see cref="int.MaxValue"/>.
-    ///     <list type="bullet">
-    ///         <item><description><see cref="FabricTransientException"/></description> </item>
-    ///     </list>
-    /// </description>
-    /// </item>
-    /// </list>
     /// </remarks>
     public class ServiceRemotingExceptionHandler : IExceptionHandler
     {
@@ -48,7 +74,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
         private readonly string traceId;
 
         /// <summary>
-        /// Constructs a ServiceRemotingExceptionHandler with a default trace ID.
+        ///     Constructs a ServiceRemotingExceptionHandler with a default trace ID.
         /// </summary>
         public ServiceRemotingExceptionHandler()
             : this(null)
@@ -56,7 +82,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
         }
 
         /// <summary>
-        /// Constructs a ServiceRemotingExceptionHandler with a specified trace ID.
+        ///     Constructs a ServiceRemotingExceptionHandler with a specified trace ID.
         /// </summary>
         /// <param name="traceId">
         ///     The ID to use in diagnostics traces from this component.
@@ -67,7 +93,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
         }
 
         /// <summary>
-        /// Examines the exception and determines how that exception can be handled. 
+        ///     Examines the exception and determines how that exception can be handled.
         /// </summary>
         /// <param name="exceptionInformation">The information about the exception.</param>
         /// <param name="retrySettings">The operation retry preferences.</param>
@@ -78,7 +104,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
             OperationRetrySettings retrySettings,
             out ExceptionHandlingResult result)
         {
-            
             if (exceptionInformation.Exception is FabricNotPrimaryException)
             {
                 if (exceptionInformation.TargetReplica == TargetReplicaSelector.PrimaryReplica)
@@ -106,10 +131,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
             if (exceptionInformation.Exception is FabricNotReadableException)
             {
                 result = new ExceptionHandlingRetryResult(
-                        exceptionInformation.Exception,
-                        false,
-                        retrySettings,
-                        int.MaxValue);
+                    exceptionInformation.Exception,
+                    false,
+                    retrySettings,
+                    int.MaxValue);
 
                 return true;
             }
@@ -122,7 +147,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
                     true,
                     retrySettings,
                     int.MaxValue);
-                
+
                 return true;
             }
 

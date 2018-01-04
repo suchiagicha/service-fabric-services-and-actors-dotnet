@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Runtime
 {
     using System;
@@ -20,6 +21,11 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             this.runtimeContext = runtimeContext;
         }
 
+        public void Dispose()
+        {
+            this.runtimeContext?.Dispose();
+        }
+
         IStatefulServiceReplica IStatefulServiceFactory.CreateReplica(
             string serviceTypeName,
             Uri serviceName,
@@ -36,13 +42,8 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 partitionId,
                 replicaId);
 
-            var service = this.serviceFactory(serviceContext);
+            StatefulServiceBase service = this.serviceFactory(serviceContext);
             return new StatefulServiceReplicaAdapter(service.Context, service);
-        }
-
-        public void Dispose()
-        {
-            runtimeContext?.Dispose();
         }
     }
 }

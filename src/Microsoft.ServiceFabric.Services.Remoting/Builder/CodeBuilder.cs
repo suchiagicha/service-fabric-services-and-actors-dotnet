@@ -25,40 +25,20 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
             this.proxyGeneratorBuildResultMap = new Dictionary<Type, ProxyGeneratorBuildResult>();
         }
 
-        ICodeBuilderNames ICodeBuilder.Names
-        {
-            get { return this.codeBuilderNames; }
-        }
+        ICodeBuilderNames ICodeBuilder.Names => this.codeBuilderNames;
 
         MethodDispatcherBuildResult ICodeBuilder.GetOrBuilderMethodDispatcher(Type interfaceType)
         {
             MethodDispatcherBuildResult result;
-            if (this.TryGetMethodDispatcher(interfaceType, out result)) return result;
+            if (this.TryGetMethodDispatcher(interfaceType, out result))
+            {
+                return result;
+            }
 
             result = this.BuildMethodDispatcher(interfaceType);
             this.UpdateMethodDispatcherBuildMap(interfaceType, result);
 
             return result;
-        }
-
-        protected void UpdateMethodDispatcherBuildMap(Type interfaceType, MethodDispatcherBuildResult result)
-        {
-            this.methodDispatcherBuildResultMap.Add(interfaceType, result);
-        }
-
-        protected bool TryGetMethodDispatcher(Type interfaceType,
-            out MethodDispatcherBuildResult builderMethodDispatcher)
-        {
-            MethodDispatcherBuildResult result;
-            if (this.methodDispatcherBuildResultMap.TryGetValue(interfaceType, out result))
-            {
-                {
-                    builderMethodDispatcher = result;
-                    return true;
-                }
-            }
-            builderMethodDispatcher = null;
-            return false;
         }
 
         MethodBodyTypesBuildResult ICodeBuilder.GetOrBuildMethodBodyTypes(Type interfaceType)
@@ -78,12 +58,37 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
         ProxyGeneratorBuildResult ICodeBuilder.GetOrBuildProxyGenerator(Type interfaceType)
         {
             ProxyGeneratorBuildResult result;
-            if (this.TryGetProxyGenerator(interfaceType, out result)) return result;
+            if (this.TryGetProxyGenerator(interfaceType, out result))
+            {
+                return result;
+            }
 
             result = this.BuildProxyGenerator(interfaceType);
             this.UpdateProxyGeneratorMap(interfaceType, result);
 
             return result;
+        }
+
+        protected void UpdateMethodDispatcherBuildMap(Type interfaceType, MethodDispatcherBuildResult result)
+        {
+            this.methodDispatcherBuildResultMap.Add(interfaceType, result);
+        }
+
+        protected bool TryGetMethodDispatcher(
+            Type interfaceType,
+            out MethodDispatcherBuildResult builderMethodDispatcher)
+        {
+            MethodDispatcherBuildResult result;
+            if (this.methodDispatcherBuildResultMap.TryGetValue(interfaceType, out result))
+            {
+                {
+                    builderMethodDispatcher = result;
+                    return true;
+                }
+            }
+
+            builderMethodDispatcher = null;
+            return false;
         }
 
         protected void UpdateProxyGeneratorMap(Type interfaceType, ProxyGeneratorBuildResult result)
@@ -101,6 +106,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
                     return true;
                 }
             }
+
             orBuildProxyGenerator = null;
             return false;
         }

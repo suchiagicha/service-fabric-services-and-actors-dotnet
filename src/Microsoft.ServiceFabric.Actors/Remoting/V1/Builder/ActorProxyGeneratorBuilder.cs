@@ -22,15 +22,15 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
 
         protected override ActorProxyGeneratorWith CreateProxyGenerator(
             Type proxyInterfaceType,
-            IDictionary<InterfaceDescription, Services.Remoting.Builder.MethodBodyTypesBuildResult>
+            IDictionary<InterfaceDescription, MethodBodyTypesBuildResult>
                 methodBodyTypesResultsMap,
             Type proxyActivatorType)
         {
-            var requestBodyTypes = methodBodyTypesResultsMap.ToDictionary(
+            Dictionary<int, IEnumerable<Type>> requestBodyTypes = methodBodyTypesResultsMap.ToDictionary(
                 item => item.Key.Id,
                 item => item.Value.GetRequestBodyTypes());
 
-            var responseBodyTypes = methodBodyTypesResultsMap.ToDictionary(
+            Dictionary<int, IEnumerable<Type>> responseBodyTypes = methodBodyTypesResultsMap.ToDictionary(
                 item => item.Key.Id,
                 item => item.Value.GetResponseBodyTypes());
 

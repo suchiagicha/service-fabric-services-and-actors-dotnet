@@ -9,45 +9,39 @@ namespace Microsoft.ServiceFabric.Actors.Client
     using System.Runtime.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Actors.Remoting.V1;
+    using Microsoft.ServiceFabric.Actors.Remoting.V1.Builder;
     using Microsoft.ServiceFabric.Actors.Remoting.V2;
+    using Microsoft.ServiceFabric.Actors.Remoting.V2.Client;
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Builder;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
+    using IActorServicePartitionClient = Microsoft.ServiceFabric.Actors.Remoting.V1.Client.IActorServicePartitionClient;
 
     /// <summary>
-    /// Provides the base implementation for the proxy to the remote actor objects implementing <see cref="IActor"/> interfaces.
-    /// The proxy object can be used used for client-to-actor and actor-to-actor communication.
+    ///     Provides the base implementation for the proxy to the remote actor objects implementing <see cref="IActor" />
+    ///     interfaces.
+    ///     The proxy object can be used used for client-to-actor and actor-to-actor communication.
     /// </summary>
     public abstract class ActorProxy : ProxyBase, IActorProxy
     {
         internal static readonly ActorProxyFactory DefaultProxyFactory = new ActorProxyFactory();
-        private Remoting.V2.Client.ActorServicePartitionClient servicePartitionClientV2;
-        private RemotingClient remotingClient;
+        private ActorServicePartitionClient servicePartitionClientV2;
 
-        /// <summary>
-        /// Initializes a new instance of the ActorProxy class.
-        /// </summary>
-        protected ActorProxy()
-        {
-        }
-
-        internal RemotingClient RemotingClient
-        {
-            get { return this.remotingClient; }
-        }
+        internal RemotingClient RemotingClient { get; private set; }
 
 
         /// <summary>
-        /// Gets <see cref="ServiceFabric.Actors.ActorId"/> associated with the proxy object.
+        ///     Gets <see cref="ServiceFabric.Actors.ActorId" /> associated with the proxy object.
         /// </summary>
-        /// <value><see cref="ServiceFabric.Actors.ActorId"/> associated with the proxy object.</value>
+        /// <value><see cref="ServiceFabric.Actors.ActorId" /> associated with the proxy object.</value>
         public ActorId ActorId
         {
             get
             {
 #if !DotNetCoreClr
-                if (this.remotingClient.Equals(RemotingClient.V1Client))
+                if (this.RemotingClient.Equals(RemotingClient.V1Client))
                 {
                     return this.servicePartitionClient.ActorId;
                 }
@@ -58,53 +52,66 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
 #if !DotNetCoreClr
         /// <summary>
-        /// Gets the <see cref="Remoting.V1.Client.IActorServicePartitionClient"/> interface that this proxy is using to communicate with the actor.
+        ///     Gets the <see cref="Remoting.V1.Client.IActorServicePartitionClient" /> interface that this proxy is using to
+        ///     communicate with the actor.
         /// </summary>
-        /// <value><see cref="Remoting.V1.Client.IActorServicePartitionClient"/> that this proxy is using to communicate with the actor.</value>
-        public Remoting.V1.Client.IActorServicePartitionClient ActorServicePartitionClient
-        {
-            get { return this.servicePartitionClient; }
-        }
+        /// <value>
+        ///     <see cref="Remoting.V1.Client.IActorServicePartitionClient" /> that this proxy is using to communicate with the
+        ///     actor.
+        /// </value>
+        public IActorServicePartitionClient ActorServicePartitionClient => this.servicePartitionClient;
 #endif
 
         /// <summary>
-        /// Gets the <see cref="Remoting.V2.Client.IActorServicePartitionClient"/> interface that this proxy is using to communicate with the actor.
+        ///     Gets the <see cref="Remoting.V2.Client.IActorServicePartitionClient" /> interface that this proxy is using to
+        ///     communicate with the actor.
         /// </summary>
-        /// <value><see cref="Remoting.V2.Client.IActorServicePartitionClient"/> that this proxy is using to communicate with the actor.</value>
-        public Remoting.V2.Client.IActorServicePartitionClient ActorServicePartitionClientV2
-        {
-            get { return this.servicePartitionClientV2; }
-        }
+        /// <value>
+        ///     <see cref="Remoting.V2.Client.IActorServicePartitionClient" /> that this proxy is using to communicate with the
+        ///     actor.
+        /// </value>
+        public Remoting.V2.Client.IActorServicePartitionClient ActorServicePartitionClientV2 => this.servicePartitionClientV2;
 
 
         /// <summary>
-        /// Creates a proxy to the actor object that implements an actor interface.
+        ///     Creates a proxy to the actor object that implements an actor interface.
         /// </summary>
         /// <typeparam name="TActorInterface">
-        /// The actor interface implemented by the remote actor object. 
-        /// The returned proxy object will implement this interface.
+        ///     The actor interface implemented by the remote actor object.
+        ///     The returned proxy object will implement this interface.
         /// </typeparam>
-        /// <param name="actorId">The actor ID of the proxy actor object. Methods called on this proxy will result in requests 
-        /// being sent to the actor with this ID.</param>
+        /// <param name="actorId">
+        ///     The actor ID of the proxy actor object. Methods called on this proxy will result in requests
+        ///     being sent to the actor with this ID.
+        /// </param>
         /// <param name="applicationName">
-        /// The name of the Service Fabric application that contains the actor service hosting the actor objects.
-        /// This parameter can be null if the client is running as part of that same Service Fabric application. For more information, see Remarks. 
+        ///     The name of the Service Fabric application that contains the actor service hosting the actor objects.
+        ///     This parameter can be null if the client is running as part of that same Service Fabric application. For more
+        ///     information, see Remarks.
         /// </param>
         /// <param name="serviceName">
-        /// The name of the Service Fabric service as configured by <see cref="ActorServiceAttribute"/> on the actor implementation.
-        /// By default, the name of the service is derived from the name of the actor interface. However, <see cref="ActorServiceAttribute"/>
-        /// is required when an actor implements more than one actor interface or an actor interface derives from another actor interface since
-        /// the service name cannot be determined automatically.
+        ///     The name of the Service Fabric service as configured by <see cref="ActorServiceAttribute" /> on the actor
+        ///     implementation.
+        ///     By default, the name of the service is derived from the name of the actor interface. However,
+        ///     <see cref="ActorServiceAttribute" />
+        ///     is required when an actor implements more than one actor interface or an actor interface derives from another actor
+        ///     interface since
+        ///     the service name cannot be determined automatically.
         /// </param>
         /// <param name="listenerName">
-        /// By default an actor service has only one listener for clients to connect to and communicate with.
-        /// However, it is possible to configure an actor service with more than one listener. This parameter specifies the name of the listener to connect to.
+        ///     By default an actor service has only one listener for clients to connect to and communicate with.
+        ///     However, it is possible to configure an actor service with more than one listener. This parameter specifies the
+        ///     name of the listener to connect to.
         /// </param>
-        /// <returns>An actor proxy object that implements <see cref="IActorProxy"/> and TActorInterface.</returns>
-        /// <remarks><para>The applicationName parameter can be null if the client is running as part of the same Service Fabric
-        /// application as the actor service it intends to communicate with. In this case, the application name is determined from
-        /// <see cref="System.Fabric.CodePackageActivationContext"/>, and is obtained by calling the 
-        /// <see cref="System.Fabric.CodePackageActivationContext.ApplicationName"/> property.</para>
+        /// <returns>An actor proxy object that implements <see cref="IActorProxy" /> and TActorInterface.</returns>
+        /// <remarks>
+        ///     <para>
+        ///         The applicationName parameter can be null if the client is running as part of the same Service Fabric
+        ///         application as the actor service it intends to communicate with. In this case, the application name is
+        ///         determined from
+        ///         <see cref="System.Fabric.CodePackageActivationContext" />, and is obtained by calling the
+        ///         <see cref="System.Fabric.CodePackageActivationContext.ApplicationName" /> property.
+        ///     </para>
         /// </remarks>
         public static TActorInterface Create<TActorInterface>(
             ActorId actorId,
@@ -112,25 +119,31 @@ namespace Microsoft.ServiceFabric.Actors.Client
             string serviceName = null,
             string listenerName = null) where TActorInterface : IActor
         {
-            return DefaultProxyFactory.CreateActorProxy<TActorInterface>(actorId, applicationName, serviceName,
+            return DefaultProxyFactory.CreateActorProxy<TActorInterface>(
+                actorId,
+                applicationName,
+                serviceName,
                 listenerName);
         }
 
         /// <summary>
-        /// Creates a proxy to the actor object that implements an actor interface.
+        ///     Creates a proxy to the actor object that implements an actor interface.
         /// </summary>
         /// <typeparam name="TActorInterface">
-        /// The actor interface implemented by the remote actor object. 
-        /// The returned proxy object will implement this interface.
+        ///     The actor interface implemented by the remote actor object.
+        ///     The returned proxy object will implement this interface.
         /// </typeparam>
         /// <param name="serviceUri">Uri of the actor service.</param>
-        /// <param name="actorId">Actor Id of the proxy actor object. Methods called on this proxy will result in requests 
-        /// being sent to the actor with this id.</param>
-        /// <param name="listenerName">
-        /// By default an actor service has only one listener for clients to connect to and communicate with.
-        /// However it is possible to configure an actor service with more than one listeners, the listenerName parameter specifies the name of the listener to connect to.
+        /// <param name="actorId">
+        ///     Actor Id of the proxy actor object. Methods called on this proxy will result in requests
+        ///     being sent to the actor with this id.
         /// </param>
-        /// <returns>An actor proxy object that implements <see cref="IActorProxy"/> and TActorInterface.</returns>
+        /// <param name="listenerName">
+        ///     By default an actor service has only one listener for clients to connect to and communicate with.
+        ///     However it is possible to configure an actor service with more than one listeners, the listenerName parameter
+        ///     specifies the name of the listener to connect to.
+        /// </param>
+        /// <returns>An actor proxy object that implements <see cref="IActorProxy" /> and TActorInterface.</returns>
         public static TActorInterface Create<TActorInterface>(
             ActorId actorId,
             Uri serviceUri,
@@ -142,12 +155,12 @@ namespace Microsoft.ServiceFabric.Actors.Client
         //V2 Stack Api
 
         internal void Initialize(
-            Remoting.V2.Client.ActorServicePartitionClient client,
-            IServiceRemotingMessageBodyFactory serviceRemotingMessageBodyFactory)
+            ActorServicePartitionClient client,
+            IServiceRemotingMessageBodyFactory messageBodyFactory)
         {
             this.servicePartitionClientV2 = client;
-            this.InitializeV2(serviceRemotingMessageBodyFactory);
-            this.remotingClient = RemotingClient.V2Client;
+            this.InitializeV2(messageBodyFactory);
+            this.RemotingClient = RemotingClient.V2Client;
         }
 
 
@@ -173,15 +186,20 @@ namespace Microsoft.ServiceFabric.Actors.Client
                 CallContext = Helper.GetCallContext()
             };
 
-            return this.servicePartitionClientV2.InvokeAsync(new ServiceRemotingRequestMessage(headers,
-                requestMsgBodyValue), cancellationToken);
+            return this.servicePartitionClientV2.InvokeAsync(
+                new ServiceRemotingRequestMessage(
+                    headers,
+                    requestMsgBodyValue),
+                cancellationToken);
         }
 
 
         internal async Task SubscribeAsyncV2(Type eventType, object subscriber, TimeSpan resubscriptionInterval)
         {
-            var actorId = this.servicePartitionClientV2.ActorId;
-            var info = Remoting.V2.Client.ActorEventSubscriberManager.Singleton.RegisterSubscriber(actorId, eventType,
+            ActorId actorId = this.servicePartitionClientV2.ActorId;
+            SubscriptionInfo info = ActorEventSubscriberManager.Singleton.RegisterSubscriber(
+                actorId,
+                eventType,
                 subscriber);
 
             Exception error = null;
@@ -213,10 +231,13 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         internal async Task UnsubscribeAsyncV2(Type eventType, object subscriber)
         {
-            var actorId = this.servicePartitionClientV2.ActorId;
+            ActorId actorId = this.servicePartitionClientV2.ActorId;
             SubscriptionInfo info;
-            if (Remoting.V2.Client.ActorEventSubscriberManager.Singleton.TryUnregisterSubscriber(actorId, eventType,
-                subscriber, out info))
+            if (ActorEventSubscriberManager.Singleton.TryUnregisterSubscriber(
+                actorId,
+                eventType,
+                subscriber,
+                out info))
             {
                 await this.servicePartitionClientV2.UnsubscribeAsync(info.Subscriber.EventId, info.Id);
             }
@@ -226,7 +247,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         {
 #pragma warning disable 4014
             // ReSharper disable once UnusedVariable
-            var ignore = Task.Run(
+            Task ignore = Task.Run(
                 async () =>
 #pragma warning restore 4014
                 {
@@ -255,7 +276,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
 #if !DotNetCoreClr
 
-        private Remoting.V1.Builder.ActorProxyGeneratorWith proxyGeneratorWith;
+        private ActorProxyGeneratorWith proxyGeneratorWith;
         private Remoting.V1.Client.ActorServicePartitionClient servicePartitionClient;
 #endif
 
@@ -273,12 +294,12 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         internal override object GetResponseMessageBodyValue(object responseMessageBody)
         {
-            return ((Remoting.V1.ActorMessageBody) responseMessageBody).Value;
+            return ((ActorMessageBody) responseMessageBody).Value;
         }
 
         internal override object CreateRequestMessageBody(object requestMessageBodyValue)
         {
-            return new Remoting.V1.ActorMessageBody() {Value = requestMessageBodyValue};
+            return new ActorMessageBody {Value = requestMessageBodyValue};
         }
 
         internal override Task<byte[]> InvokeAsync(
@@ -287,7 +308,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
             byte[] requestMsgBodyBytes,
             CancellationToken cancellationToken)
         {
-            var actorMsgHeaders = new Remoting.V1.ActorMessageHeaders()
+            var actorMsgHeaders = new ActorMessageHeaders
             {
                 ActorId = this.servicePartitionClient.ActorId,
                 InterfaceId = interfaceId,
@@ -308,12 +329,13 @@ namespace Microsoft.ServiceFabric.Actors.Client
             throw new NotImplementedException();
         }
 
-        internal void Initialize(Remoting.V1.Builder.ActorProxyGeneratorWith actorProxyGeneratorWith,
+        internal void Initialize(
+            ActorProxyGeneratorWith actorProxyGeneratorWith,
             Remoting.V1.Client.ActorServicePartitionClient actorServicePartitionClient)
         {
             this.proxyGeneratorWith = actorProxyGeneratorWith;
             this.servicePartitionClient = actorServicePartitionClient;
-            this.remotingClient = RemotingClient.V1Client;
+            this.RemotingClient = RemotingClient.V1Client;
         }
 #endif
 
@@ -321,15 +343,17 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         internal async Task SubscribeAsync(Type eventType, object subscriber, TimeSpan resubscriptionInterval)
         {
-            if (this.remotingClient.Equals(RemotingClient.V2Client))
+            if (this.RemotingClient.Equals(RemotingClient.V2Client))
             {
                 await this.SubscribeAsyncV2(eventType, subscriber, resubscriptionInterval);
                 return;
             }
 
 #if !DotNetCoreClr
-            var actorId = this.servicePartitionClient.ActorId;
-            var info = Remoting.V1.Client.ActorEventSubscriberManager.Singleton.RegisterSubscriber(actorId, eventType,
+            ActorId actorId = this.servicePartitionClient.ActorId;
+            SubscriptionInfo info = Remoting.V1.Client.ActorEventSubscriberManager.Singleton.RegisterSubscriber(
+                actorId,
+                eventType,
                 subscriber);
 
             Exception error = null;
@@ -363,16 +387,19 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         internal async Task UnsubscribeAsync(Type eventType, object subscriber)
         {
-            if (this.remotingClient.Equals(RemotingClient.V2Client))
+            if (this.RemotingClient.Equals(RemotingClient.V2Client))
             {
                 await this.UnsubscribeAsyncV2(eventType, subscriber);
                 return;
             }
 #if !DotNetCoreClr
-            var actorId = this.servicePartitionClient.ActorId;
+            ActorId actorId = this.servicePartitionClient.ActorId;
             SubscriptionInfo info;
-            if (Remoting.V1.Client.ActorEventSubscriberManager.Singleton.TryUnregisterSubscriber(actorId, eventType,
-                subscriber, out info))
+            if (Remoting.V1.Client.ActorEventSubscriberManager.Singleton.TryUnregisterSubscriber(
+                actorId,
+                eventType,
+                subscriber,
+                out info))
             {
                 await this.servicePartitionClient.UnsubscribeAsync(info.Subscriber.EventId, info.Id);
             }
@@ -385,7 +412,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         {
 #pragma warning disable 4014
             // ReSharper disable once UnusedVariable
-            var ignore = Task.Run(
+            Task ignore = Task.Run(
                 async () =>
 #pragma warning restore 4014
                 {

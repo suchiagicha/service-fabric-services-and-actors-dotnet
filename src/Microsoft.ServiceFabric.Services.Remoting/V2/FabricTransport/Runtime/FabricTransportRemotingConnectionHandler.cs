@@ -2,20 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
 {
+    using System;
     using System.Collections.Concurrent;
+    using System.Threading.Tasks;
     using Microsoft.ServiceFabric.FabricTransport.V2.Runtime;
 
-    class FabricTransportRemotingConnectionHandler : IFabricTransportConnectionHandler
+    internal class FabricTransportRemotingConnectionHandler : IFabricTransportConnectionHandler
     {
-        private ConcurrentDictionary<string, FabricTransportCallbackClient> clientCallbackConnection;
+        private readonly ConcurrentDictionary<string, FabricTransportCallbackClient> clientCallbackConnection;
 
         public FabricTransportRemotingConnectionHandler()
         {

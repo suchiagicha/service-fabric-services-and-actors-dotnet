@@ -9,12 +9,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Collections.Generic;
     using System.Fabric;
     using System.Fabric.Common;
+    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Services.Common;
-    using SR = Microsoft.ServiceFabric.Actors.SR;
-    using System.Globalization;
 
     internal sealed class ActorStateManager : IActorStateManager
     {
@@ -29,13 +28,85 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.stateChangeTracker = new Dictionary<string, StateMetadata>();
         }
 
+        private bool IsStateMarkedForRemove(string stateName)
+        {
+            if (this.stateChangeTracker.ContainsKey(stateName) &&
+                this.stateChangeTracker[stateName].ChangeKind == StateChangeKind.Remove)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private async Task<ConditionalValue<T>> TryGetStateFromStateProviderAsync<T>(string stateName, CancellationToken cancellationToken)
+        {
+            ConditionalValue<T> result;
+
+            this.actor.Manager.DiagnosticsEventManager.LoadActorStateStart(this.actor);
+
+            if (await this.stateProvider.ContainsStateAsync(this.actor.Id, stateName, cancellationToken))
+            {
+                T value = await this.stateProvider.LoadStateAsync<T>(this.actor.Id, stateName, cancellationToken);
+                result = new ConditionalValue<T>(true, value);
+            }
+            else
+            {
+                result = new ConditionalValue<T>(false, default(T));
+            }
+
+            this.actor.Manager.DiagnosticsEventManager.LoadActorStateFinish(this.actor);
+            return result;
+        }
+
+        /// <summary>
+        ///     Once ActorManager is closed, StateManager should not allow any new operation.
+        /// </summary>
+        private void ThrowIfClosed()
+        {
+            if (this.actor.Manager.IsClosed)
+            {
+                throw new FabricNotPrimaryException();
+            }
+        }
+
+        #region Helper Classes
+
+        private sealed class StateMetadata
+        {
+            private StateMetadata(object value, Type type, StateChangeKind changeKind)
+            {
+                this.Value = value;
+                this.Type = type;
+                this.ChangeKind = changeKind;
+            }
+
+            public object Value { get; set; }
+
+            public StateChangeKind ChangeKind { get; set; }
+
+            public Type Type { get; }
+
+            public static StateMetadata Create<T>(T value, StateChangeKind changeKind)
+            {
+                return new StateMetadata(value, typeof(T), changeKind);
+            }
+
+            public static StateMetadata CreateForRemove()
+            {
+                return new StateMetadata(null, typeof(object), StateChangeKind.Remove);
+            }
+        }
+
+        #endregion
+
         #region IActorStateManager Members
 
         public async Task AddStateAsync<T>(string stateName, T value, CancellationToken cancellationToken)
         {
-            if (!(await this.TryAddStateAsync(stateName, value, cancellationToken)))
+            if (!await this.TryAddStateAsync(stateName, value, cancellationToken))
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Actors.SR.ActorStateAlreadyExists, stateName));
+                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.ActorStateAlreadyExists, stateName));
             }
         }
 
@@ -47,7 +118,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                 // Check if the property was marked as remove in the cache
                 if (stateMetadata.ChangeKind == StateChangeKind.Remove)
@@ -70,7 +141,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public async Task<T> GetStateAsync<T>(string stateName, CancellationToken cancellationToken)
         {
-            var condRes = await this.TryGetStateAsync<T>(stateName, cancellationToken);
+            ConditionalValue<T> condRes = await this.TryGetStateAsync<T>(stateName, cancellationToken);
 
             if (condRes.HasValue)
             {
@@ -88,7 +159,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                 // Check if the property was marked as remove in the cache
                 if (stateMetadata.ChangeKind == StateChangeKind.Remove)
@@ -99,7 +170,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return new ConditionalValue<T>(true, (T) stateMetadata.Value);
             }
 
-            var conditionalResult = await this.TryGetStateFromStateProviderAsync<T>(stateName, cancellationToken);
+            ConditionalValue<T> conditionalResult = await this.TryGetStateFromStateProviderAsync<T>(stateName, cancellationToken);
             if (conditionalResult.HasValue)
             {
                 this.stateChangeTracker.Add(stateName, StateMetadata.Create(conditionalResult.Value, StateChangeKind.None));
@@ -116,7 +187,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
                 stateMetadata.Value = value;
 
                 if (stateMetadata.ChangeKind == StateChangeKind.None ||
@@ -137,7 +208,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public async Task RemoveStateAsync(string stateName, CancellationToken cancellationToken)
         {
-            if (!(await this.TryRemoveStateAsync(stateName, cancellationToken)))
+            if (!await this.TryRemoveStateAsync(stateName, cancellationToken))
             {
                 throw new KeyNotFoundException(string.Format(CultureInfo.CurrentCulture, SR.ErrorNamedActorStateNotFound, stateName));
             }
@@ -151,7 +222,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                 switch (stateMetadata.ChangeKind)
                 {
@@ -183,7 +254,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                 // Check if the property was marked as remove in the cache
                 return stateMetadata.ChangeKind != StateChangeKind.Remove;
@@ -199,14 +270,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public async Task<T> GetOrAddStateAsync<T>(string stateName, T value, CancellationToken cancellationToken)
         {
-            var condRes = await this.TryGetStateAsync<T>(stateName, cancellationToken);
+            ConditionalValue<T> condRes = await this.TryGetStateAsync<T>(stateName, cancellationToken);
 
             if (condRes.HasValue)
             {
                 return condRes.Value;
             }
 
-            var changeKind = this.IsStateMarkedForRemove(stateName) ? StateChangeKind.Update : StateChangeKind.Add;
+            StateChangeKind changeKind = this.IsStateMarkedForRemove(stateName) ? StateChangeKind.Update : StateChangeKind.Add;
 
             this.stateChangeTracker[stateName] = StateMetadata.Create(value, changeKind);
             return value;
@@ -224,7 +295,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             if (this.stateChangeTracker.ContainsKey(stateName))
             {
-                var stateMetadata = this.stateChangeTracker[stateName];
+                StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                 // Check if the property was marked as remove in the cache
                 if (stateMetadata.ChangeKind == StateChangeKind.Remove)
@@ -233,7 +304,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     return addValue;
                 }
 
-                var newValue = updateValueFactory.Invoke(stateName, (T) stateMetadata.Value);
+                T newValue = updateValueFactory.Invoke(stateName, (T) stateMetadata.Value);
                 stateMetadata.Value = newValue;
 
                 if (stateMetadata.ChangeKind == StateChangeKind.None)
@@ -244,10 +315,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 return newValue;
             }
 
-            var conditionalResult = await this.TryGetStateFromStateProviderAsync<T>(stateName, cancellationToken);
+            ConditionalValue<T> conditionalResult = await this.TryGetStateFromStateProviderAsync<T>(stateName, cancellationToken);
             if (conditionalResult.HasValue)
             {
-                var newValue = updateValueFactory.Invoke(stateName, conditionalResult.Value);
+                T newValue = updateValueFactory.Invoke(stateName, conditionalResult.Value);
                 this.stateChangeTracker.Add(stateName, StateMetadata.Create(newValue, StateChangeKind.Update));
 
                 return newValue;
@@ -261,10 +332,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             this.ThrowIfClosed();
 
-            var namesFromStateProvider = await this.stateProvider.EnumerateStateNamesAsync(this.actor.Id, cancellationToken);
+            IEnumerable<string> namesFromStateProvider = await this.stateProvider.EnumerateStateNamesAsync(this.actor.Id, cancellationToken);
             var stateNameList = new List<string>(namesFromStateProvider);
 
-            var kvPairEnumerator = this.stateChangeTracker.GetEnumerator();
+            Dictionary<string, StateMetadata>.Enumerator kvPairEnumerator = this.stateChangeTracker.GetEnumerator();
 
             while (kvPairEnumerator.MoveNext())
             {
@@ -287,7 +358,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.stateChangeTracker.Clear();
             return TaskDone.Done;
         }
-        
+
         public async Task SaveStateAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             this.ThrowIfClosed();
@@ -297,9 +368,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 var stateChangeList = new List<ActorStateChange>();
                 var statesToRemove = new List<string>();
 
-                foreach (var stateName in this.stateChangeTracker.Keys)
+                foreach (string stateName in this.stateChangeTracker.Keys)
                 {
-                    var stateMetadata = this.stateChangeTracker[stateName];
+                    StateMetadata stateMetadata = this.stateChangeTracker[stateName];
 
                     if (stateMetadata.ChangeKind != StateChangeKind.None)
                     {
@@ -324,87 +395,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     this.actor.Manager.DiagnosticsEventManager.SaveActorStateFinish(this.actor);
                 }
 
-                foreach (var stateToRemove in statesToRemove)
+                foreach (string stateToRemove in statesToRemove)
                 {
                     this.stateChangeTracker.Remove(stateToRemove);
                 }
-            }
-        }
-
-        #endregion
-
-        private bool IsStateMarkedForRemove(string stateName)
-        {
-            if (this.stateChangeTracker.ContainsKey(stateName) &&
-                this.stateChangeTracker[stateName].ChangeKind == StateChangeKind.Remove)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private async Task<ConditionalValue<T>> TryGetStateFromStateProviderAsync<T>(string stateName, CancellationToken cancellationToken)
-        {
-            ConditionalValue<T> result;
-
-            this.actor.Manager.DiagnosticsEventManager.LoadActorStateStart(this.actor);
-
-            if (await this.stateProvider.ContainsStateAsync(this.actor.Id, stateName, cancellationToken))
-            {
-                var value = await this.stateProvider.LoadStateAsync<T>(this.actor.Id, stateName, cancellationToken);
-                result = new ConditionalValue<T>(true, value);
-            }
-            else
-            {
-                result = new ConditionalValue<T>(false, default(T));
-            }
-
-            this.actor.Manager.DiagnosticsEventManager.LoadActorStateFinish(this.actor);
-            return result;
-        }
-
-        /// <summary>
-        /// Once ActorManager is closed, StateManager should not allow any new operation.
-        /// </summary>
-        private void ThrowIfClosed()
-        {
-            if (this.actor.Manager.IsClosed)
-            {
-                throw new FabricNotPrimaryException();
-            }
-        }
-
-        #region Helper Classes
-
-        private sealed class StateMetadata
-        {
-            private readonly Type type;
-
-            private StateMetadata(object value, Type type, StateChangeKind changeKind)
-            {
-                this.Value = value;
-                this.type = type;
-                this.ChangeKind = changeKind;
-            }
-
-            public object Value { get; set; }
-
-            public StateChangeKind ChangeKind { get; set; }
-
-            public Type Type
-            {
-                get { return this.type; }
-            }
-
-            public static StateMetadata Create<T>(T value, StateChangeKind changeKind)
-            {
-                return new StateMetadata(value, typeof(T), changeKind);
-            }
-
-            public static StateMetadata CreateForRemove()
-            {
-                return new StateMetadata(null, typeof(object), StateChangeKind.Remove);
             }
         }
 

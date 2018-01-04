@@ -6,16 +6,15 @@
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Runtime
 {
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
 
     /// <summary>
-    /// Defines the interface that must be implemented by the ServiceRemotingListener to receive messages from the
-    /// remoting transport.
+    ///     Defines the interface that must be implemented by the ServiceRemotingListener to receive messages from the
+    ///     remoting transport.
     /// </summary>
     public interface IServiceRemotingMessageHandler
     {
         /// <summary>
-        /// Handles a message from the client that requires a response from the service.
+        ///     Handles a message from the client that requires a response from the service.
         /// </summary>
         /// <param name="requestContext">Contains additional information about the request.</param>
         /// <param name="requestMessage">The request message.</param>
@@ -25,16 +24,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Runtime
             IServiceRemotingRequestMessage requestMessage);
 
         /// <summary>
-        /// Handles a one way message from the client.
+        ///     Handles a one way message from the client.
         /// </summary>
         /// <param name="requestMessage">The request message</param>
         void HandleOneWayMessage(IServiceRemotingRequestMessage requestMessage);
 
         /// <summary>
-        /// Returns the IServiceRemotingMessageBodyFactory . It is used by Dispatcher to create Remoting Response Body
+        ///     Returns the IServiceRemotingMessageBodyFactory . It is used by Dispatcher to create Remoting Response Body
         /// </summary>
         /// <returns></returns>
         IServiceRemotingMessageBodyFactory GetRemotingMessageBodyFactory();
-
     }
 }

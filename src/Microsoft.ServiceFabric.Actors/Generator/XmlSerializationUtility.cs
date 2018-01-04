@@ -2,11 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Generator
 {
     using System;
-    using System.Linq;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Xml;
     using System.Xml.Linq;
@@ -25,7 +27,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
             using (var memoryStream = new MemoryStream())
             {
-                using (var xmlWriter = XmlWriter.Create(memoryStream, GetXmlWriterSettings()))
+                using (XmlWriter xmlWriter = XmlWriter.Create(memoryStream, GetXmlWriterSettings()))
                 {
                     serializer.Serialize(xmlWriter, value);
                 }
@@ -48,7 +50,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 var settings = new XmlReaderSettings();
                 settings.XmlResolver = null;
 
-                using (var xmlReader = XmlReader.Create(stringReader, settings))
+                using (XmlReader xmlReader = XmlReader.Create(stringReader, settings))
                 {
                     return (T) serializer.Deserialize(xmlReader);
                 }
@@ -66,12 +68,12 @@ namespace Microsoft.ServiceFabric.Actors.Generator
         }
 
         /// <summary>
-        /// Inserts Xml Comments from existingContent to xml obtained by serializing the object of type T.
-        /// Exception while inserting comments are ignored and content without comments is returned.
+        ///     Inserts Xml Comments from existingContent to xml obtained by serializing the object of type T.
+        ///     Exception while inserting comments are ignored and content without comments is returned.
         /// </summary>
         public static string InsertXmlComments<T>(string existingContent, T value) where T : class
         {
-            var contentWithoutComments = XmlSerializationUtility.Serialize(value);
+            string contentWithoutComments = Serialize(value);
 
             try
             {
@@ -85,12 +87,12 @@ namespace Microsoft.ServiceFabric.Actors.Generator
         }
 
         /// <summary>
-        /// Inserts Xml Comments from Xml content with comments into Xml content without comments.
+        ///     Inserts Xml Comments from Xml content with comments into Xml content without comments.
         /// </summary>
         private static string InsertXmlComments(string contentWithComments, string contentWithoutComments)
         {
-            var commentNodes = XDocument.Parse(contentWithComments).DescendantNodes().OfType<XComment>();
-            var xdoc = XDocument.Parse(contentWithoutComments);
+            IEnumerable<XComment> commentNodes = XDocument.Parse(contentWithComments).DescendantNodes().OfType<XComment>();
+            XDocument xdoc = XDocument.Parse(contentWithoutComments);
 
             // if there are no comments to insert, just return the contentsWithoutComments
             if (!commentNodes.Any())
@@ -98,9 +100,9 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 return contentWithoutComments;
             }
 
-            foreach (var commentNode in commentNodes)
+            foreach (XComment commentNode in commentNodes)
             {
-                XComment newComment = new XComment(commentNode.Value);
+                var newComment = new XComment(commentNode.Value);
 
                 // Handle comments at beginning and end of xml
                 if (commentNode.Parent == null)
@@ -120,7 +122,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 else
                 {
                     // If Parent node of comment is not found in new xml, then dont add this comment.
-                    var parent = xdoc.Descendants(commentNode.Parent.Name).FirstOrDefault();
+                    XElement parent = xdoc.Descendants(commentNode.Parent.Name).FirstOrDefault();
                     if (parent != null)
                     {
                         bool hadPrevious = commentNode.ElementsBeforeSelf().Any();
@@ -144,12 +146,12 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                             // If PreviousNode of comment is in new Xml, add newComment after PreviousNode
                             // If PreviousNode is not in new xml and NextNode is in newXml, add newComment before NextNode.
                             // If both PreviousNode and NextNode is not in new xml skip it.
-                            var previousInOriginal = commentNode.ElementsBeforeSelf().Last();
-                            var nextInOriginal = commentNode.ElementsAfterSelf().First();
+                            XElement previousInOriginal = commentNode.ElementsBeforeSelf().Last();
+                            XElement nextInOriginal = commentNode.ElementsAfterSelf().First();
 
                             // Find matching Previous and Next siblings in new xml. Siblings must match in attributes as well.
-                            var previous = FindNodeInXDocument(xdoc, previousInOriginal);
-                            var next = FindNodeInXDocument(xdoc, nextInOriginal);
+                            XElement previous = FindNodeInXDocument(xdoc, previousInOriginal);
+                            XElement next = FindNodeInXDocument(xdoc, nextInOriginal);
 
                             if (previous != null)
                             {
@@ -165,10 +167,10 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             }
 
             // Use XmlWriterSettings same as used in serialization to keep changes to existing files to minimal.
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             using (var memoryStream = new MemoryStream())
             {
-                using (var xmlWriter = XmlWriter.Create(memoryStream, XmlSerializationUtility.GetXmlWriterSettings()))
+                using (XmlWriter xmlWriter = XmlWriter.Create(memoryStream, GetXmlWriterSettings()))
                 {
                     xdoc.Save(xmlWriter);
                     xmlWriter.Flush();
@@ -189,9 +191,9 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                         return false;
                     }
 
-                    foreach (var attribOriginal in nodeToFind.Attributes())
+                    foreach (XAttribute attribOriginal in nodeToFind.Attributes())
                     {
-                        var attrib = node.Attribute(attribOriginal.Name);
+                        XAttribute attrib = node.Attribute(attribOriginal.Name);
 
                         if (attrib == null)
                         {

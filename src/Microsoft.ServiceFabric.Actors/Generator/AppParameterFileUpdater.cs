@@ -2,11 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Generator
 {
     using System.Collections.Generic;
-    using System.Linq;
     using System.Fabric.Management.ServiceModel;
+    using System.Linq;
     using Microsoft.ServiceFabric.Actors.Runtime;
 
     internal class AppParameterFileUpdater
@@ -25,14 +26,14 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
         internal static void AddParameterValuesToLocalFiveNodeParamFile(Arguments arguments)
         {
-            var appParamFileContents = Utility.LoadContents(arguments.AppParamFilePath).Trim();
+            string appParamFileContents = Utility.LoadContents(arguments.AppParamFilePath).Trim();
             var appInstanceDefinition = XmlSerializationUtility.Deserialize<AppInstanceDefinitionType>(appParamFileContents);
 
-            var newAppParams =
+            IEnumerable<AppInstanceDefinitionTypeParameter> newAppParams =
                 arguments.ActorTypes.Select(
                     actorTypeInfo =>
                     {
-                        var serviceName = ActorNameFormat.GetFabricServiceName(actorTypeInfo.InterfaceTypes.First(), actorTypeInfo.ServiceName);
+                        string serviceName = ActorNameFormat.GetFabricServiceName(actorTypeInfo.InterfaceTypes.First(), actorTypeInfo.ServiceName);
 
                         return new AppInstanceDefinitionTypeParameter
                         {
@@ -50,14 +51,14 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
         internal static void AddParameterValuesToLocalOneNodeParamFile(Arguments arguments)
         {
-            var appParamFileContents = Utility.LoadContents(arguments.AppParamFilePath).Trim();
+            string appParamFileContents = Utility.LoadContents(arguments.AppParamFilePath).Trim();
             var appInstanceDefinition = XmlSerializationUtility.Deserialize<AppInstanceDefinitionType>(appParamFileContents);
             var newAppParams = new List<AppInstanceDefinitionTypeParameter>();
 
             // Create new parameters for Actor Types and merge it with existing Parameters.
-            foreach (var actorTypeInfo in arguments.ActorTypes)
+            foreach (ActorTypeInformation actorTypeInfo in arguments.ActorTypes)
             {
-                var serviceName = ActorNameFormat.GetFabricServiceName(actorTypeInfo.InterfaceTypes.First(), actorTypeInfo.ServiceName);
+                string serviceName = ActorNameFormat.GetFabricServiceName(actorTypeInfo.InterfaceTypes.First(), actorTypeInfo.ServiceName);
 
                 newAppParams.Add(
                     new AppInstanceDefinitionTypeParameter
@@ -86,7 +87,8 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             Utility.WriteIfNeeded(arguments.AppParamFilePath, appParamFileContents, newContent);
         }
 
-        internal static AppInstanceDefinitionTypeParameter[] MergeAppParams(IEnumerable<AppInstanceDefinitionTypeParameter> existingItems,
+        internal static AppInstanceDefinitionTypeParameter[] MergeAppParams(
+            IEnumerable<AppInstanceDefinitionTypeParameter> existingItems,
             IEnumerable<AppInstanceDefinitionTypeParameter> newItems)
         {
             // Add new parameters if not already exist in the app instance definition file.
@@ -94,15 +96,13 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             {
                 return newItems.ToArray();
             }
-            else
-            {
-                // Only add the Parameter if it doesnt exist already.
-                var existingParamNames = existingItems.Select(x => x.Name);
-                var updatedItemsList = existingItems.ToList();
-                updatedItemsList.AddRange(newItems.Where(newParam => !existingParamNames.Contains(newParam.Name)));
 
-                return updatedItemsList.ToArray();
-            }
+            // Only add the Parameter if it doesnt exist already.
+            IEnumerable<string> existingParamNames = existingItems.Select(x => x.Name);
+            List<AppInstanceDefinitionTypeParameter> updatedItemsList = existingItems.ToList();
+            updatedItemsList.AddRange(newItems.Where(newParam => !existingParamNames.Contains(newParam.Name)));
+
+            return updatedItemsList.ToArray();
         }
 
         public class Arguments
@@ -110,7 +110,6 @@ namespace Microsoft.ServiceFabric.Actors.Generator
             public string AppParamFilePath { get; set; }
 
             public IList<ActorTypeInformation> ActorTypes { get; set; }
-
         }
     }
 }

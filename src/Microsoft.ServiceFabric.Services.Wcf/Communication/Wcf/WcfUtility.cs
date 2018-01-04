@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf
 {
     using System;
@@ -9,7 +10,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
     using System.ServiceModel.Channels;
 
     /// <summary>
-    /// Utility class for creating default bindings for WCF communication.
+    ///     Utility class for creating default bindings for WCF communication.
     /// </summary>
     public static class WcfUtility
     {
@@ -29,19 +30,22 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
         ///     Creates a TCP listener binding with no security for WCF communication.
         /// </summary>
         /// <param name="maxMessageSize">
-        ///     Maximum size of the message in bytes. 
+        ///     Maximum size of the message in bytes.
         ///     If the value is not specified or it is less than or equals to zero,
         ///     a default value of 4,194,304 bytes (4 MB) is used.
         /// </param>
         /// <param name="openTimeout">
-        ///     Timeout for opening the connection. 
+        ///     Timeout for opening the connection.
         ///     If the value is not specified, the default value of 5 seconds is used.
         /// </param>
         /// <param name="closeTimeout">
-        ///     Time to wait for messages to drain on the connections before aborting the connection. 
+        ///     Time to wait for messages to drain on the connections before aborting the connection.
         ///     If the value is not specified, the default value of 5 seconds is used.
         /// </param>
-        /// <returns>A <see cref="System.ServiceModel.Channels.Binding"/> to use with <see cref="Runtime.WcfCommunicationListener{TServiceContract}"/>.</returns>
+        /// <returns>
+        ///     A <see cref="System.ServiceModel.Channels.Binding" /> to use with
+        ///     <see cref="Runtime.WcfCommunicationListener{TServiceContract}" />.
+        /// </returns>
         public static Binding CreateTcpListenerBinding(
             long maxMessageSize = DefaultMaxReceivedMessageSize,
             TimeSpan openTimeout = default(TimeSpan),
@@ -51,7 +55,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             {
                 SendTimeout = TimeSpan.MaxValue,
                 ReceiveTimeout = TimeSpan.MaxValue,
-                MaxConnections = int.MaxValue,
+                MaxConnections = int.MaxValue
             };
 
             if (openTimeout > TimeSpan.Zero)
@@ -76,8 +80,9 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             {
                 maxMessageSize = DefaultMaxReceivedMessageSize;
             }
+
             binding.MaxReceivedMessageSize = maxMessageSize;
-            binding.MaxBufferSize = (int)binding.MaxReceivedMessageSize;
+            binding.MaxBufferSize = (int) binding.MaxReceivedMessageSize;
             binding.MaxBufferPoolSize = Environment.ProcessorCount * binding.MaxReceivedMessageSize;
 
             return binding;
@@ -87,19 +92,22 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
         ///     Creates a TCP client binding with no security for WCF communication.
         /// </summary>
         /// <param name="maxMessageSize">
-        ///     Maximum size of the message in bytes. 
+        ///     Maximum size of the message in bytes.
         ///     If the value is not specified or it is less than or equals to zero,
         ///     a default value of 4,194,304 bytes (4 MB) is used.
         /// </param>
         /// <param name="openTimeout">
-        ///     Timeout for opening the connection. 
+        ///     Timeout for opening the connection.
         ///     If the value is not specified, the default value of 5 seconds is used.
         /// </param>
         /// <param name="closeTimeout">
-        ///     Time to wait for messages to drain on the connections before aborting the connection. 
+        ///     Time to wait for messages to drain on the connections before aborting the connection.
         ///     If the value is not specified, the default value of 5 seconds is used.
         /// </param>
-        /// <returns>A <see cref="System.ServiceModel.Channels.Binding"/> to use with <see cref="Client.WcfCommunicationClientFactory{TChannel}"/>.</returns>
+        /// <returns>
+        ///     A <see cref="System.ServiceModel.Channels.Binding" /> to use with
+        ///     <see cref="Client.WcfCommunicationClientFactory{TChannel}" />.
+        /// </returns>
         public static Binding CreateTcpClientBinding(
             long maxMessageSize = DefaultMaxReceivedMessageSize,
             TimeSpan openTimeout = default(TimeSpan),
@@ -108,7 +116,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             var binding = new NetTcpBinding(SecurityMode.None)
             {
                 SendTimeout = TimeSpan.MaxValue,
-                ReceiveTimeout = TimeSpan.MaxValue,
+                ReceiveTimeout = TimeSpan.MaxValue
             };
 
             if (openTimeout > TimeSpan.Zero)
@@ -127,7 +135,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             }
 
             binding.MaxReceivedMessageSize = maxMessageSize;
-            binding.MaxBufferSize = (int)binding.MaxReceivedMessageSize;
+            binding.MaxBufferSize = (int) binding.MaxReceivedMessageSize;
             binding.MaxBufferPoolSize = Environment.ProcessorCount * binding.MaxReceivedMessageSize;
 
             return binding;

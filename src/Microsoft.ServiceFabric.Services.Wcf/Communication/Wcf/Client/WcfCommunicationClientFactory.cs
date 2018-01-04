@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
 {
     using System;
@@ -16,10 +17,14 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
     using Microsoft.ServiceFabric.Services.Wcf;
 
     /// <summary>
-    /// An <see cref="Microsoft.ServiceFabric.Services.Communication.Client.ICommunicationClientFactory{TCommunicationClient}"/> that uses
-    /// Windows Communication Foundation to create <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Client.WcfCommunicationClient{TServiceContract}"/>
-    /// to communicate with stateless and stateful services that are using 
-    /// <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime.WcfCommunicationListener{TServiceContract}"/>.
+    ///     An
+    ///     <see cref="Microsoft.ServiceFabric.Services.Communication.Client.ICommunicationClientFactory{TCommunicationClient}" />
+    ///     that uses
+    ///     Windows Communication Foundation to create
+    ///     <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Client.WcfCommunicationClient{TServiceContract}" />
+    ///     to communicate with stateless and stateful services that are using
+    ///     <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Runtime.WcfCommunicationListener{TServiceContract}" />
+    ///     .
     /// </summary>
     /// <typeparam name="TServiceContract">WCF based service contract</typeparam>
     public class WcfCommunicationClientFactory<TServiceContract> :
@@ -30,20 +35,20 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
         private readonly object callbackObject;
 
         /// <summary>
-        /// Constructs a factory to create clients using WCF to communicate with the services.
+        ///     Constructs a factory to create clients using WCF to communicate with the services.
         /// </summary>
         /// <param name="clientBinding">
         ///     WCF binding to use for the client. If the client binding is not specified or null,
-        ///     a default client binding is created using 
-        ///     <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.WcfUtility.CreateTcpClientBinding"/> method 
-        ///     which creates a <see cref="System.ServiceModel.NetTcpBinding"/> with no security.
+        ///     a default client binding is created using
+        ///     <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.WcfUtility.CreateTcpClientBinding" /> method
+        ///     which creates a <see cref="System.ServiceModel.NetTcpBinding" /> with no security.
         /// </param>
         /// <param name="exceptionHandlers">
         ///     Exception handlers to handle the exceptions encountered in communicating with the service.
         /// </param>
         /// <param name="servicePartitionResolver">
-        ///     Service partition resolver to resolve the service endpoints. If not specified, a default 
-        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault"/> is used.
+        ///     Service partition resolver to resolve the service endpoints. If not specified, a default
+        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault" /> is used.
         /// </param>
         /// <param name="traceId">
         ///     Id to use in diagnostics traces from this component.
@@ -69,7 +74,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
         }
 
         /// <summary>
-        /// Creates WCF communication clients to communicate over the given channel.
+        ///     Creates WCF communication clients to communicate over the given channel.
         /// </summary>
         /// <param name="channel">Service contract based WCF channel.</param>
         /// <returns>The communication client that was created</returns>
@@ -79,7 +84,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
         }
 
         /// <summary>
-        /// Creates a communication client for the given endpoint address.
+        ///     Creates a communication client for the given endpoint address.
         /// </summary>
         /// <param name="endpoint">Endpoint address where the service is listening</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -89,18 +94,18 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
             CancellationToken cancellationToken)
         {
             var endpointAddress = new EndpointAddress(endpoint);
-            var channel = (this.callbackObject != null)
+            TServiceContract channel = this.callbackObject != null
                 ? DuplexChannelFactory<TServiceContract>.CreateChannel(
                     this.callbackObject,
                     this.clientBinding,
                     endpointAddress)
                 : ChannelFactory<TServiceContract>.CreateChannel(this.clientBinding, endpointAddress);
 
-            var clientChannel = ((IClientChannel) channel);
+            var clientChannel = (IClientChannel) channel;
             Exception connectionTimeoutException = null;
             try
             {
-                var openTask = Task.Factory.FromAsync(
+                Task openTask = Task.Factory.FromAsync(
                     clientChannel.BeginOpen(this.clientBinding.OpenTimeout, null, null),
                     clientChannel.EndOpen);
                 if (await Task.WhenAny(openTask, Task.Delay(this.clientBinding.OpenTimeout, cancellationToken)) == openTask)
@@ -113,7 +118,8 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
                 else
                 {
                     clientChannel.Abort();
-                    throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, SR.ErrorCommunicationClientOpenTimeout, this.clientBinding.OpenTimeout));
+                    throw new TimeoutException(
+                        string.Format(CultureInfo.CurrentCulture, SR.ErrorCommunicationClientOpenTimeout, this.clientBinding.OpenTimeout));
                 }
             }
             catch (AggregateException ae)
@@ -125,6 +131,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
             {
                 connectionTimeoutException = te;
             }
+
             if (connectionTimeoutException != null)
             {
                 throw new EndpointNotFoundException(
@@ -137,31 +144,32 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
         }
 
         /// <summary>
-        /// Returns true if the client is still valid. Connection oriented transports can use this method to indicate that the client is no longer
-        /// connected to the service.
+        ///     Returns true if the client is still valid. Connection oriented transports can use this method to indicate that the
+        ///     client is no longer
+        ///     connected to the service.
         /// </summary>
         /// <param name="client">WCF communication client</param>
         /// <returns>true if the client is valid, false otherwise</returns>
         protected override bool ValidateClient(WcfCommunicationClient<TServiceContract> client)
         {
-            return (client.ClientChannel.State == CommunicationState.Opened);
+            return client.ClientChannel.State == CommunicationState.Opened;
         }
 
         /// <summary>
-        /// Returns true if the client is still valid and connected to the endpoint specified in the parameter.
+        ///     Returns true if the client is still valid and connected to the endpoint specified in the parameter.
         /// </summary>
         /// <param name="endpoint">endpoint string</param>
         /// <param name="client">WCF communication client</param>
         /// <returns>true if the client is valid, false otherwise</returns>
         protected override bool ValidateClient(string endpoint, WcfCommunicationClient<TServiceContract> client)
         {
-            var clientChannel = client.ClientChannel;
-            return ((clientChannel.State == CommunicationState.Opened) &&
-                    (clientChannel.RemoteAddress.Uri.Equals(new Uri(endpoint))));
+            IClientChannel clientChannel = client.ClientChannel;
+            return clientChannel.State == CommunicationState.Opened &&
+                   clientChannel.RemoteAddress.Uri.Equals(new Uri(endpoint));
         }
 
         /// <summary>
-        /// Aborts the given client
+        ///     Aborts the given client
         /// </summary>
         /// <param name="client">Communication client</param>
         protected override void AbortClient(WcfCommunicationClient<TServiceContract> client)
@@ -177,6 +185,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf.Client
             {
                 handlers.AddRange(exceptionHandlers);
             }
+
             handlers.Add(new WcfExceptionHandler());
             return handlers;
         }

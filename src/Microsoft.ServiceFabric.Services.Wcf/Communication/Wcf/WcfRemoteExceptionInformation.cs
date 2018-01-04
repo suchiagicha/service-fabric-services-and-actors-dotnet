@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Communication.Wcf
 {
     using System;
@@ -11,6 +12,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
     using System.ServiceModel;
     using System.Text;
     using System.Xml;
+    using Microsoft.ServiceFabric.Services.Wcf;
 
     internal class WcfRemoteExceptionInformation
     {
@@ -18,55 +20,59 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
         public static readonly string FaultSubCodeRetryName = "Retry";
         public static readonly string FaultSubCodeThrowName = "Throw";
 
-        public static readonly FaultCode FaultCodeRetry = new FaultCode(FaultCodeName,
+        public static readonly FaultCode FaultCodeRetry = new FaultCode(
+            FaultCodeName,
             new FaultCode(FaultSubCodeRetryName));
 
-        public static readonly FaultCode FaultCodeThrow = new FaultCode(FaultCodeName,
+        public static readonly FaultCode FaultCodeThrow = new FaultCode(
+            FaultCodeName,
             new FaultCode(FaultSubCodeThrowName));
 
-        private static readonly DataContractSerializer serializer =
+        private static readonly DataContractSerializer ServiceExceptionDataSerializer =
             new DataContractSerializer(typeof(ServiceExceptionData));
 
         public static string ToString(Exception exception)
         {
             try
             {
-                var serializer = new NetDataContractSerializer();
+                var exceptionSerializer = new NetDataContractSerializer();
 
                 var stringWriter = new StringWriter();
 
-                using (var textStream = XmlWriter.Create(stringWriter))
+                using (XmlWriter textStream = XmlWriter.Create(stringWriter))
                 {
-                    serializer.WriteObject(textStream, exception);
+                    exceptionSerializer.WriteObject(textStream, exception);
                     textStream.Flush();
 
                     return stringWriter.ToString();
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 var exceptionStringBuilder = new StringBuilder();
 
                 exceptionStringBuilder.AppendFormat(
                     CultureInfo.CurrentCulture,
-                    Microsoft.ServiceFabric.Services.Wcf.SR.ErrorExceptionSerializationFailed1,
+                    SR.ErrorExceptionSerializationFailed1,
                     exception.GetType().FullName);
 
                 exceptionStringBuilder.AppendLine();
 
                 exceptionStringBuilder.AppendFormat(
                     CultureInfo.CurrentCulture,
-                    Microsoft.ServiceFabric.Services.Wcf.SR.ErrorExceptionSerializationFailed2,
+                    SR.ErrorExceptionSerializationFailed2,
                     exception);
 
-                var exceptionData = new ServiceExceptionData(exception.GetType().FullName,
+                var exceptionData = new ServiceExceptionData(
+                    exception.GetType().FullName,
                     exceptionStringBuilder.ToString());
                 string result;
                 if (TrySerializeExceptionData(exceptionData, out result))
                 {
                     return result;
                 }
-                throw e;
+
+                throw;
             }
         }
 
@@ -75,7 +81,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
         {
             try
             {
-                var serializer = new NetDataContractSerializer();
+                var exceptionSerializer = new NetDataContractSerializer();
                 var stringReader = new StringReader(exceptionString);
 
                 // disabling DTD processing on XML streams that are not over the network.
@@ -84,12 +90,12 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
                     DtdProcessing = DtdProcessing.Prohibit,
                     XmlResolver = null
                 };
-                using (var textStream = XmlReader.Create(stringReader, settings))
+                using (XmlReader textStream = XmlReader.Create(stringReader, settings))
                 {
-                    return (Exception) serializer.ReadObject(textStream);
+                    return (Exception) exceptionSerializer.ReadObject(textStream);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // add the message as service exception
                 ServiceExceptionData exceptionData;
@@ -97,7 +103,8 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
                 {
                     return new ServiceException(exceptionData.Type, exceptionData.Message);
                 }
-                throw ex;
+
+                throw;
             }
         }
 
@@ -107,9 +114,9 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             {
                 var stringWriter = new StringWriter();
 
-                using (var textStream = XmlWriter.Create(stringWriter))
+                using (XmlWriter textStream = XmlWriter.Create(stringWriter))
                 {
-                    serializer.WriteObject(textStream, serviceExceptionData);
+                    ServiceExceptionDataSerializer.WriteObject(textStream, serviceExceptionData);
                     textStream.Flush();
 
                     result = stringWriter.ToString();
@@ -120,6 +127,7 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
             {
                 // no-op
             }
+
             result = null;
             return false;
         }
@@ -136,9 +144,9 @@ namespace Microsoft.ServiceFabric.Services.Communication.Wcf
                     DtdProcessing = DtdProcessing.Prohibit,
                     XmlResolver = null
                 };
-                using (var textStream = XmlReader.Create(stringReader, settings))
+                using (XmlReader textStream = XmlReader.Create(stringReader, settings))
                 {
-                    result = (ServiceExceptionData) serializer.ReadObject(textStream);
+                    result = (ServiceExceptionData) ServiceExceptionDataSerializer.ReadObject(textStream);
                     return true;
                 }
             }

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 {
     using System;
@@ -14,6 +15,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
     using Microsoft.ServiceFabric.Services.Communication;
     using Microsoft.ServiceFabric.Services.Communication.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Client;
+    using SR = Microsoft.ServiceFabric.Services.Remoting.SR;
 
     internal class FabricTransportServiceRemotingClient : IServiceRemotingClient
     {
@@ -37,24 +39,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
             this.RemotingClientConnectionHandler = remotingClientConnectionHandler;
         }
 
+        public FabricTransportRemotingClientConnectionHandler RemotingClientConnectionHandler { get; }
 
-        ~FabricTransportServiceRemotingClient()
-        {
-            if (this.nativeClient != null)
-            {
-                this.nativeClient.Dispose();
-            }
-        }
-
-        public FabricTransportRemotingClientConnectionHandler RemotingClientConnectionHandler { get; private set; }
-
-        public string ConnectionAddress { get; private set; }
+        public string ConnectionAddress { get; }
 
         public bool IsValid { get; private set; }
 
         ResolvedServicePartition ICommunicationClient.ResolvedServicePartition
         {
-            get { return this.resolvedServicePartition; }
+            get => this.resolvedServicePartition;
             set
             {
                 this.resolvedServicePartition = value;
@@ -67,7 +60,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 
         string ICommunicationClient.ListenerName
         {
-            get { return this.listenerName; }
+            get => this.listenerName;
             set
             {
                 this.listenerName = value;
@@ -80,7 +73,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
 
         ResolvedServiceEndpoint ICommunicationClient.Endpoint
         {
-            get { return this.resolvedServiceEndpoint; }
+            get => this.resolvedServiceEndpoint;
             set
             {
                 this.resolvedServiceEndpoint = value;
@@ -91,40 +84,46 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
             }
         }
 
-        Task<byte[]> IServiceRemotingClient.RequestResponseAsync(ServiceRemotingMessageHeaders messageHeaders,
+        Task<byte[]> IServiceRemotingClient.RequestResponseAsync(
+            ServiceRemotingMessageHeaders messageHeaders,
             byte[] requestBody)
         {
-            var header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
-            return this.nativeClient.RequestResponseAsync(header, requestBody,
-                this.settings.OperationTimeout).ContinueWith(t =>
+            byte[] header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
+            return this.nativeClient.RequestResponseAsync(
+                header,
+                requestBody,
+                this.settings.OperationTimeout).ContinueWith(
+                t =>
                 {
-                    var retval = t.GetAwaiter().GetResult();
+                    FabricTransportReplyMessage retval = t.GetAwaiter().GetResult();
                     if (retval.IsException)
                     {
                         Exception e;
-                        var isDeserialzied =
-                            RemoteExceptionInformation.ToException(new RemoteExceptionInformation(retval.GetBody()),
+                        bool isDeserialzied =
+                            RemoteExceptionInformation.ToException(
+                                new RemoteExceptionInformation(retval.GetBody()),
                                 out e);
 
                         if (isDeserialzied)
                         {
                             throw new AggregateException(e);
                         }
-                        else
-                        {
-                            throw new ServiceException(e.GetType().FullName, string.Format(
+
+                        throw new ServiceException(
+                            e.GetType().FullName,
+                            string.Format(
                                 CultureInfo.InvariantCulture,
-                                Remoting.SR.ErrorDeserializationFailure,
+                                SR.ErrorDeserializationFailure,
                                 e.ToString()));
-                        }
                     }
+
                     return retval.GetBody();
                 });
         }
 
         void IServiceRemotingClient.SendOneWay(ServiceRemotingMessageHeaders messageHeaders, byte[] requestBody)
         {
-            var header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
+            byte[] header = ServiceRemotingMessageHeaders.Serialize(this.serializer, messageHeaders);
             this.nativeClient.SendOneWay(header, requestBody);
         }
 
@@ -132,6 +131,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client
         {
             this.IsValid = false;
             this.nativeClient.Abort();
+        }
+
+
+        ~FabricTransportServiceRemotingClient()
+        {
+            if (this.nativeClient != null)
+            {
+                this.nativeClient.Dispose();
+            }
         }
     }
 }

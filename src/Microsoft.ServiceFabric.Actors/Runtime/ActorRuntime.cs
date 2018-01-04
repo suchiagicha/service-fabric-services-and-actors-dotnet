@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -12,18 +13,20 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Actors.Diagnostics;
     using Microsoft.ServiceFabric.Actors.Generator;
-    using Microsoft.ServiceFabric.Actors.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
 
     /// <summary>
-    /// Contains methods to register actor and actor service types with Service Fabric runtime. Registering the types allows the runtime to create instances of the actor and the actor service. See https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-actors-lifecycle for more information on the lifecycle of an actor.
+    ///     Contains methods to register actor and actor service types with Service Fabric runtime. Registering the types
+    ///     allows the runtime to create instances of the actor and the actor service. See
+    ///     https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-actors-lifecycle for more information on
+    ///     the lifecycle of an actor.
     /// </summary>
     public static class ActorRuntime
     {
         private static readonly string NodeName;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ActorRuntime"/> class.
+        ///     Initializes a new instance of the <see cref="ActorRuntime" /> class.
         /// </summary>
         static ActorRuntime()
         {
@@ -31,7 +34,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Registers an actor type with Service Fabric runtime. This allows the runtime to create instances of this actor.
+        ///     Registers an actor type with Service Fabric runtime. This allows the runtime to create instances of this actor.
         /// </summary>
         /// <typeparam name="TActor">The type implementing the actor.</typeparam>
         /// <param name="timeout">A timeout period after which the registration operation will be canceled.</param>
@@ -49,14 +52,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Registers an actor service with Service Fabric runtime. This allows the runtime to create instances of the replicas for the actor service.
+        ///     Registers an actor service with Service Fabric runtime. This allows the runtime to create instances of the replicas
+        ///     for the actor service.
         /// </summary>
         /// <typeparam name="TActor">The Type implementing actor.</typeparam>
         /// <param name="actorServiceFactory">The delegate that creates new actor service.</param>
         /// <param name="timeout">A timeout period after which the registration operation will be canceled.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that repre
-        /// sents the asynchronous operation to register actor service with Service Fabric runtime.</returns>        
+        /// <returns>
+        ///     A task that repre
+        ///     sents the asynchronous operation to register actor service with Service Fabric runtime.
+        /// </returns>
         public static async Task RegisterActorAsync<TActor>(
             Func<StatefulServiceContext, ActorTypeInformation, ActorService> actorServiceFactory,
             TimeSpan timeout = default(TimeSpan),
@@ -65,10 +71,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             actorServiceFactory.ThrowIfNull("actorServiceFactory");
 
-            var actorType = typeof (TActor);
-            var actorServiceType = actorServiceFactory.GetMethodInfo().ReturnType;
-            var actorTypeInformation = ActorTypeInformation.Get(actorType);
-            var serviceTypeName = ActorNameFormat.GetFabricServiceTypeName(actorTypeInformation.ImplementationType);
+            Type actorType = typeof(TActor);
+            Type actorServiceType = actorServiceFactory.GetMethodInfo().ReturnType;
+            ActorTypeInformation actorTypeInformation = ActorTypeInformation.Get(actorType);
+            string serviceTypeName = ActorNameFormat.GetFabricServiceTypeName(actorTypeInformation.ImplementationType);
 
             try
             {
@@ -98,6 +104,5 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 throw;
             }
         }
-
     }
 }

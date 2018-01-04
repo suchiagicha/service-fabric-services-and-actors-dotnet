@@ -2,9 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 {
     using System.Globalization;
+    using Microsoft.ServiceFabric.FabricTransport.Client;
     using Microsoft.ServiceFabric.FabricTransport.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Runtime;
@@ -13,7 +15,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
     {
         private readonly FabricTransportRequestContext requestContext;
         private readonly string id;
-        private IServiceRemotingCallbackClient callback = null;
+        private IServiceRemotingCallbackClient callback;
 
         public FabricTransportServiceRemotingRequestContext(FabricTransportRequestContext requestContext)
         {
@@ -25,14 +27,17 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
         {
             if (this.callback == null)
             {
-                var nativeCallback = this.requestContext.GetCallbackClient();
+                FabricTransportCallbackClient nativeCallback = this.requestContext.GetCallbackClient();
                 this.callback = new FabricTransportServiceRemotingCallback(nativeCallback);
             }
 
             if (this.callback == null)
             {
-                throw new FabricTransportCallbackNotFoundException(string.Format(CultureInfo.CurrentCulture,
-                    SR.ErrorClientCallbackChannelNotFound, this.id));
+                throw new FabricTransportCallbackNotFoundException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        SR.ErrorClientCallbackChannelNotFound,
+                        this.id));
             }
 
             return this.callback;

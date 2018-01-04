@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Runtime
 {
     using System;
@@ -19,6 +20,12 @@ namespace Microsoft.ServiceFabric.Services.Runtime
         public ICodePackageActivationContext CodePackageContext { get; private set; }
 
         public NodeContext NodeContext { get; private set; }
+
+        public void Dispose()
+        {
+            this.Runtime?.Dispose();
+            this.CodePackageContext?.Dispose();
+        }
 
         public static async Task<RuntimeContext> GetOrCreateAsync(
             TimeSpan timeout,
@@ -56,6 +63,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
                 {
                     fabricRuntime.Dispose();
                 }
+
                 if (codePackageContext != null)
                 {
                     codePackageContext.Dispose();
@@ -69,7 +77,7 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             {
                 if (SharedContext == null)
                 {
-                    SharedContext = new RuntimeContext()
+                    SharedContext = new RuntimeContext
                     {
                         Runtime = fabricRuntime,
                         CodePackageContext = codePackageContext,
@@ -79,23 +87,17 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             }
 
             // dispose the newly created runtime and context if they do not become the shared
-            if (!object.ReferenceEquals(SharedContext.Runtime, fabricRuntime))
+            if (!ReferenceEquals(SharedContext.Runtime, fabricRuntime))
             {
                 fabricRuntime.Dispose();
             }
 
-            if (!object.ReferenceEquals(SharedContext.CodePackageContext, codePackageContext))
+            if (!ReferenceEquals(SharedContext.CodePackageContext, codePackageContext))
             {
                 codePackageContext.Dispose();
             }
 
             return SharedContext;
-        }
-
-        public void Dispose()
-        {
-            Runtime?.Dispose();
-            CodePackageContext?.Dispose();
         }
     }
 }

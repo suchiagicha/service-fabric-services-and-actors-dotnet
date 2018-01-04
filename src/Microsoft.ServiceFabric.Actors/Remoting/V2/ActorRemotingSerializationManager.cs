@@ -5,15 +5,15 @@
 
 namespace Microsoft.ServiceFabric.Actors.Remoting.V2
 {
-    using Microsoft.ServiceFabric.Actors.Remoting;
     using Microsoft.ServiceFabric.Actors.Remoting.V2.Builder;
+    using Microsoft.ServiceFabric.Actors.Remoting.V2.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Builder;
-    using ActorEventSubscription = Microsoft.ServiceFabric.Actors.Remoting.V2.Runtime.ActorEventSubscription;
 
-    class ActorRemotingSerializationManager : ServiceRemotingMessageSerializersManager
+    internal class ActorRemotingSerializationManager : ServiceRemotingMessageSerializersManager
     {
-        public ActorRemotingSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider,
+        public ActorRemotingSerializationManager(
+            IServiceRemotingMessageSerializationProvider serializationProvider,
             IServiceRemotingMessageHeaderSerializer headerSerializer) : base(serializationProvider, headerSerializer)
         {
         }
@@ -28,13 +28,12 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
                         new[]
                         {
                             typeof(EventSubscriptionRequestBody)
-                        }), 
+                        }),
                     new BasicDataResponsetMessageBodySerializer(
                         new[]
                         {
                             typeof(EventSubscriptionRequestBody)
                         }));
-                
             }
 
             return base.CreateSerializers(interfaceId);
@@ -47,6 +46,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
             {
                 return interfaceDetails;
             }
+
             //if not found in Actor Store, Check if its there in service store for actor service request
             return base.GetInterfaceDetails(interfaceId);
         }

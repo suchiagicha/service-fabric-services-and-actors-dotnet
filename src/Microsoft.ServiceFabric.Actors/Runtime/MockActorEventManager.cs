@@ -10,7 +10,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors.Remoting.Builder;
     using Microsoft.ServiceFabric.Actors.Remoting.V2.Builder;
     using Microsoft.ServiceFabric.Services.Common;
 
@@ -36,15 +35,15 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public ActorEventProxy GetActorEventProxy(ActorId actorId, Type eventType)
         {
-            var eventProxyMap = this.actorIdToEventProxyMap.GetOrAdd(
+            ConcurrentDictionary<Type, ActorEventProxy> eventProxyMap = this.actorIdToEventProxyMap.GetOrAdd(
                 actorId,
                 new ConcurrentDictionary<Type, ActorEventProxy>());
 
-            var eventProxy = eventProxyMap.GetOrAdd(
+            ActorEventProxy eventProxy = eventProxyMap.GetOrAdd(
                 eventType,
                 t =>
                 {
-                    var eventProxyGenerator = ActorCodeBuilder.GetOrCreateEventProxyGenerator(t);
+                    ActorEventProxyGenerator eventProxyGenerator = ActorCodeBuilder.GetOrCreateEventProxyGenerator(t);
                     return eventProxyGenerator.CreateActorEventProxy();
                 });
             return eventProxy;

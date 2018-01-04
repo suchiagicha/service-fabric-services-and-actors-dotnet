@@ -1,37 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Microsoft.ServiceFabric.Services.Remoting.V2
+﻿namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.Serialization;
     using System.Xml;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
 
-    class BasicDataContractSerializationProvider : IServiceRemotingMessageSerializationProvider
+    internal class BasicDataContractSerializationProvider : IServiceRemotingMessageSerializationProvider
     {
         public IServiceRemotingMessageBodyFactory CreateMessageBodyFactory()
         {
             return new DataContractRemotingMessageFactory();
         }
 
-        public IServiceRemotingRequestMessageBodySerializer CreateRequestMessageSerializer(Type serviceInterfaceType,
+        public IServiceRemotingRequestMessageBodySerializer CreateRequestMessageSerializer(
+            Type serviceInterfaceType,
             IEnumerable<Type> requestBodyTypes)
         {
-           return  new BasicDataRequestMessageBodySerializer(requestBodyTypes);
+            return new BasicDataRequestMessageBodySerializer(requestBodyTypes);
         }
 
-        public IServiceRemotingResponseMessageBodySerializer CreateResponseMessageSerializer(Type serviceInterfaceType,
+        public IServiceRemotingResponseMessageBodySerializer CreateResponseMessageSerializer(
+            Type serviceInterfaceType,
             IEnumerable<Type> responseBodyTypes)
         {
             return new BasicDataResponsetMessageBodySerializer(responseBodyTypes);
         }
     }
 
-    class BasicDataRequestMessageBodySerializer : IServiceRemotingRequestMessageBodySerializer
+    internal class BasicDataRequestMessageBodySerializer : IServiceRemotingRequestMessageBodySerializer
     {
         private readonly DataContractSerializer serializer;
 
@@ -40,51 +38,51 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         {
             this.serializer = new DataContractSerializer(
                 typeof(ServiceRemotingRequestMessageBody),
-                new DataContractSerializerSettings()
+                new DataContractSerializerSettings
                 {
                     MaxItemsInObjectGraph = int.MaxValue,
                     KnownTypes = parameterInfo
                 });
         }
+
         public OutgoingMessageBody Serialize(IServiceRemotingRequestMessageBody serviceRemotingRequestMessageBody)
         {
-            if (serviceRemotingRequestMessageBody == null )
+            if (serviceRemotingRequestMessageBody == null)
             {
                 return null;
             }
 
             using (var stream = new MemoryStream())
             {
-                using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                 {
-                    serializer.WriteObject(writer, serviceRemotingRequestMessageBody);
+                    this.serializer.WriteObject(writer, serviceRemotingRequestMessageBody);
                     writer.Flush();
-                    var bytes = stream.ToArray();
+                    byte[] bytes = stream.ToArray();
                     var segments = new List<ArraySegment<byte>>();
                     segments.Add(new ArraySegment<byte>(bytes));
-                    return  new OutgoingMessageBody(segments);
+                    return new OutgoingMessageBody(segments);
                 }
             }
         }
 
         public IServiceRemotingRequestMessageBody Deserialize(IncomingMessageBody messageBody)
         {
-            if ((messageBody == null) || (messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length==0))
+            if (messageBody == null || messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0)
             {
                 return null;
             }
 
-            using (var reader = XmlDictionaryReader.CreateBinaryReader(
+            using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(
                 messageBody.GetReceivedBuffer(),
                 XmlDictionaryReaderQuotas.Max))
             {
-                return (ServiceRemotingRequestMessageBody)this.serializer.ReadObject(reader);
-
+                return (ServiceRemotingRequestMessageBody) this.serializer.ReadObject(reader);
             }
         }
-        }
+    }
 
-    class BasicDataResponsetMessageBodySerializer : IServiceRemotingResponseMessageBodySerializer
+    internal class BasicDataResponsetMessageBodySerializer : IServiceRemotingResponseMessageBodySerializer
     {
         private readonly DataContractSerializer serializer;
 
@@ -93,12 +91,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         {
             this.serializer = new DataContractSerializer(
                 typeof(ServiceRemotingResponseMessageBody),
-                new DataContractSerializerSettings()
+                new DataContractSerializerSettings
                 {
                     MaxItemsInObjectGraph = int.MaxValue,
                     KnownTypes = parameterInfo
                 });
         }
+
         public OutgoingMessageBody Serialize(IServiceRemotingResponseMessageBody serviceRemotingRequestMessageBody)
         {
             if (serviceRemotingRequestMessageBody == null)
@@ -108,11 +107,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
             using (var stream = new MemoryStream())
             {
-                using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                 {
-                    serializer.WriteObject(writer, serviceRemotingRequestMessageBody);
+                    this.serializer.WriteObject(writer, serviceRemotingRequestMessageBody);
                     writer.Flush();
-                    var bytes = stream.ToArray();
+                    byte[] bytes = stream.ToArray();
                     var segments = new List<ArraySegment<byte>>();
                     segments.Add(new ArraySegment<byte>(bytes));
                     return new OutgoingMessageBody(segments);
@@ -122,17 +121,16 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
         public IServiceRemotingResponseMessageBody Deserialize(IncomingMessageBody messageBody)
         {
-            if ((messageBody == null) || (messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0))
+            if (messageBody == null || messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0)
             {
                 return null;
             }
 
-            using (var reader = XmlDictionaryReader.CreateBinaryReader(
+            using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(
                 messageBody.GetReceivedBuffer(),
                 XmlDictionaryReaderQuotas.Max))
             {
-                return (ServiceRemotingResponseMessageBody)this.serializer.ReadObject(reader);
-
+                return (ServiceRemotingResponseMessageBody) this.serializer.ReadObject(reader);
             }
         }
     }

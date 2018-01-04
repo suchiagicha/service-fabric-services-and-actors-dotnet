@@ -16,15 +16,15 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.FabricTransport.Client
     using Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime;
 
     /// <summary>
-    /// An <see cref="IServiceRemotingClientFactory"/> that uses
-    /// Fabric TCP transport to create <see cref="IServiceRemotingClient"/> that communicate with 
-    /// actors over interfaces that are remoted via 
-    /// <see cref="FabricTransportServiceRemotingListener"/>.
+    ///     An <see cref="IServiceRemotingClientFactory" /> that uses
+    ///     Fabric TCP transport to create <see cref="IServiceRemotingClient" /> that communicate with
+    ///     actors over interfaces that are remoted via
+    ///     <see cref="FabricTransportServiceRemotingListener" />.
     /// </summary>
     public class FabricTransportActorRemotingClientFactory : FabricTransportServiceRemotingClientFactory
     {
         /// <summary>
-        /// Constructs a fabric transport based actor remoting client factory.
+        ///     Constructs a fabric transport based actor remoting client factory.
         /// </summary>
         /// <param name="callbackClient">
         ///     The callback client that receives the callbacks from the service.
@@ -36,18 +36,18 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.FabricTransport.Client
         }
 
         /// <summary>
-        /// Constructs a fabric transport based actor remoting client factory.
+        ///     Constructs a fabric transport based actor remoting client factory.
         /// </summary>
         /// <param name="fabricTransportRemotingSettings">
-        ///     The settings for the fabric transport. If the settings are not provided or null, default settings 
+        ///     The settings for the fabric transport. If the settings are not provided or null, default settings
         ///     with no security.
         /// </param>
         /// <param name="callbackClient">
         ///     The callback client that receives the callbacks from the service.
         /// </param>
         /// <param name="servicePartitionResolver">
-        ///     Service partition resolver to resolve the service endpoints. If not specified, a default 
-        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault"/> is used.
+        ///     Service partition resolver to resolve the service endpoints. If not specified, a default
+        ///     service partition resolver returned by <see cref="ServicePartitionResolver.GetDefault" /> is used.
         /// </param>
         /// <param name="exceptionHandlers">
         ///     Exception handlers to handle the exceptions encountered in communicating with the actor.
@@ -78,6 +78,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.FabricTransport.Client
             {
                 handlers.AddRange(exceptionHandlers);
             }
+
             handlers.Add(new ActorRemotingExceptionHandler());
             return handlers;
         }

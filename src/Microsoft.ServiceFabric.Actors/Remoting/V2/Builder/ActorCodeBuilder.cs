@@ -15,12 +15,13 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
     using Microsoft.ServiceFabric.Services.Remoting.Builder;
     using Microsoft.ServiceFabric.Services.Remoting.Description;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Builder;
+    using MethodDispatcherBase = Microsoft.ServiceFabric.Services.Remoting.Builder.MethodDispatcherBase;
 
     internal class ActorCodeBuilder : CodeBuilder
     {
-        private static ICodeBuilder Singleton = new ActorCodeBuilder();
-        private static object BuildLock = new object();
         internal static readonly InterfaceDetailsStore InterfaceDetailsStore = new InterfaceDetailsStore();
+        private static readonly ICodeBuilder Singleton = new ActorCodeBuilder();
+        private static readonly object BuildLock = new object();
 
         private readonly ICodeBuilder eventCodeBuilder;
         private readonly MethodBodyTypesBuilder methodBodyTypesBuilder;
@@ -30,28 +31,17 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
         public ActorCodeBuilder()
             : base(new ActorCodeBuilderNames())
         {
-            this.eventCodeBuilder = new ActorCodeBuilder.ActorEventCodeBuilder();
+            this.eventCodeBuilder = new ActorEventCodeBuilder();
             this.methodBodyTypesBuilder = new MethodBodyTypesBuilder(this);
             this.methodDispatcherBuilder = new MethodDispatcherBuilder<ActorMethodDispatcherBase>(this);
             this.proxyGeneratorBuilder = new ActorProxyGeneratorBuilder(this);
-        }
-
-        internal static bool TryGetKnownTypes(int interfaceId, out InterfaceDetails interfaceDetails)
-        {
-            return InterfaceDetailsStore.TryGetKnownTypes(interfaceId, out interfaceDetails);
-        }
-
-        
-        internal static bool TryGetKnownTypes(string interfaceName, out InterfaceDetails interfaceDetails)
-        {
-            return InterfaceDetailsStore.TryGetKnownTypes(interfaceName, out interfaceDetails);
         }
 
         public static ActorProxyGenerator GetOrCreateProxyGenerator(Type actorInterfaceType)
         {
             lock (BuildLock)
             {
-                return (ActorProxyGenerator)Singleton.GetOrBuildProxyGenerator(actorInterfaceType).ProxyGenerator;
+                return (ActorProxyGenerator) Singleton.GetOrBuildProxyGenerator(actorInterfaceType).ProxyGenerator;
             }
         }
 
@@ -59,23 +49,23 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
         {
             lock (BuildLock)
             {
-                return (ActorMethodDispatcherBase)Singleton.GetOrBuilderMethodDispatcher(actorInterfaceType).MethodDispatcher;
+                return (ActorMethodDispatcherBase) Singleton.GetOrBuilderMethodDispatcher(actorInterfaceType).MethodDispatcher;
             }
         }
 
         public static ActorEventProxyGenerator GetOrCreateEventProxyGenerator(Type actorEventInterfaceType)
         {
-            var eventCodeBuilder = ((ActorCodeBuilder)Singleton).eventCodeBuilder;
+            ICodeBuilder eventCodeBuilder = ((ActorCodeBuilder) Singleton).eventCodeBuilder;
             lock (BuildLock)
             {
-                return (ActorEventProxyGenerator)eventCodeBuilder.GetOrBuildProxyGenerator(actorEventInterfaceType).ProxyGenerator;
+                return (ActorEventProxyGenerator) eventCodeBuilder.GetOrBuildProxyGenerator(actorEventInterfaceType).ProxyGenerator;
             }
         }
 
         protected override MethodDispatcherBuildResult BuildMethodDispatcher(Type interfaceType)
         {
-            var actorInterfaceDescription = ActorInterfaceDescription.CreateUsingCRCId(interfaceType);
-            var res =  this.methodDispatcherBuilder.Build(actorInterfaceDescription);
+            ActorInterfaceDescription actorInterfaceDescription = ActorInterfaceDescription.CreateUsingCRCId(interfaceType);
+            MethodDispatcherBuildResult res = this.methodDispatcherBuilder.Build(actorInterfaceDescription);
             InterfaceDetailsStore.UpdateKnownTypeDetail(actorInterfaceDescription);
             return res;
         }
@@ -89,8 +79,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
         protected override ProxyGeneratorBuildResult BuildProxyGenerator(Type interfaceType)
         {
             // get all event interfaces supported by this actorInterface and build method dispatchers for those
-            var actorEventInterfaces = interfaceType.GetActorEventInterfaces();
-            var actorEventDispatchers = actorEventInterfaces.Select(
+            Type[] actorEventInterfaces = interfaceType.GetActorEventInterfaces();
+            IEnumerable<MethodDispatcherBase> actorEventDispatchers = actorEventInterfaces.Select(
                 t => this.eventCodeBuilder.GetOrBuilderMethodDispatcher(t).MethodDispatcher);
             IEnumerable<ActorMethodDispatcherBase> actorMethodDispatcherBases =
                 actorEventDispatchers.Cast<ActorMethodDispatcherBase>();
@@ -98,16 +88,27 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
             ActorEventSubscriberManager.Singleton.RegisterEventDispatchers(actorMethodDispatcherBases);
 
             // create all actor interfaces that this interface derives from
-            var actorInterfaces = new List<Type>() { interfaceType };
+            var actorInterfaces = new List<Type> {interfaceType};
             actorInterfaces.AddRange(interfaceType.GetActorInterfaces());
 
             // create interface descriptions for all interfaces
-            var actorInterfaceDescriptions = actorInterfaces.Select<Type, InterfaceDescription>(
+            IEnumerable<InterfaceDescription> actorInterfaceDescriptions = actorInterfaces.Select<Type, InterfaceDescription>(
                 t => ActorInterfaceDescription.CreateUsingCRCId(t));
 
-            var res = this.proxyGeneratorBuilder.Build(interfaceType, actorInterfaceDescriptions);
+            ProxyGeneratorBuildResult res = this.proxyGeneratorBuilder.Build(interfaceType, actorInterfaceDescriptions);
             InterfaceDetailsStore.UpdateKnownTypesDetails(actorInterfaceDescriptions);
             return res;
+        }
+
+        internal static bool TryGetKnownTypes(int interfaceId, out InterfaceDetails interfaceDetails)
+        {
+            return InterfaceDetailsStore.TryGetKnownTypes(interfaceId, out interfaceDetails);
+        }
+
+
+        internal static bool TryGetKnownTypes(string interfaceName, out InterfaceDetails interfaceDetails)
+        {
+            return InterfaceDetailsStore.TryGetKnownTypes(interfaceName, out interfaceDetails);
         }
 
         private class ActorEventCodeBuilder : CodeBuilder
@@ -127,8 +128,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
 
             protected override MethodDispatcherBuildResult BuildMethodDispatcher(Type interfaceType)
             {
-                var actorEventInterfaceDescription = ActorEventInterfaceDescription.CreateUsingCRCId(interfaceType);
-                var res = this.methodDispatcherBuilder.Build(actorEventInterfaceDescription);
+                ActorEventInterfaceDescription actorEventInterfaceDescription = ActorEventInterfaceDescription.CreateUsingCRCId(interfaceType);
+                MethodDispatcherBuildResult res = this.methodDispatcherBuilder.Build(actorEventInterfaceDescription);
                 InterfaceDetailsStore.UpdateKnownTypeDetail(actorEventInterfaceDescription);
                 return res;
             }
@@ -142,10 +143,10 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Builder
             protected override ProxyGeneratorBuildResult BuildProxyGenerator(Type interfaceType)
             {
                 // get all event interfaces supported by this actorInterface and build method dispatchers for those
-                var actorEventInterfaces = new[] { interfaceType };
+                var actorEventInterfaces = new[] {interfaceType};
 
                 // create interface descriptions for all interfaces
-                var actorEventInterfaceDescriptions = actorEventInterfaces.Select<Type, InterfaceDescription>(
+                IEnumerable<InterfaceDescription> actorEventInterfaceDescriptions = actorEventInterfaces.Select<Type, InterfaceDescription>(
                     t => ActorEventInterfaceDescription.CreateUsingCRCId(t));
 
                 InterfaceDetailsStore.UpdateKnownTypesDetails(actorEventInterfaceDescriptions);

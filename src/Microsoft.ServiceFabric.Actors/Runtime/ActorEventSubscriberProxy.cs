@@ -2,54 +2,49 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
-    using Microsoft.ServiceFabric.Actors.Remoting;
+    using Microsoft.ServiceFabric.Actors.Remoting.V1;
     using Microsoft.ServiceFabric.Actors.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting;
+    using Microsoft.ServiceFabric.Services.Remoting.V1;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
 
     internal class ActorEventSubscriberProxy : IActorEventSubscriberProxy
     {
 #if !DotNetCoreClr
-        private readonly ServiceFabric.Services.Remoting.V1.IServiceRemotingCallbackClient callback;
+        private readonly IServiceRemotingCallbackClient callback;
 #endif
-        private readonly ServiceFabric.Services.Remoting.V2.Runtime.IServiceRemotingCallbackClient callbackV2;
+        private readonly Services.Remoting.V2.Runtime.IServiceRemotingCallbackClient callbackV2;
         private readonly Guid id;
-        private readonly RemotingListener remotingListener;
 
 #if !DotNetCoreClr
-        public ActorEventSubscriberProxy(Guid id, ServiceFabric.Services.Remoting.V1.IServiceRemotingCallbackClient callback)
+        public ActorEventSubscriberProxy(Guid id, IServiceRemotingCallbackClient callback)
         {
             this.id = id;
             this.callback = callback;
-            this.remotingListener = RemotingListener.V1Listener;
+            this.RemotingListener = RemotingListener.V1Listener;
         }
 
 #endif
-        public ActorEventSubscriberProxy(Guid id, ServiceFabric.Services.Remoting.V2.Runtime.IServiceRemotingCallbackClient callback)
+        public ActorEventSubscriberProxy(Guid id, Services.Remoting.V2.Runtime.IServiceRemotingCallbackClient callback)
         {
             this.id = id;
             this.callbackV2 = callback;
-            this.remotingListener = RemotingListener.V2Listener;
+            this.RemotingListener = RemotingListener.V2Listener;
         }
 
-        Guid IActorEventSubscriberProxy.Id
-        {
-            get { return this.id; }
-        }
+        Guid IActorEventSubscriberProxy.Id => this.id;
 
-        public RemotingListener RemotingListener
-        {
-            get { return this.remotingListener; }
-        }
+        public RemotingListener RemotingListener { get; }
 
 #if !DotNetCoreClr
         void IActorEventSubscriberProxy.RaiseEvent(int eventInterfaceId, int eventMethodId, byte[] eventMsgBody)
         {
             this.callback.OneWayMessage(
-                new Remoting.V1.ActorMessageHeaders()
+                new ActorMessageHeaders
                 {
                     ActorId = new ActorId(this.id),
                     InterfaceId = eventInterfaceId,
@@ -69,7 +64,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             };
 
             this.callbackV2.SendOneWay(
-                new ServiceRemotingRequestMessage(headers,
+                new ServiceRemotingRequestMessage(
+                    headers,
                     eventMsgBody));
         }
 
@@ -79,6 +75,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 return this.callbackV2.GetRemotingMessageBodyFactory();
             }
+
             throw new NotSupportedException("MessageFactory is not supported for V1Listener");
         }
     }

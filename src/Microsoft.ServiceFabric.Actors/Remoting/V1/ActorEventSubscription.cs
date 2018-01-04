@@ -6,7 +6,6 @@
 namespace Microsoft.ServiceFabric.Actors.Remoting.V1
 {
     using System.Runtime.Serialization;
-    using Microsoft.ServiceFabric.Actors.Remoting;
     using Microsoft.ServiceFabric.Services.Common;
 
     internal static class ActorEventSubscription

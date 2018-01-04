@@ -12,13 +12,42 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
     internal sealed class KvsActorStateProviderSettings : ActorStateProviderSettings
     {
-        private const string BackupCallbackSlowCancellationHealthReportTimeToLiveParameterName = "BackupCallbackSlowCancellationHealthReportTimeToLiveInSeconds";
+        private const string BackupCallbackSlowCancellationHealthReportTimeToLiveParameterName =
+            "BackupCallbackSlowCancellationHealthReportTimeToLiveInSeconds";
+
         private const string BackupCallbackExpectedCancellationTimeParameterName = "BackupCallbackExpectedCancellationTimeInSeconds";
-        
+
         public KvsActorStateProviderSettings()
         {
             this.BackupCallbackSlowCancellationHealthReportTimeToLive = TimeSpan.FromMinutes(5);
             this.BackupCallbackExpectedCancellationTime = TimeSpan.FromSeconds(5);
+        }
+
+        public TimeSpan BackupCallbackSlowCancellationHealthReportTimeToLive { get; set; }
+
+        public TimeSpan BackupCallbackExpectedCancellationTime { get; set; }
+
+        public static KvsActorStateProviderSettings LoadFrom(
+            ICodePackageActivationContext activationContext,
+            string configPackageName,
+            string sectionName)
+        {
+            var settings = new KvsActorStateProviderSettings();
+
+            settings.LoadFromSettings(activationContext, configPackageName, sectionName);
+
+            return settings;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            sb.Append($"{base.ToString()}, ");
+            sb.Append($"BackupCallbackSlowCancellationHealthReportTimeToLive: {this.BackupCallbackSlowCancellationHealthReportTimeToLive.TotalSeconds}, ");
+            sb.Append($"BackupCallbackExpectedCancellationTime: {this.BackupCallbackExpectedCancellationTime.TotalSeconds}");
+
+            return sb.ToString();
         }
 
         protected override void LoadFromSection(ConfigurationSection section)
@@ -34,33 +63,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 section,
                 BackupCallbackExpectedCancellationTimeParameterName,
                 this.BackupCallbackExpectedCancellationTime);
-        }
-
-        public static KvsActorStateProviderSettings LoadFrom(
-            ICodePackageActivationContext activationContext,
-            string configPackageName,
-            string sectionName)
-        {
-            var settings = new KvsActorStateProviderSettings();
-
-            settings.LoadFromSettings(activationContext, configPackageName, sectionName);
-
-            return settings;
-        }
-
-        public TimeSpan BackupCallbackSlowCancellationHealthReportTimeToLive { get; set; }
-
-        public TimeSpan BackupCallbackExpectedCancellationTime { get; set; }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-
-            sb.Append($"{base.ToString()}, ");
-            sb.Append($"BackupCallbackSlowCancellationHealthReportTimeToLive: {this.BackupCallbackSlowCancellationHealthReportTimeToLive.TotalSeconds}, ");
-            sb.Append($"BackupCallbackExpectedCancellationTime: {this.BackupCallbackExpectedCancellationTime.TotalSeconds}");
-
-            return sb.ToString();
         }
     }
 }

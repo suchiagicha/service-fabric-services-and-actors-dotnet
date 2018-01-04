@@ -5,52 +5,61 @@
 
 namespace Microsoft.ServiceFabric.Services
 {
-    using System;
     using System.Diagnostics.Tracing;
     using System.Globalization;
     using Microsoft.ServiceFabric.Diagnostics.Tracing;
 
     /// <summary>
-    /// Reliable Services event source collected by Service Fabric runtime diagnostics system.
+    ///     Reliable Services event source collected by Service Fabric runtime diagnostics system.
     /// </summary>
     [EventSource(Guid = "27b7a543-7280-5c2a-b053-f2f798e2cbb7", Name = "ServiceFramework")]
     internal sealed class ServiceEventSource : ServiceFabricEventSource
     {
         /// <summary>
-        /// Gets instance of <see cref="ServiceEventSource"/> class.
+        ///     Gets instance of <see cref="ServiceEventSource" /> class.
         /// </summary>
         internal static readonly ServiceEventSource Instance = new ServiceEventSource();
 
         /// <summary>
-        /// Prevents a default instance of the <see cref="ServiceEventSource" /> class from being created.
+        ///     Prevents a default instance of the <see cref="ServiceEventSource" /> class from being created.
         /// </summary>
         private ServiceEventSource()
         {
         }
 
+        #region Keywords / Tasks / Opcodes
+
+        public static class Keywords
+        {
+            public const EventKeywords Default = (EventKeywords) 0x0001;
+        }
+
+        #endregion
+
         #region Events
+
         [Event(1, Message = "{2}", Level = EventLevel.Informational, Keywords = Keywords.Default)]
         private void InfoText(string id, string type, string message)
         {
-            WriteEvent(1, id, type, message);
+            this.WriteEvent(1, id, type, message);
         }
 
         [Event(2, Message = "{2}", Level = EventLevel.Warning, Keywords = Keywords.Default)]
         private void WarningText(string id, string type, string message)
         {
-            WriteEvent(2, id, type, message);
+            this.WriteEvent(2, id, type, message);
         }
 
         [Event(3, Message = "{2}", Level = EventLevel.Error, Keywords = Keywords.Default)]
         private void ErrorText(string id, string type, string message)
         {
-            WriteEvent(3, id, type, message);
+            this.WriteEvent(3, id, type, message);
         }
 
         [Event(4, Message = "{2}", Level = EventLevel.Verbose, Keywords = Keywords.Default)]
         private void NoiseText(string id, string type, string message)
         {
-            WriteEvent(4, id, type, message);
+            this.WriteEvent(4, id, type, message);
         }
 
         #endregion
@@ -92,7 +101,7 @@ namespace Microsoft.ServiceFabric.Services
         [NonEvent]
         internal void WriteInfo(string type, string format, params object[] args)
         {
-            WriteInfoWithId(type, string.Empty, format, args);
+            this.WriteInfoWithId(type, string.Empty, format, args);
         }
 
         [NonEvent]
@@ -111,7 +120,7 @@ namespace Microsoft.ServiceFabric.Services
         [NonEvent]
         internal void WriteNoise(string type, string format, params object[] args)
         {
-            WriteNoiseWithId(type, string.Empty, format, args);
+            this.WriteNoiseWithId(type, string.Empty, format, args);
         }
 
         [NonEvent]
@@ -125,15 +134,6 @@ namespace Microsoft.ServiceFabric.Services
             {
                 Instance.NoiseText(id, type, string.Format(CultureInfo.InvariantCulture, format, args));
             }
-        }
-
-        #endregion
-
-        #region Keywords / Tasks / Opcodes
-
-        public static class Keywords
-        {
-            public const EventKeywords Default = (EventKeywords)0x0001;
         }
 
         #endregion

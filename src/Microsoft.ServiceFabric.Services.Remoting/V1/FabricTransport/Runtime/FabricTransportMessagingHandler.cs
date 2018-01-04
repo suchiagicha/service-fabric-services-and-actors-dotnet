@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 {
     using System;
@@ -10,8 +11,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.FabricTransport;
     using Microsoft.ServiceFabric.FabricTransport.Runtime;
-    using Microsoft.ServiceFabric.Services.Communication;
-    using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.V1.Runtime;
 
     internal class FabricTransportMessagingHandler : IFabricTransportMessageHandler
@@ -49,9 +48,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
             }
             catch (Exception e)
             {
-                ServiceTrace.Source.WriteInfo("FabricTransportCommunicationHandler", "Exception While dispatching {0}",
+                ServiceTrace.Source.WriteInfo(
+                    "FabricTransportCommunicationHandler",
+                    "Exception While dispatching {0}",
                     e);
-                var remoteExceptionInformation = RemoteExceptionInformation.FromException(e);
+                RemoteExceptionInformation remoteExceptionInformation = RemoteExceptionInformation.FromException(e);
                 replybody = remoteExceptionInformation.Data;
                 return new FabricTransportReplyMessage(true, replybody);
             }
@@ -60,7 +61,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime
 
         public void HandleOneWay(FabricTransportRequestContext requestContext, byte[] headers, byte[] requestBody)
         {
-            var messageHeaders = ServiceRemotingMessageHeaders.Deserialize(this.serializer, headers);
+            ServiceRemotingMessageHeaders messageHeaders = ServiceRemotingMessageHeaders.Deserialize(this.serializer, headers);
             var context = new FabricTransportServiceRemotingRequestContext(requestContext);
             this.messageHandler.HandleOneWay(context, messageHeaders, requestBody);
         }

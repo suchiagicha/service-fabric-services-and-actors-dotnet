@@ -2,11 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Runtime
 {
     using System;
-    using System.Fabric;
     using System.Diagnostics.Tracing;
+    using System.Fabric;
 
     //
     // REMARKS: 
@@ -25,12 +26,12 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             StatefulServiceContext serviceContext)
         {
             this.StatefulRunAsyncInvocation(
-                    serviceContext.CodePackageActivationContext.ApplicationTypeName,
-                    serviceContext.CodePackageActivationContext.ApplicationName,
-                    serviceContext.ServiceTypeName,
-                    serviceContext.ServiceName.OriginalString,
-                    serviceContext.PartitionId.ToString(),
-                    serviceContext.ReplicaId);
+                serviceContext.CodePackageActivationContext.ApplicationTypeName,
+                serviceContext.CodePackageActivationContext.ApplicationName,
+                serviceContext.ServiceTypeName,
+                serviceContext.ServiceName.OriginalString,
+                serviceContext.PartitionId.ToString(),
+                serviceContext.ReplicaId);
         }
 
         [NonEvent]
@@ -39,13 +40,13 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             TimeSpan slowCancellationTimeMillis)
         {
             this.StatefulRunAsyncCancellation(
-                    serviceContext.CodePackageActivationContext.ApplicationTypeName,
-                    serviceContext.CodePackageActivationContext.ApplicationName,
-                    serviceContext.ServiceTypeName,
-                    serviceContext.ServiceName.OriginalString,
-                    serviceContext.PartitionId.ToString(),
-                    serviceContext.ReplicaId,
-                    slowCancellationTimeMillis.TotalMilliseconds);
+                serviceContext.CodePackageActivationContext.ApplicationTypeName,
+                serviceContext.CodePackageActivationContext.ApplicationName,
+                serviceContext.ServiceTypeName,
+                serviceContext.ServiceName.OriginalString,
+                serviceContext.PartitionId.ToString(),
+                serviceContext.ReplicaId,
+                slowCancellationTimeMillis.TotalMilliseconds);
         }
 
         [NonEvent]
@@ -54,13 +55,13 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             bool wasCanceled)
         {
             this.StatefulRunAsyncCompletion(
-                    serviceContext.CodePackageActivationContext.ApplicationTypeName,
-                    serviceContext.CodePackageActivationContext.ApplicationName,
-                    serviceContext.ServiceTypeName,
-                    serviceContext.ServiceName.OriginalString,
-                    serviceContext.PartitionId.ToString(),
-                    serviceContext.ReplicaId,
-                    wasCanceled);
+                serviceContext.CodePackageActivationContext.ApplicationTypeName,
+                serviceContext.CodePackageActivationContext.ApplicationName,
+                serviceContext.ServiceTypeName,
+                serviceContext.ServiceName.OriginalString,
+                serviceContext.PartitionId.ToString(),
+                serviceContext.ReplicaId,
+                wasCanceled);
         }
 
         [NonEvent]
@@ -70,14 +71,14 @@ namespace Microsoft.ServiceFabric.Services.Runtime
             TimeSpan slowCancellationTimeMillis)
         {
             this.StatefulRunAsyncSlowCancellation(
-                    serviceContext.CodePackageActivationContext.ApplicationTypeName,
-                    serviceContext.CodePackageActivationContext.ApplicationName,
-                    serviceContext.ServiceTypeName,
-                    serviceContext.ServiceName.OriginalString,
-                    serviceContext.PartitionId.ToString(),
-                    serviceContext.ReplicaId,
-                    actualCancellationTimeMillis.TotalMilliseconds,
-                    slowCancellationTimeMillis.TotalMilliseconds);
+                serviceContext.CodePackageActivationContext.ApplicationTypeName,
+                serviceContext.CodePackageActivationContext.ApplicationName,
+                serviceContext.ServiceTypeName,
+                serviceContext.ServiceName.OriginalString,
+                serviceContext.PartitionId.ToString(),
+                serviceContext.ReplicaId,
+                actualCancellationTimeMillis.TotalMilliseconds,
+                slowCancellationTimeMillis.TotalMilliseconds);
         }
 
         [NonEvent]

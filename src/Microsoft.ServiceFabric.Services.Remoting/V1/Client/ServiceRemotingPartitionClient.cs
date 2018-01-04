@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Remoting.V1.Client
 {
     using System;
@@ -9,10 +10,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Client
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Communication.Client;
-    using Microsoft.ServiceFabric.Services.Remoting;
 
     /// <summary>
-    /// Specifies the Service partition client for Remoting communication.
+    ///     Specifies the Service partition client for Remoting communication.
     /// </summary>
     internal class ServiceRemotingPartitionClient : ServicePartitionClient<IServiceRemotingClient>, IServiceRemotingPartitionClient
     {
@@ -66,11 +66,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Client
 
             using (cancellationToken.Register(() => tcs.TrySetResult(false)))
             {
-                var innerTask = this.InvokeWithRetryAsync(
+                Task<byte[]> innerTask = this.InvokeWithRetryAsync(
                     client => client.RequestResponseAsync(headers, requestMsgBody),
                     cancellationToken);
 
-                var completedTask = await Task.WhenAny(innerTask, tcs.Task);
+                Task completedTask = await Task.WhenAny(innerTask, tcs.Task);
 
                 if (completedTask != innerTask)
                 {
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Client
                         //
                         var remoteCancellationTaskCts = new CancellationTokenSource();
 
-                        var remoteCancellationTask = this.InvokeWithRetryAsync(
+                        Task<byte[]> remoteCancellationTask = this.InvokeWithRetryAsync(
                             client => client.RequestResponseAsync(headers, requestMsgBody),
                             remoteCancellationTaskCts.Token);
 
@@ -113,7 +113,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V1.Client
                         // task or actual request task to finish.
                         //
 
-                        var finishedTask = await Task.WhenAny(innerTask, remoteCancellationTask);
+                        Task<byte[]> finishedTask = await Task.WhenAny(innerTask, remoteCancellationTask);
 
                         if (finishedTask != innerTask)
                         {

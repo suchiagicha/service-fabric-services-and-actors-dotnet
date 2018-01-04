@@ -2,12 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
 
     /// <summary>
-    /// Settings to configures behavior of Actor Service.
+    ///     Settings to configures behavior of Actor Service.
     /// </summary>
     public sealed class ActorServiceSettings
     {
@@ -16,33 +17,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         private ReminderSettings reminderSettings = new ReminderSettings();
 
         /// <summary>
-        /// Initializes a new instance of the ActorServiceSettings class.
+        ///     Gets or sets garbage collection settings for the Actor service.
         /// </summary>
-        public ActorServiceSettings()
-        {   
-        }
-
-        internal static ActorServiceSettings DeepCopyFromOrDefaultOnNull(ActorServiceSettings other)
-        {
-            var actorServiceSettings = new ActorServiceSettings();
-
-            if (other == null) return actorServiceSettings;
-
-            // deep copy settings.
-            actorServiceSettings.actorGarbageCollectionSettings = new ActorGarbageCollectionSettings(other.actorGarbageCollectionSettings);
-            actorServiceSettings.actorConcurrencySettings = new ActorConcurrencySettings(other.actorConcurrencySettings);
-            actorServiceSettings.reminderSettings = new ReminderSettings(other.reminderSettings);
-
-            return actorServiceSettings;
-        }
-        
-        /// <summary>
-        /// Gets or sets garbage collection settings for the Actor service.
-        /// </summary>
-        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorGarbageCollectionSettings"/> for the Actor Service.</value>
+        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorGarbageCollectionSettings" /> for the Actor Service.</value>
         public ActorGarbageCollectionSettings ActorGarbageCollectionSettings
         {
-            get { return this.actorGarbageCollectionSettings; }
+            get => this.actorGarbageCollectionSettings;
 
             set
             {
@@ -56,12 +36,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Gets or sets settings to configure the turn based concurrency lock for actors.
+        ///     Gets or sets settings to configure the turn based concurrency lock for actors.
         /// </summary>
-        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorConcurrencySettings"/> for the Actor Service.</value>
+        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ActorConcurrencySettings" /> for the Actor Service.</value>
         public ActorConcurrencySettings ActorConcurrencySettings
         {
-            get { return this.actorConcurrencySettings; }
+            get => this.actorConcurrencySettings;
 
             set
             {
@@ -75,12 +55,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Gets or sets settings to configure behavior of reminders.
+        ///     Gets or sets settings to configure behavior of reminders.
         /// </summary>
-        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ReminderSettings"/> for the Actor Service.</value>
+        /// <value><see cref="Microsoft.ServiceFabric.Actors.Runtime.ReminderSettings" /> for the Actor Service.</value>
         public ReminderSettings ReminderSettings
         {
-            get { return this.reminderSettings; }
+            get => this.reminderSettings;
 
             set
             {
@@ -91,6 +71,23 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                 this.reminderSettings = value;
             }
+        }
+
+        internal static ActorServiceSettings DeepCopyFromOrDefaultOnNull(ActorServiceSettings other)
+        {
+            var actorServiceSettings = new ActorServiceSettings();
+
+            if (other == null)
+            {
+                return actorServiceSettings;
+            }
+
+            // deep copy settings.
+            actorServiceSettings.actorGarbageCollectionSettings = new ActorGarbageCollectionSettings(other.actorGarbageCollectionSettings);
+            actorServiceSettings.actorConcurrencySettings = new ActorConcurrencySettings(other.actorConcurrencySettings);
+            actorServiceSettings.reminderSettings = new ReminderSettings(other.reminderSettings);
+
+            return actorServiceSettings;
         }
     }
 }

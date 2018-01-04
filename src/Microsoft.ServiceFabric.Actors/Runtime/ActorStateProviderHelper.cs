@@ -9,22 +9,24 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Fabric;
+    using System.Fabric.Description;
     using System.Globalization;
     using System.Runtime.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Fabric.Description;
     using Microsoft.ServiceFabric.Actors.Generator;
     using Microsoft.ServiceFabric.Actors.Query;
     using Microsoft.ServiceFabric.Actors.Remoting;
 
     /// <summary>
-    /// Represents the code shared by the different actor state providers (Kvs, RD, Volatile and Null).
-    /// If you are adding any code/behavior that is common to different actor state provider(s), please add
-    /// it to this class.
+    ///     Represents the code shared by the different actor state providers (Kvs, RD, Volatile and Null).
+    ///     If you are adding any code/behavior that is common to different actor state provider(s), please add
+    ///     it to this class.
     /// </summary>
     internal sealed class ActorStateProviderHelper
     {
+        internal const string ActorPresenceStorageKeyPrefix = "@@";
+        internal const string ReminderCompletedStorageKeyPrefix = "RC@@";
         private const long DefaultMaxPrimaryReplicationQueueSize = 8192;
         private const long DefaultMaxSecondaryReplicationQueueSize = 16384;
 
@@ -35,12 +37,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.owner = owner;
         }
 
-        internal const string ActorPresenceStorageKeyPrefix = "@@";
-        internal const string ReminderCompletedStorageKeyPrefix = "RC@@";
-
         internal Task ExecuteWithRetriesAsync(
             Func<Task> func,
-            string functionNameTag, 
+            string functionNameTag,
             CancellationToken userCancellationToken)
         {
             return this.ExecuteWithRetriesAsync(
@@ -60,9 +59,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             var retryCount = 0;
             var useLinearBackoff = false;
-            var lastExceptionTag = string.Empty;
-            var roleChangeTracker = this.owner.RoleChangeTracker;
-            var operationId = Guid.NewGuid();
+            string lastExceptionTag = string.Empty;
+            long roleChangeTracker = this.owner.RoleChangeTracker;
+            Guid operationId = Guid.NewGuid();
             var timeoutHelper = new TimeoutHelper(this.owner.OperationTimeout);
 
             while (true)
@@ -85,7 +84,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                     useLinearBackoff = false;
 
-                    var res = await func.Invoke();
+                    TResult res = await func.Invoke();
 
                     if (retryCount > 0)
                     {
@@ -102,7 +101,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 }
                 catch (FabricTransientException ex)
                 {
-                    useLinearBackoff = (ex.ErrorCode == FabricErrorCode.ReplicationQueueFull);
+                    useLinearBackoff = ex.ErrorCode == FabricErrorCode.ReplicationQueueFull;
                     lastExceptionTag = ex.ErrorCode.ToString();
 
                     // fall-through and retry
@@ -177,9 +176,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
                 retryCount++;
 
-                var effectiveRetryDelay = useLinearBackoff ?
-                    TimeSpan.FromTicks(retryCount * this.owner.TransientErrorRetryDelay.Ticks) :
-                    this.owner.TransientErrorRetryDelay;
+                TimeSpan effectiveRetryDelay = useLinearBackoff
+                    ? TimeSpan.FromTicks(retryCount * this.owner.TransientErrorRetryDelay.Ticks)
+                    : this.owner.TransientErrorRetryDelay;
 
                 ActorTrace.Source.WriteInfoWithId(
                     this.owner.TraceType,
@@ -194,7 +193,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 await Task.Delay(effectiveRetryDelay, userCancellationToken);
             }
         }
-        
+
         internal Task<PagedResult<ActorId>> GetStoredActorIdsAsync<T>(
             int itemsCount,
             ContinuationToken continuationToken,
@@ -202,17 +201,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             Func<T, string> getStorageKeyFunc,
             CancellationToken cancellationToken)
         {
-            var previousActorCount = continuationToken == null ? 0 : Int64.Parse((string) continuationToken.Marker);
+            long previousActorCount = continuationToken == null ? 0 : long.Parse((string) continuationToken.Marker);
 
             long currentActorCount = 0;
             var actorIdList = new List<ActorId>();
             var actorQueryResult = new PagedResult<ActorId>();
 
             // KVS enumerates its entries in alphabetical order.
-            var enumerator = getEnumeratorFunc();
+            IEnumerator<T> enumerator = getEnumeratorFunc();
 
             // Move the enumerator to point to first entry
-            var enumHasMoreEntries = enumerator.MoveNext();
+            bool enumHasMoreEntries = enumerator.MoveNext();
 
             if (!enumHasMoreEntries)
             {
@@ -239,8 +238,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var storageKey = getStorageKeyFunc(enumerator.Current);
-                var actorId = GetActorIdFromPresenceStorageKey(storageKey);
+                string storageKey = getStorageKeyFunc(enumerator.Current);
+                ActorId actorId = GetActorIdFromPresenceStorageKey(storageKey);
 
                 if (actorId != null)
                 {
@@ -251,7 +250,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     ActorTrace.Source.WriteWarningWithId(
                         this.owner.TraceType,
                         this.owner.TraceId,
-                        String.Format("Failed to parse ActorId from storage key: {0}", storageKey));
+                        string.Format("Failed to parse ActorId from storage key: {0}", storageKey));
                 }
 
                 enumHasMoreEntries = enumerator.MoveNext();
@@ -277,7 +276,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             return Task.FromResult(actorQueryResult);
         }
-        
+
         #region Static Methods
 
         internal static IActorStateProvider GetActorStateProviderOverride()
@@ -286,19 +285,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
             try
             {
-                var configurationPackageName = ActorNameFormat.GetConfigPackageName();
-                var stateProviderOverrideSectionName = ActorNameFormat.GetActorStateProviderOverrideSectionName();
-                var attributeTypeKey = ActorNameFormat.GetActorStateProviderOverrideKeyName();
+                string configurationPackageName = ActorNameFormat.GetConfigPackageName();
+                string stateProviderOverrideSectionName = ActorNameFormat.GetActorStateProviderOverrideSectionName();
+                string attributeTypeKey = ActorNameFormat.GetActorStateProviderOverrideKeyName();
 
                 // Load the ActorStateProviderAttribute Type from the Configuration settings
-                var context = FabricRuntime.GetActivationContext();
-                var config = context.GetConfigurationPackageObject(configurationPackageName);
+                CodePackageActivationContext context = FabricRuntime.GetActivationContext();
+                ConfigurationPackage config = context.GetConfigurationPackageObject(configurationPackageName);
 
-                if ((config.Settings.Sections != null) &&
-                    (config.Settings.Sections.Contains(stateProviderOverrideSectionName)))
+                if (config.Settings.Sections != null &&
+                    config.Settings.Sections.Contains(stateProviderOverrideSectionName))
                 {
-                    var section = config.Settings.Sections[stateProviderOverrideSectionName];
-                    var stateProviderType = section.Parameters[attributeTypeKey].Value;
+                    ConfigurationSection section = config.Settings.Sections[stateProviderOverrideSectionName];
+                    string stateProviderType = section.Parameters[attributeTypeKey].Value;
                     stateProvider = Activator.CreateInstance(Type.GetType(stateProviderType)) as IActorStateProvider;
                 }
             }
@@ -311,14 +310,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         }
 
         /// <summary>
-        /// Used by Kvs and Volatile actor state provider.
+        ///     Used by Kvs and Volatile actor state provider.
         /// </summary>
         /// <param name="codePackage">The code package.</param>
         /// <param name="actorImplType">The type of actor.</param>
         /// <returns></returns>
         internal static ReplicatorSettings GetActorReplicatorSettings(CodePackageActivationContext codePackage, Type actorImplType)
         {
-            var settings = ReplicatorSettings.LoadFrom(
+            ReplicatorSettings settings = ReplicatorSettings.LoadFrom(
                 codePackage,
                 ActorNameFormat.GetConfigPackageName(actorImplType),
                 ActorNameFormat.GetFabricServiceReplicatorConfigSectionName(actorImplType));
@@ -328,10 +327,10 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 ActorNameFormat.GetConfigPackageName(actorImplType),
                 ActorNameFormat.GetFabricServiceReplicatorSecurityConfigSectionName(actorImplType));
 
-            var nodeContext = FabricRuntime.GetNodeContext();
-            var endpoint = codePackage.GetEndpoint(ActorNameFormat.GetFabricServiceReplicatorEndpointName(actorImplType));
+            NodeContext nodeContext = FabricRuntime.GetNodeContext();
+            EndpointResourceDescription endpoint = codePackage.GetEndpoint(ActorNameFormat.GetFabricServiceReplicatorEndpointName(actorImplType));
 
-            settings.ReplicatorAddress = String.Format(
+            settings.ReplicatorAddress = string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}:{1}",
                 nodeContext.IPAddressOrFQDN,
@@ -352,7 +351,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal static string CreateActorPresenceStorageKey(ActorId actorId)
         {
-            return String.Format(
+            return string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}_{1}",
                 ActorPresenceStorageKeyPrefix,
@@ -361,7 +360,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal static string CreateReminderCompletedStorageKey(ActorId actorId, string reminderName)
         {
-            return String.Format(
+            return string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}_{1}_{2}",
                 ReminderCompletedStorageKeyPrefix,
@@ -371,7 +370,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         internal static string CreateReminderCompletedStorageKeyPrefix(ActorId actorId)
         {
-            return String.Format(
+            return string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}_{1}_",
                 ReminderCompletedStorageKeyPrefix,
@@ -385,29 +384,29 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             //
             // See CreateActorPresenceStorageKey for how it is generated.
 
-            var storageKey = presenceStorageKey.Substring(ActorPresenceStorageKeyPrefix.Length + 1);
+            string storageKey = presenceStorageKey.Substring(ActorPresenceStorageKeyPrefix.Length + 1);
             return ActorId.TryGetActorIdFromStorageKey(storageKey);
         }
 
         internal static DataContractSerializer CreateDataContractSerializer(Type actorStateType)
         {
-            var dataContractSerializer =  new DataContractSerializer(
+            var dataContractSerializer = new DataContractSerializer(
                 actorStateType,
                 new DataContractSerializerSettings
                 {
-                    MaxItemsInObjectGraph = Int32.MaxValue,
-#if !DotNetCoreClr					
+                    MaxItemsInObjectGraph = int.MaxValue,
+#if !DotNetCoreClr
                     DataContractSurrogate = ActorDataContractSurrogate.Singleton,
 #endif
                     KnownTypes = new[]
                     {
-                        typeof(ActorReference) ,
+                        typeof(ActorReference)
                     }
                 });
-#if DotNetCoreClr					
+#if DotNetCoreClr
 			dataContractSerializer.SetSerializationSurrogateProvider(ActorDataContractSurrogate.Singleton);
-#endif			
-			return dataContractSerializer;
+#endif
+            return dataContractSerializer;
         }
 
         internal static IActorStateProvider CreateDefaultStateProvider(ActorTypeInformation actorTypeInfo)
@@ -431,7 +430,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
 
             // Get state provider override from settings if specified, used by tests to override state providers.
-            var stateProviderOverride = Runtime.ActorStateProviderHelper.GetActorStateProviderOverride();
+            IActorStateProvider stateProviderOverride = GetActorStateProviderOverride();
 
             if (stateProviderOverride != null)
             {
@@ -449,9 +448,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             section = null;
 
-            var config = activationContext.GetConfigurationPackageObject(configPackageName);
+            ConfigurationPackage config = activationContext.GetConfigurationPackageObject(configPackageName);
 
-            if ((config.Settings.Sections == null) || (!config.Settings.Sections.Contains(sectionName)))
+            if (config.Settings.Sections == null || !config.Settings.Sections.Contains(sectionName))
             {
                 return false;
             }
@@ -464,9 +463,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         internal static TimeSpan GetTimeConfigInSecondsAsTimeSpan(ConfigurationSection section, string parameterName, TimeSpan defaultValue)
         {
             if (section.Parameters.Contains(parameterName) &&
-               !string.IsNullOrWhiteSpace(section.Parameters[parameterName].Value))
+                !string.IsNullOrWhiteSpace(section.Parameters[parameterName].Value))
             {
-                var timeInSeconds = double.Parse(section.Parameters[parameterName].Value);
+                double timeInSeconds = double.Parse(section.Parameters[parameterName].Value);
                 return TimeSpan.FromSeconds(timeInSeconds);
             }
 
@@ -485,13 +484,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
         }
 
-        private bool CurrentReplicaRoleNotPrimary
-        {
-            get
-            {
-                return (this.owner.CurrentReplicaRole != ReplicaRole.Primary);
-            }
-        }
+        private bool CurrentReplicaRoleNotPrimary => this.owner.CurrentReplicaRole != ReplicaRole.Primary;
 
         #endregion
     }
@@ -507,20 +500,8 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.stopWatch = Stopwatch.StartNew();
         }
 
-        public bool HasRemainingTime
-        {
-            get
-            {
-                return (this.stopWatch.Elapsed < this.originalTimeout); 
-            }
-        }
+        public bool HasRemainingTime => this.stopWatch.Elapsed < this.originalTimeout;
 
-        public bool HasTimedOut 
-        {
-            get
-            {
-                return !this.HasRemainingTime;
-            }
-        }
+        public bool HasTimedOut => !this.HasRemainingTime;
     }
 }

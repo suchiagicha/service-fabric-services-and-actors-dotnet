@@ -75,7 +75,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting
             {
                 return null;
             }
-            else if (obj is IActor)
+
+            if (obj is IActor)
             {
                 return ActorReference.Get(obj);
             }
@@ -89,8 +90,9 @@ namespace Microsoft.ServiceFabric.Actors.Remoting
             {
                 return null;
             }
-            else if (obj is IActorReference && typeof(IActor).IsAssignableFrom(targetType) &&
-                     !typeof(IActorReference).IsAssignableFrom(targetType))
+
+            if (obj is IActorReference && typeof(IActor).IsAssignableFrom(targetType) &&
+                !typeof(IActorReference).IsAssignableFrom(targetType))
             {
                 return ((IActorReference) obj).Bind(targetType);
             }

@@ -2,25 +2,16 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
     internal class CacheEntry
     {
-        private readonly IServiceRemotingRequestMessageBodySerializer requestBodySerializer;
-        private readonly IServiceRemotingResponseMessageBodySerializer responseBodySerializer;
-
         public CacheEntry(
             IServiceRemotingRequestMessageBodySerializer requestBodySerializer,
             IServiceRemotingResponseMessageBodySerializer responseBodySerializer)
         {
-            this.requestBodySerializer = requestBodySerializer;
-            this.responseBodySerializer = responseBodySerializer;
+            this.RequestBodySerializer = requestBodySerializer;
+            this.ResponseBodySerializer = responseBodySerializer;
         }
 
-        public IServiceRemotingRequestMessageBodySerializer RequestBodySerializer
-        {
-            get { return this.requestBodySerializer; }
-        }
+        public IServiceRemotingRequestMessageBodySerializer RequestBodySerializer { get; }
 
-        public IServiceRemotingResponseMessageBodySerializer ResponseBodySerializer
-        {
-            get { return this.responseBodySerializer; }
-        }
+        public IServiceRemotingResponseMessageBodySerializer ResponseBodySerializer { get; }
     }
 }

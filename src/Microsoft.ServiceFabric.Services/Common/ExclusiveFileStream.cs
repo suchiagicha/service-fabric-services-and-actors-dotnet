@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Services.Common
 {
     using System;
@@ -15,12 +16,12 @@ namespace Microsoft.ServiceFabric.Services.Common
         private const int MinRetryIntervalMillis = 100;
         private static readonly Random Rand = new Random();
 
-        public FileStream Value { get; private set; }
-
         private ExclusiveFileStream(FileStream stream)
         {
             this.Value = stream;
         }
+
+        public FileStream Value { get; }
 
         public void Dispose()
         {
@@ -39,7 +40,7 @@ namespace Microsoft.ServiceFabric.Services.Common
                 numAttempts++;
                 try
                 {
-                    var fileStream = File.Open(
+                    FileStream fileStream = File.Open(
                         path,
                         fileMode,
                         fileAccess,

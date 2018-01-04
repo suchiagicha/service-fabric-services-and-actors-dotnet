@@ -5,7 +5,6 @@
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
-    using System;
     using System.Collections.Generic;
     using System.Fabric;
     using System.Globalization;
@@ -19,30 +18,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         [DataMember(Name = "Headers", IsRequired = true, Order = 2)]
         private Dictionary<string, byte[]> headers;
 
-        /// <summary>
-        /// The methodId of the remote method
-        /// </summary>
-        /// <value>Method id</value>
-        [DataMember(Name = "MethodId", IsRequired = true, Order = 0)]
-        public int MethodId { get; set; }
 
         /// <summary>
-        /// The interface id of the remote interface.
-        /// </summary>
-        /// <value>Interface id</value>
-        [DataMember(Name = "InterfaceId", IsRequired = true, Order = 1)]
-        public int InterfaceId { get; set; }
-
-        /// <summary>
-        /// Identifier for the remote method invocation
-        /// </summary>
-        [DataMember(Name = "InvocationId", IsRequired = false, Order = 3, EmitDefaultValue = false)]
-        public string InvocationId { get; set; }
-
-
-        
-        /// <summary>
-        /// Instantiates a new instance of the ServiceRemotingRequestMessageHeader
+        ///     Instantiates a new instance of the ServiceRemotingRequestMessageHeader
         /// </summary>
         public ServiceRemotingRequestMessageHeader()
         {
@@ -50,7 +28,27 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             this.InvocationId = null;
         }
 
-       
+        /// <summary>
+        ///     The methodId of the remote method
+        /// </summary>
+        /// <value>Method id</value>
+        [DataMember(Name = "MethodId", IsRequired = true, Order = 0)]
+        public int MethodId { get; set; }
+
+        /// <summary>
+        ///     The interface id of the remote interface.
+        /// </summary>
+        /// <value>Interface id</value>
+        [DataMember(Name = "InterfaceId", IsRequired = true, Order = 1)]
+        public int InterfaceId { get; set; }
+
+        /// <summary>
+        ///     Identifier for the remote method invocation
+        /// </summary>
+        [DataMember(Name = "InvocationId", IsRequired = false, Order = 3, EmitDefaultValue = false)]
+        public string InvocationId { get; set; }
+
+
         public void AddHeader(string headerName, byte[] headerValue)
         {
             if (this.headers.ContainsKey(headerName))
@@ -76,9 +74,5 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
             return this.headers.TryGetValue(headerName, out headerValue);
         }
-
-     
-
-
     }
 }

@@ -8,7 +8,6 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1
     using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
-    using Microsoft.ServiceFabric.Actors.Remoting;
 
     internal static class ActorMessageBodySerializer
     {
@@ -34,7 +33,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1
 #else
             var dataContractSerializer = new DataContractSerializer(
                 typeof(ActorMessageBody),
-                new DataContractSerializerSettings()
+                new DataContractSerializerSettings
                 {
                     DataContractSurrogate = new ActorDataContractSurrogate(),
                     MaxItemsInObjectGraph = int.MaxValue,

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -16,41 +17,30 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
     internal sealed class MockActorManager : IActorManager
     {
-        private readonly ActorService actorService;
         private readonly ConcurrentDictionary<ActorId, ConcurrentDictionary<string, ActorReminder>> remindersByActorId;
-        private readonly ActorEventSource traceSource;
 
-        private IDiagnosticsManager diagnosticsManager;
-        private IActorEventManager eventManager;
-
-        private IActorStateProvider StateProvider
-        {
-            get { return this.actorService.StateProvider; }
-        }
+        private readonly IDiagnosticsManager diagnosticsManager;
+        private readonly IActorEventManager eventManager;
 
         internal MockActorManager(ActorService actorService)
         {
-            this.actorService = actorService;
+            this.ActorService = actorService;
             this.diagnosticsManager = new MockDiagnosticsManager(actorService);
             this.eventManager = new MockActorEventManager(actorService.ActorTypeInformation);
             this.remindersByActorId = new ConcurrentDictionary<ActorId, ConcurrentDictionary<string, ActorReminder>>();
-            this.traceSource = ActorEventSource.Instance;
+            this.TraceSource = ActorEventSource.Instance;
             this.IsClosed = false;
         }
 
+        private IActorStateProvider StateProvider => this.ActorService.StateProvider;
+
         #region IActorManager Implementation
 
-        public ActorService ActorService
-        {
-            get { return this.actorService; }
-        }
+        public ActorService ActorService { get; }
 
         #region Actor Diagnostics
 
-        public DiagnosticsEventManager DiagnosticsEventManager
-        {
-            get { return this.diagnosticsManager.DiagnosticsEventManager; }
-        }
+        public DiagnosticsEventManager DiagnosticsEventManager => this.diagnosticsManager.DiagnosticsEventManager;
 
         #endregion
 
@@ -90,8 +80,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             return TaskDone<byte[]>.Done;
         }
 
-        
-        public Task<IServiceRemotingResponseMessageBody> InvokeAsync(ActorId actorId, int interfaceId, int methodId, string callContext,
+
+        public Task<IServiceRemotingResponseMessageBody> InvokeAsync(
+            ActorId actorId, int interfaceId, int methodId, string callContext,
             IServiceRemotingRequestMessageBody requestMsgBody, IServiceRemotingMessageBodyFactory remotingMessageBodyFactory,
             CancellationToken cancellationToken)
         {
@@ -126,20 +117,14 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         public TEvent GetEvent<TEvent>(ActorId actorId)
         {
-            return (TEvent)(object)this.eventManager.GetActorEventProxy(actorId, typeof(TEvent));
+            return (TEvent) (object) this.eventManager.GetActorEventProxy(actorId, typeof(TEvent));
         }
 
         #endregion
 
         #region Actor Reminders
 
-        public bool HasRemindersLoaded
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public bool HasRemindersLoaded => true;
 
         public async Task<IActorReminder> RegisterOrUpdateReminderAsync(
             ActorId actorId,
@@ -149,7 +134,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             TimeSpan period,
             bool saveState = true)
         {
-            var reminderDictionary = this.remindersByActorId.GetOrAdd(
+            ConcurrentDictionary<string, ActorReminder> reminderDictionary = this.remindersByActorId.GetOrAdd(
                 actorId,
                 k => new ConcurrentDictionary<string, ActorReminder>());
 
@@ -268,7 +253,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             return string.Empty;
         }
 
-        public ActorEventSource TraceSource => this.traceSource;
+        public ActorEventSource TraceSource { get; }
 
         #endregion
 

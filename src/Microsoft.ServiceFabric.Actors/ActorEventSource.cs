@@ -5,54 +5,63 @@
 
 namespace Microsoft.ServiceFabric.Actors
 {
-    using System;
-    using System.Fabric;
     using System.Diagnostics.Tracing;
     using System.Globalization;
     using Microsoft.ServiceFabric.Diagnostics.Tracing;
 
     /// <summary>
-    /// Actor Framework event source collected by Service Fabric runtime diagnostics system.
+    ///     Actor Framework event source collected by Service Fabric runtime diagnostics system.
     /// </summary>
     [EventSource(Guid = "e2f2656b-985e-5c5b-5ba3-bbe8a851e1d7", Name = "ActorFramework")]
     internal sealed class ActorEventSource : ServiceFabricEventSource
     {
         /// <summary>
-        /// Gets instance of <see cref="ActorEventSource"/> class.
+        ///     Gets instance of <see cref="ActorEventSource" /> class.
         /// </summary>
         internal static readonly ActorEventSource Instance = new ActorEventSource();
 
         /// <summary>
-        /// Prevents a default instance of the <see cref="ActorEventSource" /> class from being created.
+        ///     Prevents a default instance of the <see cref="ActorEventSource" /> class from being created.
         /// </summary>
         private ActorEventSource()
         {
         }
 
+        #region Keywords / Tasks / Opcodes
+
+        public static class Keywords
+        {
+            public const EventKeywords Default = (EventKeywords) 0x0001;
+        }
+
+        #endregion
+
         #region Events
+
         [Event(1, Message = "{2}", Level = EventLevel.Informational, Keywords = Keywords.Default)]
         private void InfoText(string id, string type, string message)
         {
-            WriteEvent(1, id, type, message);
+            this.WriteEvent(1, id, type, message);
         }
 
         [Event(2, Message = "{2}", Level = EventLevel.Warning, Keywords = Keywords.Default)]
         private void WarningText(string id, string type, string message)
         {
-            WriteEvent(2, id, type, message);
+            this.WriteEvent(2, id, type, message);
         }
 
         [Event(3, Message = "{2}", Level = EventLevel.Error, Keywords = Keywords.Default)]
         private void ErrorText(string id, string type, string message)
         {
-            WriteEvent(3, id, type, message);
+            this.WriteEvent(3, id, type, message);
         }
 
         [Event(4, Message = "{2}", Level = EventLevel.Verbose, Keywords = Keywords.Default)]
         private void NoiseText(string id, string type, string message)
         {
-            WriteEvent(4, id, type, message);
+            this.WriteEvent(4, id, type, message);
         }
+
         #endregion
 
         #region NonEvents
@@ -98,7 +107,7 @@ namespace Microsoft.ServiceFabric.Actors
         [NonEvent]
         internal void WriteInfo(string type, string format, params object[] args)
         {
-            WriteInfoWithId(type, string.Empty, format, args);
+            this.WriteInfoWithId(type, string.Empty, format, args);
         }
 
         [NonEvent]
@@ -117,7 +126,7 @@ namespace Microsoft.ServiceFabric.Actors
         [NonEvent]
         internal void WriteNoise(string type, string format, params object[] args)
         {
-            WriteNoiseWithId(type, string.Empty, format, args);
+            this.WriteNoiseWithId(type, string.Empty, format, args);
         }
 
         [NonEvent]
@@ -131,15 +140,6 @@ namespace Microsoft.ServiceFabric.Actors
             {
                 Instance.NoiseText(id, type, string.Format(CultureInfo.InvariantCulture, format, args));
             }
-        }
-
-        #endregion
-
-        #region Keywords / Tasks / Opcodes
-
-        public static class Keywords
-        {
-            public const EventKeywords Default = (EventKeywords)0x0001;
         }
 
         #endregion

@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
 namespace Microsoft.ServiceFabric.Actors.Runtime
 {
     using System;
@@ -14,7 +15,6 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Actors.Query;
     using Microsoft.ServiceFabric.Data;
-    using SR = Microsoft.ServiceFabric.Actors.SR;
 
     internal class NullActorStateProvider : IActorStateProvider, IStateProvider, IActorStateProviderInternal
     {
@@ -41,6 +41,27 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             this.actorStateProviderHelper = new ActorStateProviderHelper(this);
         }
 
+        #region IStateProviderReplica2
+
+        Func<CancellationToken, Task> IStateProviderReplica2.OnRestoreCompletedAsync
+        {
+            set => this.onRestoreCompFunc = value;
+        }
+
+        #endregion
+
+        #region Private Helper Classes
+
+        private class NullOperationDataStream : IOperationDataStream
+        {
+            public Task<OperationData> GetNextAsync(CancellationToken cancellationToken)
+            {
+                return Task.FromResult<OperationData>(null);
+            }
+        }
+
+        #endregion #region Private Helper Classes
+
         #region IActorStateProvider
 
         void IActorStateProvider.Initialize(ActorTypeInformation actorTypeInfo)
@@ -50,12 +71,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Task IActorStateProvider.ActorActivatedAsync(ActorId actorId, CancellationToken cancellationToken)
         {
-            var key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
+            string key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
             this.stateDictionary.TryAdd(key, null);
 
             return Task.FromResult(true);
         }
-        
+
         Task IActorStateProvider.ReminderCallbackCompletedAsync(ActorId actorId, IActorReminder reminder, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
@@ -65,7 +86,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             Requires.Argument("stateName", stateName).NotNull();
 
-            var key = CreateActorStorageKey(actorId, stateName);
+            string key = CreateActorStorageKey(actorId, stateName);
 
             object value;
             if (this.stateDictionary.TryGetValue(key, out value))
@@ -78,9 +99,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Task IActorStateProvider.SaveStateAsync(ActorId actorId, IReadOnlyCollection<ActorStateChange> stateChanges, CancellationToken cancellationToken)
         {
-            foreach (var stateChange in stateChanges)
+            foreach (ActorStateChange stateChange in stateChanges)
             {
-                var key = CreateActorStorageKey(actorId, stateChange.StateName);
+                string key = CreateActorStorageKey(actorId, stateChange.StateName);
 
                 switch (stateChange.ChangeKind)
                 {
@@ -102,17 +123,17 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             Requires.Argument("stateName", stateName).NotNull();
 
-            var key = CreateActorStorageKey(actorId, stateName);
+            string key = CreateActorStorageKey(actorId, stateName);
             return Task.FromResult(this.stateDictionary.ContainsKey(key));
         }
 
         Task IActorStateProvider.RemoveActorAsync(ActorId actorId, CancellationToken cancellationToken)
         {
-            var actorStorageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
-            var reminderStorgaeKeyPrefix = CreateReminderStorageKeyPrefix(actorId, string.Empty);
+            string actorStorageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string reminderStorgaeKeyPrefix = CreateReminderStorageKeyPrefix(actorId, string.Empty);
 
             object value;
-            foreach (var kvPair in this.stateDictionary)
+            foreach (KeyValuePair<string, object> kvPair in this.stateDictionary)
             {
                 if (kvPair.Key.StartsWith(actorStorageKeyPrefix) ||
                     kvPair.Key.StartsWith(reminderStorgaeKeyPrefix))
@@ -122,7 +143,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             }
 
             // Delete actor presence key
-            var key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
+            string key = ActorStateProviderHelper.CreateActorPresenceStorageKey(actorId);
             this.stateDictionary.TryRemove(key, out value);
 
             return Task.FromResult(true);
@@ -131,9 +152,9 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         Task<IEnumerable<string>> IActorStateProvider.EnumerateStateNamesAsync(ActorId actorId, CancellationToken cancellationToken)
         {
             var stateNameList = new List<string>();
-            var storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
 
-            foreach (var kvPair in this.stateDictionary)
+            foreach (KeyValuePair<string, object> kvPair in this.stateDictionary)
             {
                 if (kvPair.Key.StartsWith(storageKeyPrefix))
                 {
@@ -159,7 +180,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Task IActorStateProvider.SaveReminderAsync(ActorId actorId, IActorReminder state, CancellationToken cancellationToken)
         {
-            var key = CreateReminderStorageKey(actorId, state.Name);
+            string key = CreateReminderStorageKey(actorId, state.Name);
             var reminderData = new ActorReminderData(actorId, state, TimeSpan.Zero);
 
             this.stateDictionary.AddOrUpdate(key, reminderData, (s, o) => reminderData);
@@ -169,7 +190,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         Task IActorStateProvider.DeleteReminderAsync(ActorId actorId, string reminderName, CancellationToken cancellationToken)
         {
-            var key = CreateReminderStorageKey(actorId, reminderName);
+            string key = CreateReminderStorageKey(actorId, reminderName);
 
             object value;
             this.stateDictionary.TryRemove(key, out value);
@@ -177,15 +198,16 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             return Task.FromResult(true);
         }
 
-        Task IActorStateProvider.DeleteRemindersAsync(IReadOnlyDictionary<ActorId, IReadOnlyCollection<string>> reminderNames, CancellationToken cancellationToken)
+        Task IActorStateProvider.DeleteRemindersAsync(
+            IReadOnlyDictionary<ActorId, IReadOnlyCollection<string>> reminderNames, CancellationToken cancellationToken)
         {
-            foreach (var reminderNamesPerActor in reminderNames)
+            foreach (KeyValuePair<ActorId, IReadOnlyCollection<string>> reminderNamesPerActor in reminderNames)
             {
-                var actorId = reminderNamesPerActor.Key;
+                ActorId actorId = reminderNamesPerActor.Key;
 
-                foreach (var reminderName in reminderNamesPerActor.Value)
+                foreach (string reminderName in reminderNamesPerActor.Value)
                 {
-                    var reminderKey = CreateReminderStorageKey(actorId, reminderName);
+                    string reminderKey = CreateReminderStorageKey(actorId, reminderName);
 
                     object value;
                     this.stateDictionary.TryRemove(reminderKey, out value);
@@ -199,7 +221,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             var reminderCollection = new ActorReminderCollection();
 
-            foreach (var kvPair in this.stateDictionary)
+            foreach (KeyValuePair<string, object> kvPair in this.stateDictionary)
             {
                 if (kvPair.Key.StartsWith(ReminderKeyPrefix))
                 {
@@ -208,16 +230,16 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 }
             }
 
-            return Task.FromResult((IActorReminderCollection)reminderCollection);
+            return Task.FromResult((IActorReminderCollection) reminderCollection);
         }
 
         #endregion
-        
+
         #region IStateProviderReplica
 
         Func<CancellationToken, Task<bool>> IStateProviderReplica.OnDataLossAsync
         {
-            set { this.onDataLoFunc = value; }
+            set => this.onDataLoFunc = value;
         }
 
         void IStateProviderReplica.Initialize(StatefulServiceInitializationParameters initializationParameters)
@@ -231,7 +253,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             IStatefulServicePartition partition,
             CancellationToken cancellationToken)
         {
-            var fabricReplicator = partition.CreateReplicator(this, this.GetReplicatorSettings());
+            FabricReplicator fabricReplicator = partition.CreateReplicator(this, this.GetReplicatorSettings());
             this.replicator = fabricReplicator.StateReplicator2;
             this.servicePartition = partition;
 
@@ -254,6 +276,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                     {
                         this.StartSecondaryReplicationPump();
                     }
+
                     break;
             }
 
@@ -276,7 +299,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             throw new NotImplementedException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    Actors.SR.ErrorMethodNotSupported,
+                    SR.ErrorMethodNotSupported,
                     "Backup",
                     this.GetType()));
         }
@@ -290,7 +313,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             throw new NotImplementedException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    Actors.SR.ErrorMethodNotSupported,
+                    SR.ErrorMethodNotSupported,
                     "Backup",
                     this.GetType()));
         }
@@ -300,7 +323,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             throw new NotImplementedException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    Actors.SR.ErrorMethodNotSupported,
+                    SR.ErrorMethodNotSupported,
                     "Restore",
                     this.GetType()));
         }
@@ -313,21 +336,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             throw new NotImplementedException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    Actors.SR.ErrorMethodNotSupported,
+                    SR.ErrorMethodNotSupported,
                     "Restore",
                     this.GetType()));
         }
 
         #endregion IStateProviderReplica
-
-        #region IStateProviderReplica2
-
-        Func<CancellationToken, Task> IStateProviderReplica2.OnRestoreCompletedAsync
-        {
-            set { this.onRestoreCompFunc = value; }
-        }
-
-        #endregion
 
         #region IStateProvider
 
@@ -381,11 +395,11 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                         "Starting SecondaryPumpOperation (isCopy: {0}).",
                         isCopy);
 
-                    var operationStream = this.GetOperationStream(isCopy);
+                    IOperationStream operationStream = this.GetOperationStream(isCopy);
 
                     try
                     {
-                        var operation = await operationStream.GetOperationAsync(CancellationToken.None);
+                        IOperation operation = await operationStream.GetOperationAsync(CancellationToken.None);
 
                         if (operation == null)
                         {
@@ -470,7 +484,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         private static string ExtractStateName(ActorId actorId, string storageKey)
         {
-            var storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
+            string storageKeyPrefix = CreateActorStorageKeyPrefix(actorId, string.Empty);
             return storageKey.Substring(storageKeyPrefix.Length);
         }
 
@@ -478,7 +492,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         {
             var actorPresenceKeyList = new List<string>();
 
-            foreach (var kvPair in this.stateDictionary)
+            foreach (KeyValuePair<string, object> kvPair in this.stateDictionary)
             {
                 if (kvPair.Key.StartsWith(ActorStateProviderHelper.ActorPresenceStorageKeyPrefix))
                 {
@@ -491,54 +505,21 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         #endregion
 
-        #region Private Helper Classes
-
-        private class NullOperationDataStream : IOperationDataStream
-        {
-            public Task<OperationData> GetNextAsync(CancellationToken cancellationToken)
-            {
-                return Task.FromResult<OperationData>(null);
-            }
-        }
-
-        #endregion #region Private Helper Classes
-
         #region IActorStateProviderInternal
 
-        string IActorStateProviderInternal.TraceType
-        {
-            get { return TraceType; }
-        }
+        string IActorStateProviderInternal.TraceType => TraceType;
 
-        string IActorStateProviderInternal.TraceId
-        {
-            get { return this.traceId; }
-        }
+        string IActorStateProviderInternal.TraceId => this.traceId;
 
-        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole
-        {
-            get { return this.currentRole; }
-        }
+        ReplicaRole IActorStateProviderInternal.CurrentReplicaRole => this.currentRole;
 
-        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay
-        {
-            get { return TimeSpan.Zero; }
-        }
+        TimeSpan IActorStateProviderInternal.TransientErrorRetryDelay => TimeSpan.Zero;
 
-        TimeSpan IActorStateProviderInternal.CurrentLogicalTime
-        {
-            get { return TimeSpan.Zero; }
-        }
+        TimeSpan IActorStateProviderInternal.CurrentLogicalTime => TimeSpan.Zero;
 
-        TimeSpan IActorStateProviderInternal.OperationTimeout
-        {
-            get { return TimeSpan.Zero; }
-        }
+        TimeSpan IActorStateProviderInternal.OperationTimeout => TimeSpan.Zero;
 
-        long IActorStateProviderInternal.RoleChangeTracker
-        {
-            get { return 0; }
-        }
+        long IActorStateProviderInternal.RoleChangeTracker => 0;
 
         #endregion
     }

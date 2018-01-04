@@ -6,33 +6,29 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
     using System;
     using System.Collections.Generic;
-    using System.Fabric.Common;
-    using System.Linq;
-    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Xml;
-    using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
 
     /// <summary>
-    /// This is the default implmentation  for <see cref="IServiceRemotingMessageSerializationProvider"/>used by remoting service and client during
-    /// request/response serialization . It used DataContract for serialization.
+    ///     This is the default implmentation  for <see cref="IServiceRemotingMessageSerializationProvider" />used by remoting
+    ///     service and client during
+    ///     request/response serialization . It used DataContract for serialization.
     /// </summary>
     public class ServiceRemotingDataContractSerializationProvider : IServiceRemotingMessageSerializationProvider
     {
-        
         private readonly IBufferPoolManager bodyBufferPoolManager;
 
         /// <summary>
-        /// Creates a ServiceRemotingDataContractSerializationProvider with default IBufferPoolManager 
+        ///     Creates a ServiceRemotingDataContractSerializationProvider with default IBufferPoolManager
         /// </summary>
         public ServiceRemotingDataContractSerializationProvider()
-            : this(new BufferPoolManager(Constants.DefaultMessageBufferSize,Constants.DefaultMaxBufferCount))
+            : this(new BufferPoolManager(Constants.DefaultMessageBufferSize, Constants.DefaultMaxBufferCount))
         {
         }
 
         /// <summary>
-        /// Creates a ServiceRemotingDataContractSerializationProvider with user specified IBufferPoolManager
+        ///     Creates a ServiceRemotingDataContractSerializationProvider with user specified IBufferPoolManager
         /// </summary>
         /// <param name="bodyBufferPoolManager"></param>
         public ServiceRemotingDataContractSerializationProvider(
@@ -42,7 +38,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         }
 
         /// <summary>
-        /// Creates IServiceRemotingRequestMessageBodySerializer for a serviceInterface using DataContract implementation
+        ///     Creates IServiceRemotingRequestMessageBodySerializer for a serviceInterface using DataContract implementation
         /// </summary>
         /// <param name="serviceInterfaceType">User service interface</param>
         /// <param name="requestBodyTypes">Parameters for all the methods in the serviceInterfaceType</param>
@@ -58,7 +54,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
 
         /// <summary>
-        /// Creates IServiceRemotingResponseMessageBodySerializer for a serviceInterface using DataContract implementation
+        ///     Creates IServiceRemotingResponseMessageBodySerializer for a serviceInterface using DataContract implementation
         /// </summary>
         /// <param name="serviceInterfaceType">User service interface</param>
         /// <param name="responseBodyTypes">Return Types for all the methods in the serviceInterfaceType</param>
@@ -71,9 +67,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                 this.bodyBufferPoolManager,
                 responseBodyTypes);
         }
-  
+
         /// <summary>
-        /// Creates a MessageFactory for DataContract Remoting Types. This is used to create Remoting Request/Response objects.
+        ///     Creates a MessageFactory for DataContract Remoting Types. This is used to create Remoting Request/Response objects.
         /// </summary>
         /// <returns></returns>
         public IServiceRemotingMessageBodyFactory CreateMessageBodyFactory()
@@ -88,12 +84,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
             public ServiceRemotingRequestMessageBodySerializer(
                 IBufferPoolManager bufferPoolManager,
-                IEnumerable<Type>  parameterInfo)
+                IEnumerable<Type> parameterInfo)
             {
                 this.bufferPoolManager = bufferPoolManager;
                 this.serializer = new DataContractSerializer(
                     typeof(ServiceRemotingRequestMessageBody),
-                    new DataContractSerializerSettings()
+                    new DataContractSerializerSettings
                     {
                         MaxItemsInObjectGraph = int.MaxValue,
                         KnownTypes = parameterInfo
@@ -106,11 +102,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                 {
                     return null;
                 }
-               
+
 
                 using (var stream = new SegmentedPoolMemoryStream(this.bufferPoolManager))
                 {
-                    using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                    using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                     {
                         this.serializer.WriteObject(writer, serviceRemotingRequestMessageBody);
                         writer.Flush();
@@ -121,17 +117,16 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
             public IServiceRemotingRequestMessageBody Deserialize(IncomingMessageBody messageBody)
             {
-                if (messageBody == null || messageBody.GetReceivedBuffer()==null || messageBody.GetReceivedBuffer().Length==0)
+                if (messageBody == null || messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0)
                 {
                     return null;
                 }
 
-                using (var reader = XmlDictionaryReader.CreateBinaryReader(
+                using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(
                     messageBody.GetReceivedBuffer(),
                     XmlDictionaryReaderQuotas.Max))
                 {
-                    return (ServiceRemotingRequestMessageBody)this.serializer.ReadObject(reader);
-                
+                    return (ServiceRemotingRequestMessageBody) this.serializer.ReadObject(reader);
                 }
             }
         }
@@ -148,7 +143,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                 this.bufferPoolManager = bufferPoolManager;
                 this.serializer = new DataContractSerializer(
                     typeof(ServiceRemotingResponseMessageBody),
-                    new DataContractSerializerSettings()
+                    new DataContractSerializerSettings
                     {
                         MaxItemsInObjectGraph = int.MaxValue,
                         KnownTypes = parameterInfo
@@ -165,7 +160,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
                 using (var stream = new SegmentedPoolMemoryStream(this.bufferPoolManager))
                 {
-                    using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+                    using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
                     {
                         this.serializer.WriteObject(writer, serviceRemotingResponseMessageBody);
                         writer.Flush();
@@ -181,12 +176,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                     return null;
                 }
 
-                using (var reader = XmlDictionaryReader.CreateBinaryReader(
+                using (XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(
                     messageBody.GetReceivedBuffer(),
                     XmlDictionaryReaderQuotas.Max))
                 {
-                    return (ServiceRemotingResponseMessageBody)this.serializer.ReadObject(reader);
-
+                    return (ServiceRemotingResponseMessageBody) this.serializer.ReadObject(reader);
                 }
             }
         }
@@ -196,6 +190,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
     internal class ServiceRemotingResponseMessageBody : IServiceRemotingResponseMessageBody
     {
         [DataMember] private object response;
+
         public void Set(object response)
         {
             this.response = response;
