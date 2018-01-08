@@ -150,7 +150,6 @@
     <Compile Include="V1\FabricTransport\Runtime\FabricTransportServiceRemotingRequestContext.cs" />
     <Compile Include="V1\ServiceRemotingMessageSerializer.cs" />
     <Compile Include="V2\BasicDataContractHeaderSerializer.cs" />
-    <Compile Include="V2\BasicDataContractSerializationProvider.cs" />
     <Compile Include="V2\Builder\InterfaceDetails.cs" />
     <Compile Include="V2\Builder\InterfaceDetailsStore.cs" />
     <Compile Include="V2\Builder\MethodDispatcherBase.cs" />
@@ -194,6 +193,7 @@
     <Compile Include="V2\IServiceRemotingResponseMessageHeader.cs" />
     <Compile Include="V2\Messaging\Allocator.cs" />
     <Compile Include="V2\Messaging\BufferPoolManager.cs" />
+    <Compile Include="V2\Messaging\DisposableStream.cs" />
     <Compile Include="V2\Messaging\IBufferPoolManager.cs" />
     <Compile Include="V2\Messaging\IMessageBody.cs" />
     <Compile Include="V2\Messaging\IMessageHeader.cs" />
@@ -219,6 +219,7 @@
     <Compile Include="V2\ServiceRemotingRequestMessageBody.cs" />
     <Compile Include="V2\ServiceRemotingRequestMessageHeader.cs" />
     <Compile Include="V2\ServiceRemotingResponseMessage.cs" />
+    <Compile Include="V2\ServiceRemotingResponseMessageBody.cs" />
     <Compile Include="V2\ServiceRemotingResponseMessageHeader.cs" />
   </ItemGroup>
   <ItemGroup>

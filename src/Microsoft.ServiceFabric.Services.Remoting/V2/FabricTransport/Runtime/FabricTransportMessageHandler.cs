@@ -1,6 +1,6 @@
 ﻿// ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
@@ -138,7 +138,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
             IServiceRemotingResponseMessageBodySerializer responseSerializer =
                 this.serializersManager.GetResponseBodySerializer(interfaceId);
             stopwatch.Restart();
-            OutgoingMessageBody responseMsgBody = responseSerializer.Serialize(retval.GetBody());
+            IMessageBody responseMsgBody = responseSerializer.Serialize(retval.GetBody());
             if (this.serviceRemotingPerformanceCounterProvider.serviceResponseSerializationTimeCounterWriter != null)
             {
                 this.serviceRemotingPerformanceCounterProvider.serviceResponseSerializationTimeCounterWriter

@@ -1,6 +1,6 @@
 ﻿// ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
@@ -34,7 +34,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
             IMessageHeader serialzedHeader = headerSerialzier.SerializeRequestHeader(requestMessage.GetHeader());
             IServiceRemotingRequestMessageBodySerializer requestSerializer =
                 this.serializersManager.GetRequestBodySerializer(requestMessage.GetHeader().InterfaceId);
-            OutgoingMessageBody serializedMsgBody = requestSerializer.Serialize(requestMessage.GetBody());
+            IMessageBody serializedMsgBody = requestSerializer.Serialize(requestMessage.GetBody());
             FabricTransportRequestBody fabricTransportRequestBody = serializedMsgBody != null
                 ? new FabricTransportRequestBody(
                     serializedMsgBody.GetSendBuffers(),

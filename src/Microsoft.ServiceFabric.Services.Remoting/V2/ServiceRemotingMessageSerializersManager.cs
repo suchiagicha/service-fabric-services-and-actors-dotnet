@@ -1,6 +1,6 @@
 // ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2
@@ -68,8 +68,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             // get the known types from the codegen layer
 
             return new CacheEntry(
-                this.serializationProvider.CreateRequestMessageSerializer(serviceInterfaceType, requestBodyTypes),
-                this.serializationProvider.CreateResponseMessageSerializer(serviceInterfaceType, responseBodyTypes));
+                this.serializationProvider.CreateRequestMessageBodySerializer(serviceInterfaceType, requestBodyTypes),
+                this.serializationProvider.CreateResponseMessageBodySerializer(serviceInterfaceType, responseBodyTypes));
         }
 
         internal virtual InterfaceDetails GetInterfaceDetails(int interfaceId)

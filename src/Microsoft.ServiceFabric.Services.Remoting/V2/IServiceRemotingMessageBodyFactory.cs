@@ -1,12 +1,12 @@
 // ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2
 {
     /// <summary>
-    ///     Defines the interface that must be implemented for providing factory for creating remtoing request body and
+    ///     Defines the interface that must be implemented for providing factory for creating remoting request body and
     ///     response body objects.
     /// </summary>
     public interface IServiceRemotingMessageBodyFactory

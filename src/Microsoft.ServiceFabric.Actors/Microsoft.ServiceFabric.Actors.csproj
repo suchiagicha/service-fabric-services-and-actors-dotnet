@@ -88,6 +88,7 @@
     <Compile Include="Remoting\V1\Client\ActorEventSubscriberManager.cs" />
     <Compile Include="Remoting\V1\Client\ActorServicePartitionClient.cs" />
     <Compile Include="Remoting\V1\Client\IActorServicePartitionClient.cs" />
+    <Compile Include="Remoting\V2\ActorRemotingDataContractSerializationProvider.cs" />
     <Compile Include="Runtime\ActorEventManager.cs" />
     <Compile Include="Diagnostics\EventSourceProviderV2.cs" />
     <Compile Include="Diagnostics\PerformanceCounterProviderV2.cs" />

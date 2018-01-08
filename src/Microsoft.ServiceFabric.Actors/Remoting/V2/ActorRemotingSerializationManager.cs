@@ -1,6 +1,6 @@
 ﻿// ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Actors.Remoting.V2
@@ -23,17 +23,17 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
         {
             if (interfaceId == ActorEventSubscription.InterfaceId)
             {
-                return new CacheEntry(
-                    new BasicDataRequestMessageBodySerializer(
-                        new[]
-                        {
-                            typeof(EventSubscriptionRequestBody)
-                        }),
-                    new BasicDataResponsetMessageBodySerializer(
-                        new[]
-                        {
-                            typeof(EventSubscriptionRequestBody)
-                        }));
+                var actorRemotingSerializationProvider = new ActorRemotingDataContractSerializationProvider();
+
+                var cacheEntry = new CacheEntry(
+                    actorRemotingSerializationProvider.CreateRequestMessageBodySerializer(
+                        null,
+                        new[] {typeof(EventSubscriptionRequestBody)}),
+                    actorRemotingSerializationProvider.CreateResponseMessageBodySerializer(
+                        null,
+                        new[] {typeof(EventSubscriptionRequestBody)}));
+
+                return cacheEntry;
             }
 
             return base.CreateSerializers(interfaceId);
