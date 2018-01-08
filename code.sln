@@ -1,0 +1,91 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FabActUtil", "src\FabActUtil\FabActUtil.csproj", "{F6E091C3-9136-4058-91CF-57CDF383DF74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Actors", "src\Microsoft.ServiceFabric.Actors\Microsoft.ServiceFabric.Actors.csproj", "{014D5847-39F5-4660-B385-82EDFBA06CD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Services", "src\Microsoft.ServiceFabric.Services\Microsoft.ServiceFabric.Services.csproj", "{F416C4C3-250D-48F3-822C-1C589E8F851C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Services.Remoting", "src\Microsoft.ServiceFabric.Services.Remoting\Microsoft.ServiceFabric.Services.Remoting.csproj", "{A01358E6-D5E1-44B5-948A-45709D2421A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Services.Wcf", "src\Microsoft.ServiceFabric.Services.Wcf\Microsoft.ServiceFabric.Services.Wcf.csproj", "{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Actors.Wcf", "src\Microsoft.ServiceFabric.Actors.Wcf\Microsoft.ServiceFabric.Actors.Wcf.csproj", "{BA2E8FE4-2970-40D4-BA55-5415E84C7B50}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FAD4779C-6494-4FF6-8D14-F1F43205A301}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{60B540CF-F2AA-40C9-9705-DD07C30A82F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unittests", "unittests", "{A232AC83-8F8C-491C-9786-F0A9D97BEE05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Actors.Tests", "test\unittests\Microsoft.ServiceFabric.Actors.Tests\Microsoft.ServiceFabric.Actors.Tests.csproj", "{63B58D31-66BB-4879-B4F1-0969FA3F4464}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Services.Remoting.Tests", "test\unittests\Microsoft.ServiceFabric.Services.Remoting.Tests\Microsoft.ServiceFabric.Services.Remoting.Tests.csproj", "{AE4034AC-27BC-43B8-9176-068B4794E25E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ServiceFabric.Services.Tests", "test\unittests\Microsoft.ServiceFabric.Services.Tests\Microsoft.ServiceFabric.Services.Tests.csproj", "{ECB3825D-B309-4C76-A20D-76544459F611}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F6E091C3-9136-4058-91CF-57CDF383DF74}.Debug|x64.ActiveCfg = Debug|x64
+		{F6E091C3-9136-4058-91CF-57CDF383DF74}.Debug|x64.Build.0 = Debug|x64
+		{F6E091C3-9136-4058-91CF-57CDF383DF74}.Release|x64.ActiveCfg = Release|x64
+		{F6E091C3-9136-4058-91CF-57CDF383DF74}.Release|x64.Build.0 = Release|x64
+		{014D5847-39F5-4660-B385-82EDFBA06CD9}.Debug|x64.ActiveCfg = Debug|x64
+		{014D5847-39F5-4660-B385-82EDFBA06CD9}.Debug|x64.Build.0 = Debug|x64
+		{014D5847-39F5-4660-B385-82EDFBA06CD9}.Release|x64.ActiveCfg = Release|x64
+		{014D5847-39F5-4660-B385-82EDFBA06CD9}.Release|x64.Build.0 = Release|x64
+		{F416C4C3-250D-48F3-822C-1C589E8F851C}.Debug|x64.ActiveCfg = Debug|x64
+		{F416C4C3-250D-48F3-822C-1C589E8F851C}.Debug|x64.Build.0 = Debug|x64
+		{F416C4C3-250D-48F3-822C-1C589E8F851C}.Release|x64.ActiveCfg = Release|x64
+		{F416C4C3-250D-48F3-822C-1C589E8F851C}.Release|x64.Build.0 = Release|x64
+		{A01358E6-D5E1-44B5-948A-45709D2421A5}.Debug|x64.ActiveCfg = Debug|x64
+		{A01358E6-D5E1-44B5-948A-45709D2421A5}.Debug|x64.Build.0 = Debug|x64
+		{A01358E6-D5E1-44B5-948A-45709D2421A5}.Release|x64.ActiveCfg = Release|x64
+		{A01358E6-D5E1-44B5-948A-45709D2421A5}.Release|x64.Build.0 = Release|x64
+		{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8}.Debug|x64.ActiveCfg = Debug|x64
+		{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8}.Debug|x64.Build.0 = Debug|x64
+		{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8}.Release|x64.ActiveCfg = Release|x64
+		{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8}.Release|x64.Build.0 = Release|x64
+		{BA2E8FE4-2970-40D4-BA55-5415E84C7B50}.Debug|x64.ActiveCfg = Debug|x64
+		{BA2E8FE4-2970-40D4-BA55-5415E84C7B50}.Debug|x64.Build.0 = Debug|x64
+		{BA2E8FE4-2970-40D4-BA55-5415E84C7B50}.Release|x64.ActiveCfg = Release|x64
+		{BA2E8FE4-2970-40D4-BA55-5415E84C7B50}.Release|x64.Build.0 = Release|x64
+		{63B58D31-66BB-4879-B4F1-0969FA3F4464}.Debug|x64.ActiveCfg = Debug|x64
+		{63B58D31-66BB-4879-B4F1-0969FA3F4464}.Debug|x64.Build.0 = Debug|x64
+		{63B58D31-66BB-4879-B4F1-0969FA3F4464}.Release|x64.ActiveCfg = Release|x64
+		{63B58D31-66BB-4879-B4F1-0969FA3F4464}.Release|x64.Build.0 = Release|x64
+		{AE4034AC-27BC-43B8-9176-068B4794E25E}.Debug|x64.ActiveCfg = Debug|x64
+		{AE4034AC-27BC-43B8-9176-068B4794E25E}.Debug|x64.Build.0 = Debug|x64
+		{AE4034AC-27BC-43B8-9176-068B4794E25E}.Release|x64.ActiveCfg = Release|x64
+		{AE4034AC-27BC-43B8-9176-068B4794E25E}.Release|x64.Build.0 = Release|x64
+		{ECB3825D-B309-4C76-A20D-76544459F611}.Debug|x64.ActiveCfg = Debug|x64
+		{ECB3825D-B309-4C76-A20D-76544459F611}.Debug|x64.Build.0 = Debug|x64
+		{ECB3825D-B309-4C76-A20D-76544459F611}.Release|x64.ActiveCfg = Release|x64
+		{ECB3825D-B309-4C76-A20D-76544459F611}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F6E091C3-9136-4058-91CF-57CDF383DF74} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{014D5847-39F5-4660-B385-82EDFBA06CD9} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{F416C4C3-250D-48F3-822C-1C589E8F851C} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{A01358E6-D5E1-44B5-948A-45709D2421A5} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{4ED5DBAD-F3AB-4818-A8ED-48809D2D01E8} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{BA2E8FE4-2970-40D4-BA55-5415E84C7B50} = {FAD4779C-6494-4FF6-8D14-F1F43205A301}
+		{A232AC83-8F8C-491C-9786-F0A9D97BEE05} = {60B540CF-F2AA-40C9-9705-DD07C30A82F0}
+		{63B58D31-66BB-4879-B4F1-0969FA3F4464} = {A232AC83-8F8C-491C-9786-F0A9D97BEE05}
+		{AE4034AC-27BC-43B8-9176-068B4794E25E} = {A232AC83-8F8C-491C-9786-F0A9D97BEE05}
+		{ECB3825D-B309-4C76-A20D-76544459F611} = {A232AC83-8F8C-491C-9786-F0A9D97BEE05}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CC60EDF4-6066-4C1D-ACD5-6326A146B852}
+	EndGlobalSection
+EndGlobal

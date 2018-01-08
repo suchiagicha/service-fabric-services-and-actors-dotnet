@@ -1,6 +1,6 @@
 ﻿// ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
 namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
@@ -53,7 +53,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
 
             var serializerManager = new ServiceRemotingMessageSerializersManager(
@@ -100,7 +100,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
 
             var serializerManager = new ServiceRemotingMessageSerializersManager(
@@ -136,7 +136,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
 
             var serializerManager = new ServiceRemotingMessageSerializersManager(
