@@ -26,7 +26,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         /// <param name="requestBodyTypes">Parameters for all the methods in the serviceInterfaceType</param>
         /// <returns></returns>
         /// <returns></returns>
-        IServiceRemotingRequestMessageBodySerializer CreateRequestMessageSerializer(
+        IServiceRemotingRequestMessageBodySerializer CreateRequestMessageBodySerializer(
             Type serviceInterfaceType,
             IEnumerable<Type> requestBodyTypes);
 
@@ -36,7 +36,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         /// <param name="serviceInterfaceType">User service interface</param>
         /// <param name="responseBodyTypes">Return Types for all the methods in the serviceInterfaceType</param>
         /// <returns></returns>
-        IServiceRemotingResponseMessageBodySerializer CreateResponseMessageSerializer(
+        IServiceRemotingResponseMessageBodySerializer CreateResponseMessageBodySerializer(
             Type serviceInterfaceType,
             IEnumerable<Type> responseBodyTypes);
 

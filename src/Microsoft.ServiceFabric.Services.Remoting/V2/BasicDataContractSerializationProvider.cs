@@ -19,13 +19,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             return new DataContractRemotingMessageFactory();
         }
 
-        public IServiceRemotingRequestMessageBodySerializer CreateRequestMessageSerializer(Type serviceInterfaceType,
+        public IServiceRemotingRequestMessageBodySerializer CreateRequestMessageBodySerializer(Type serviceInterfaceType,
             IEnumerable<Type> requestBodyTypes)
         {
             return new BasicDataRequestMessageBodySerializer(requestBodyTypes);
         }
 
-        public IServiceRemotingResponseMessageBodySerializer CreateResponseMessageSerializer(Type serviceInterfaceType,
+        public IServiceRemotingResponseMessageBodySerializer CreateResponseMessageBodySerializer(Type serviceInterfaceType,
             IEnumerable<Type> responseBodyTypes)
         {
             return new BasicDataResponsetMessageBodySerializer(responseBodyTypes);
@@ -47,7 +47,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                     KnownTypes = parameterInfo
                 });
         }
-        public OutgoingMessageBody Serialize(IServiceRemotingRequestMessageBody serviceRemotingRequestMessageBody)
+        public IMessageBody Serialize(IServiceRemotingRequestMessageBody serviceRemotingRequestMessageBody)
         {
             if (serviceRemotingRequestMessageBody == null)
             {
@@ -70,7 +70,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             }
         }
 
-        public IServiceRemotingRequestMessageBody Deserialize(IncomingMessageBody messageBody)
+        public IServiceRemotingRequestMessageBody Deserialize(IMessageBody messageBody)
         {
             if ((messageBody == null) || (messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0))
             {
@@ -102,7 +102,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
                     KnownTypes = parameterInfo
                 });
         }
-        public OutgoingMessageBody Serialize(IServiceRemotingResponseMessageBody serviceRemotingRequestMessageBody)
+        public IMessageBody Serialize(IServiceRemotingResponseMessageBody serviceRemotingRequestMessageBody)
         {
             if (serviceRemotingRequestMessageBody == null)
             {
@@ -125,7 +125,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             }
         }
 
-        public IServiceRemotingResponseMessageBody Deserialize(IncomingMessageBody messageBody)
+        public IServiceRemotingResponseMessageBody Deserialize(IMessageBody messageBody)
         {
             if ((messageBody == null) || (messageBody.GetReceivedBuffer() == null || messageBody.GetReceivedBuffer().Length == 0))
             {

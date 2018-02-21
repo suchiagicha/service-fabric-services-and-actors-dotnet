@@ -15,15 +15,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
         /// <summary>
         /// Serialize the Remoting Response Body before sending message over the wire.
         /// </summary>
-        /// <param name="serviceRemotingRequestMessageBody"></param>
+        /// <param name="serviceRemotingResponseMessageBody"></param>
         /// <returns>OutgoingMessageBody</returns>
-        OutgoingMessageBody Serialize(IServiceRemotingResponseMessageBody serviceRemotingRequestMessageBody);
+        IMessageBody Serialize(IServiceRemotingResponseMessageBody serviceRemotingResponseMessageBody);
 
         /// <summary>
         /// Deserialize the incoming Message to a Remoting ResponseMessageBody before sending it to Client Api
         /// </summary>
         /// <param name="messageBody">serialized Message</param>
         /// <returns>IServiceRemotingResponseMessageBody</returns>
-        IServiceRemotingResponseMessageBody Deserialize(IncomingMessageBody messageBody);
+        IServiceRemotingResponseMessageBody Deserialize(IMessageBody messageBody);
     }
 }
