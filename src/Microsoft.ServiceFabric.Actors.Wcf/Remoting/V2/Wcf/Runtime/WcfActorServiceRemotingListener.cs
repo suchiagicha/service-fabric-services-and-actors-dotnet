@@ -38,7 +38,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Runtime
             : base(
                 GetContext(actorService),
                 new ActorServiceRemotingDispatcher(actorService, new DataContractRemotingMessageFactory()),
-                new ActorRemotingSerializationManager(new BasicDataContractSerializationProvider(),
+                new ActorRemotingSerializationManager(new ActorRemotingDataContractSerializationProvider(null),
                     new BasicDataContractActorHeaderSerializer()),
                 listenerBinding,
                 ActorNameFormat.GetFabricServiceEndpointName(actorService.ActorTypeInformation.ImplementationType))
@@ -68,7 +68,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Runtime
             : base(
                 serviceContext,
                 serviceRemotingMessageHandler,
-                new ActorRemotingSerializationManager(serializationProvider ?? new BasicDataContractSerializationProvider(),
+                new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
                     new BasicDataContractActorHeaderSerializer()),
                 listenerBinding,
                 address)

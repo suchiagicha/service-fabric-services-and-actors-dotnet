@@ -51,7 +51,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer());
@@ -91,7 +91,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer());
@@ -122,7 +122,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer());

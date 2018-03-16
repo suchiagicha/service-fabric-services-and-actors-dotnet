@@ -71,7 +71,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Client
             string traceId = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null) :
             base(
-                 new ActorRemotingSerializationManager(serializationProvider ?? new BasicDataContractSerializationProvider(),
+                 new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
                     new BasicDataContractActorHeaderSerializer()),
                 clientBinding,
                 callbackClient,

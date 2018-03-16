@@ -90,7 +90,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Client
         {
             if (serializationProvider == null)
             {
-                serializationProvider = new BasicDataContractSerializationProvider();
+                serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
 
             var serializersManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
