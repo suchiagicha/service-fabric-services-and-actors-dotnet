@@ -18,7 +18,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
 
         public ServiceRemotingMessageSerializersManager(
             IServiceRemotingMessageSerializationProvider serializationProvider,
-            IServiceRemotingMessageHeaderSerializer headerSerializer)
+            IServiceRemotingMessageHeaderSerializer headerSerializer,
+            bool isV1InterfaceCompatible)
         {
             if (headerSerializer == null)
             {
@@ -26,7 +27,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             }
             if (serializationProvider == null)
             {
-                serializationProvider = new ServiceRemotingDataContractSerializationProvider();
+                if (isV1InterfaceCompatible)
+                {
+                    serializationProvider = new WrappingServiceRemotingDataContractSerializationProvider();
+                }
+                else
+                {
+                    serializationProvider = new ServiceRemotingDataContractSerializationProvider();
+                }
+                
             }
             this.serializationProvider = serializationProvider;
             this.cachedBodySerializers = new ConcurrentDictionary<int, CacheEntry>();
@@ -65,8 +74,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2
             // get the known types from the codegen layer
 
             return new CacheEntry(
-                this.serializationProvider.CreateRequestMessageSerializer(serviceInterfaceType, requestBodyTypes),
-                this.serializationProvider.CreateResponseMessageSerializer(serviceInterfaceType, responseBodyTypes));
+                this.serializationProvider.CreateRequestMessageSerializer(serviceInterfaceType, requestBodyTypes, interfaceDetails.RequestWrappedKnownTypes),
+                this.serializationProvider.CreateResponseMessageSerializer(serviceInterfaceType, responseBodyTypes,interfaceDetails.ResponseWrappedKnownTypes));
         }
 
         internal virtual InterfaceDetails GetInterfaceDetails(int interfaceId)

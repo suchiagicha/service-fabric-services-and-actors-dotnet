@@ -12,13 +12,12 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Remoting;
-    using Microsoft.ServiceFabric.Services.Remoting.Builder;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
 
     /// <summary>
     /// Provides the base implementation for the proxy to invoke methods on actor event subscribers.
     /// </summary>
-    public abstract class ActorEventProxy : ProxyBase
+    public abstract class ActorEventProxy : Microsoft.ServiceFabric.Services.Remoting.Builder.ProxyBase
     {
 #if !DotNetCoreClr
         private Remoting.V1.Builder.ActorEventProxyGeneratorWith proxyGeneratorWith;
@@ -40,19 +39,19 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
 
         /// <inheritdoc />
         protected override IServiceRemotingRequestMessageBody CreateRequestMessageBodyV2(string interfaceName, string methodName,
-            int parameterCount)
+            int parameterCount,object wrappedRequest)
         {
             //This cna happen in case someone trries to raiseEvent but no subscribers registered.
             if (this.serviceRemotingMessageBodyFactory == null)
             {
                 return new DummyServiceRemoingRequestMessageBody();
             }
-            return this.serviceRemotingMessageBodyFactory.CreateRequest(interfaceName, methodName, parameterCount);
+            return this.serviceRemotingMessageBodyFactory.CreateRequest(interfaceName, methodName, parameterCount,wrappedRequest);
         }
 
         internal void AddSubscriber(IActorEventSubscriberProxy subscriber)
         {
-            if (subscriber.RemotingListener.Equals(RemotingListener.V2Listener))
+            if (Helper.IsEitherRemotingV2(subscriber.RemotingListener))
             {
                 if (this.serviceRemotingMessageBodyFactory == null)
                 {

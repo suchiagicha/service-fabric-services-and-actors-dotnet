@@ -71,14 +71,21 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Client
             string traceId = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null) :
             base(
-                 new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
-                    new BasicDataContractActorHeaderSerializer()),
+InitializeSerializerManager(serializationProvider),
                 clientBinding,
                 callbackClient,
                 GetExceptionHandlers(exceptionHandlers),
                 servicePartitionResolver,
                 traceId)
         {
+        }
+
+        //TODO : Add IsiNterfaceCompatible constructor
+        private static ActorRemotingSerializationManager InitializeSerializerManager(IServiceRemotingMessageSerializationProvider serializationProvider)
+        {
+            return new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
+                                new BasicDataContractActorHeaderSerializer(),
+                                false);
         }
 
         private static IEnumerable<IExceptionHandler> GetExceptionHandlers(IEnumerable<IExceptionHandler> exceptionHandlers)

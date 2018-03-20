@@ -60,12 +60,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Builder
         {
             return string.Format(CultureInfo.InvariantCulture, "{0}RespBody", methodName);
         }
-
+        
         public string GetMethodDispatcherAssemblyName(Type interfaceType)
         {
             return string.Format(CultureInfo.InvariantCulture, "{0}_.{1}.disp", interfaceType.FullName, this.namePrefix);
         }
-
+        
         public string GetMethodDispatcherAssemblyNamespace(Type interfaceType)
         {
             return string.Format(CultureInfo.InvariantCulture, "{0}_.{1}.disp", interfaceType.FullName, this.namePrefix);

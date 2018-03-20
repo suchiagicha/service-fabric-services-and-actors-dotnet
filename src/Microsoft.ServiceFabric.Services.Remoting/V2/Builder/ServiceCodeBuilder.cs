@@ -110,10 +110,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Builder
         private MethodDispatcherBuildResult BuildMethodDispatcherResult(ServiceInterfaceDescription servicenterfaceDescription)
         {
             var res = this.methodDispatcherBuilder.Build(servicenterfaceDescription);
-            InterfaceDetailsStore.UpdateKnownTypeDetail(servicenterfaceDescription);
             return res;
         }
-
 
         protected override MethodDispatcherBuildResult BuildMethodDispatcher(Type interfaceType)
         {
@@ -125,7 +123,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Builder
 
         protected override MethodBodyTypesBuildResult BuildMethodBodyTypes(Type interfaceType)
         {
-            throw new NotImplementedException("This is not Implemented for V2 Stack");
+            var servicenterfaceDescription = ServiceInterfaceDescription.CreateUsingCRCId(interfaceType, true);
+            var result =  this.methodBodyTypesBuilder.Build(servicenterfaceDescription);
+            InterfaceDetailsStore.UpdateKnownTypeDetail(servicenterfaceDescription,result);
+            return result;
         }
 
         internal ProxyGeneratorBuildResult BuildProxyGeneratorForNonMarkerInterface(Type interfaceType)
@@ -160,7 +161,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Builder
             IEnumerable<InterfaceDescription> servicenterfaceDescriptions)
         {
             var res = this.proxyGeneratorBuilder.Build(interfaceType, servicenterfaceDescriptions);
-            InterfaceDetailsStore.UpdateKnownTypesDetails(servicenterfaceDescriptions);
+            //InterfaceDetailsStore.UpdateKnownTypesDetails(servicenterfaceDescriptions);
             return res;
         }
     }

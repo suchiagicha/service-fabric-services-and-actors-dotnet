@@ -39,7 +39,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Runtime
                 GetContext(actorService),
                 new ActorServiceRemotingDispatcher(actorService, new DataContractRemotingMessageFactory()),
                 new ActorRemotingSerializationManager(new ActorRemotingDataContractSerializationProvider(null),
-                    new BasicDataContractActorHeaderSerializer()),
+                    new BasicDataContractActorHeaderSerializer(),false),
                 listenerBinding,
                 ActorNameFormat.GetFabricServiceEndpointName(actorService.ActorTypeInformation.ImplementationType))
         {
@@ -69,11 +69,13 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Runtime
                 serviceContext,
                 serviceRemotingMessageHandler,
                 new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
-                    new BasicDataContractActorHeaderSerializer()),
+                    new BasicDataContractActorHeaderSerializer(),
+                    false),
                 listenerBinding,
                 address)
         {
-        }
+        }        //TODO : Add IsiNterfaceCompatible constructor
+
 
         private static ServiceContext GetContext(ActorService actorService)
         {

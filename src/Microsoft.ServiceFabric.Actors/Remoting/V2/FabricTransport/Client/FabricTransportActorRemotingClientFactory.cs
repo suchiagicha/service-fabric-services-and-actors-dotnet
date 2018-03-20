@@ -55,7 +55,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
         /// <param name="traceId">
         ///     Id to use in diagnostics traces from this component.
         /// </param>
-        /// <param name="serializationProvider"></param>
+        /// <param name="serializationProvider">TODO : Add docs</param>
         public FabricTransportActorRemotingClientFactory(
             FabricTransportRemotingSettings fabricTransportRemotingSettings,
             IServiceRemotingCallbackMessageHandler callbackMessageHandler = null,
@@ -63,7 +63,9 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
             string traceId = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null) :
-            base(IntializeSerializationManager(serializationProvider, fabricTransportRemotingSettings),
+            base(IntializeSerializationManager(
+                serializationProvider, 
+                fabricTransportRemotingSettings),
                 fabricTransportRemotingSettings,
                 callbackMessageHandler,
                 servicePartitionResolver,
@@ -85,12 +87,14 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
             return handlers;
         }
 
-        private static ActorRemotingSerializationManager IntializeSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider, FabricTransportRemotingSettings settings)
+        private static ActorRemotingSerializationManager IntializeSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider,
+            FabricTransportRemotingSettings settings)
         {
             settings = settings ?? FabricTransportRemotingSettings.GetDefault();
 
             return new ActorRemotingSerializationManager(serializationProvider,
-                new ActorRemotingMessageHeaderSerializer(settings.HeaderBufferSize, settings.HeaderMaxBufferCount));
+                new ActorRemotingMessageHeaderSerializer(settings.HeaderBufferSize, settings.HeaderMaxBufferCount),
+                settings.IsInterfaceCompatible);
 
         }
     }

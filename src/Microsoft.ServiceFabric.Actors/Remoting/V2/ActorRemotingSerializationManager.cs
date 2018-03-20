@@ -14,7 +14,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
     internal class ActorRemotingSerializationManager : ServiceRemotingMessageSerializersManager
     {
         public ActorRemotingSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider,
-            IServiceRemotingMessageHeaderSerializer headerSerializer) : base(serializationProvider, headerSerializer)
+            IServiceRemotingMessageHeaderSerializer headerSerializer,
+            bool isInterfaceCompatible) : base(serializationProvider, headerSerializer,isInterfaceCompatible)
         {
         }
 
@@ -23,8 +24,9 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
         {
             if (interfaceId == ActorEventSubscription.InterfaceId)
             {
-                var actorRemotingSerializationProvider = new ActorRemotingDataContractSerializationProvider();
-
+                IServiceRemotingMessageSerializationProvider actorRemotingSerializationProvider = null;
+                    actorRemotingSerializationProvider = new ActorRemotingDataContractSerializationProvider();
+         
                 var cacheEntry = new CacheEntry(
                     actorRemotingSerializationProvider.CreateRequestMessageSerializer(
                         null,

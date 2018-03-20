@@ -86,7 +86,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <summary>
         /// This determines which version(V1,V2or Compact) of actor service listener is being used.
         /// </summary>
-        public RemotingListener RemotingListener { get; private set; }
+        public RemotingListenerVersion RemotingListener { get; private set; }
 
         /// <summary>
         /// Gets a <see cref="IActorStateProvider"/> that represents the state provider for the actor service.
@@ -204,146 +204,131 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             types.AddRange(this.ActorTypeInformation.InterfaceTypes);
 
             var provider = ActorRemotingProviderAttribute.GetProvider(types);
-
+            var serviceReplicaListeners = new List<ServiceReplicaListener>();
 #if !DotNetCoreClr
-            if (provider.RemotingListener.Equals(RemotingListener.V2Listener))
+            if (Helper.IsRemotingV1(provider.RemotingListener))
             {
-                return new[]
-                {
-                    new ServiceReplicaListener((t) => { return provider.CreateServiceRemotingListenerV2(this); },
-                        ServiceRemotingProviderAttribute.DefaultV2listenerName
-                        )
-                };
+               serviceReplicaListeners.Add(
+                    new ServiceReplicaListener((t) => { return provider.CreateServiceRemotingListener(this); }
+                        ));
             }
-            if (provider.RemotingListener.Equals(RemotingListener.CompatListener))
-            {
-                return new[]
-                {
-                    new ServiceReplicaListener((t) => { return provider.CreateServiceRemotingListener(this); }, ""
-                        ),
-                    new ServiceReplicaListener((t) => { return provider.CreateServiceRemotingListenerV2(this); },
-                        ServiceRemotingProviderAttribute.DefaultV2listenerName
-                        )
-                };
-            }
-            else
-            {
-                return new[]
-                {
-                    new ServiceReplicaListener((t) => { return provider.CreateServiceRemotingListener(this); }, ""
-                        )
-                };
-            }
-#else
-            return new[] {
-                    new ServiceReplicaListener((t) =>
-                    {
-                        return provider.CreateServiceRemotingListenerV2(this);
-                    }, ServiceRemotingProviderAttribute.DefaultV2listenerName
-                )};
 #endif
-        }
-
-        /// <summary>
-        /// Overrides <see cref="StatefulServiceBase.RunAsync(CancellationToken)"/>.
-        /// </summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>
-        /// A task that represents the asynchronous operation of loading reminders when the replica becomes primary.
-        /// </returns>
-        /// <remarks>
-        /// If you need to override this method, please make sure to call this method from your overridden method.
-        /// Also make sure your implementation of overridden method conforms to the guideline specified for
-        /// <see cref="StatefulServiceBase.RunAsync(CancellationToken)"/>. 
-        /// <para>
-        /// Failing to do so can cause failover, reconfiguration or upgrade of your actor service to get stuck and 
-        /// can impact availibility of your service.
-        /// </para>
-        /// </remarks>
-        protected override Task RunAsync(CancellationToken cancellationToken)
-        {
-            return this.ActorManager.StartLoadingRemindersAsync(cancellationToken);
-        }
-
-        /// <summary>
-        /// Overrides <see cref="StatefulServiceBase.OnChangeRoleAsync(ReplicaRole, CancellationToken)"/>.
-        /// </summary>
-        /// <param name="newRole">The new role for the replica.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous operation performed when the replica becomes primary.</returns>
-        protected override async Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
-        {
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Begin change role. New role: {0}.",
-                newRole);
-
-            if (newRole == ReplicaRole.Primary)
+            if (Helper.IsEitherRemotingV2(provider.RemotingListener))
             {
-                this.actorManagerAdapter.ActorManager = new ActorManager(this);
-                await this.actorManagerAdapter.OpenAsync(this.Partition, cancellationToken);
+                var listeners = provider.CreateServiceRemotingListeners();
+                foreach(var kvp in listeners)
+                {
+                    serviceReplicaListeners.Add(new ServiceReplicaListener(t=>
+                    {
+                        return kvp.Value(this);
+                    }, kvp.Key));
+                }
+                
+            }
+         
+            return serviceReplicaListeners;
+        }
+
+    /// <summary>
+    /// Overrides <see cref="StatefulServiceBase.RunAsync(CancellationToken)"/>.
+    /// </summary>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation of loading reminders when the replica becomes primary.
+    /// </returns>
+    /// <remarks>
+    /// If you need to override this method, please make sure to call this method from your overridden method.
+    /// Also make sure your implementation of overridden method conforms to the guideline specified for
+    /// <see cref="StatefulServiceBase.RunAsync(CancellationToken)"/>. 
+    /// <para>
+    /// Failing to do so can cause failover, reconfiguration or upgrade of your actor service to get stuck and 
+    /// can impact availibility of your service.
+    /// </para>
+    /// </remarks>
+    protected override Task RunAsync(CancellationToken cancellationToken)
+    {
+        return this.ActorManager.StartLoadingRemindersAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Overrides <see cref="StatefulServiceBase.OnChangeRoleAsync(ReplicaRole, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="newRole">The new role for the replica.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation performed when the replica becomes primary.</returns>
+    protected override async Task OnChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
+    {
+        ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Begin change role. New role: {0}.",
+            newRole);
+
+        if (newRole == ReplicaRole.Primary)
+        {
+            this.actorManagerAdapter.ActorManager = new ActorManager(this);
+            await this.actorManagerAdapter.OpenAsync(this.Partition, cancellationToken);
+            this.ActorManager.DiagnosticsEventManager.ActorChangeRole(this.replicaRole, newRole);
+        }
+        else
+        {
+            if ((this.ActorManager != null) && (this.ActorManager.DiagnosticsEventManager != null))
+            {
                 this.ActorManager.DiagnosticsEventManager.ActorChangeRole(this.replicaRole, newRole);
             }
-            else
-            {
-                if ((this.ActorManager != null) && (this.ActorManager.DiagnosticsEventManager != null))
-                {
-                    this.ActorManager.DiagnosticsEventManager.ActorChangeRole(this.replicaRole, newRole);
-                }
-
-                await this.actorManagerAdapter.CloseAsync(cancellationToken);
-            }
-
-            this.replicaRole = newRole;
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "End change role. New role: {0}.",
-                newRole);
-        }
-
-        /// <summary>
-        /// Overrides <see cref="StatefulServiceBase.OnCloseAsync(CancellationToken)"/>.
-        /// </summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous operation performed when the replica is closed.</returns>
-        protected override async Task OnCloseAsync(CancellationToken cancellationToken)
-        {
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Begin close.");
 
             await this.actorManagerAdapter.CloseAsync(cancellationToken);
-
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "End close.");
         }
 
-        /// <summary>
-        /// Overrides <see cref="StatefulServiceBase.OnAbort()"/>.
-        /// </summary>
-        protected override void OnAbort()
-        {
-            ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Abort.");
-
-            this.actorManagerAdapter.Abort();
-        }
-
-        #endregion
-
-        #region Helper Functions
-
-        private ActorBase DefaultActorFactory(ActorService actorService, ActorId actorId)
-        {
-            return (ActorBase)Activator.CreateInstance(
-                this.ActorTypeInformation.ImplementationType,
-                actorService,
-                actorId);
-        }
-
-        private static IActorStateManager DefaultActorStateManagerFactory(ActorBase actorBase,
-            IActorStateProvider actorStateProvider)
-        {
-            return new ActorStateManager(actorBase, actorStateProvider);
-        }
-
-        internal IActorStateManager CreateStateManager(ActorBase actor)
-        {
-            return this.stateManagerFactory.Invoke(actor, this.StateProvider);
-        }
-
-        #endregion
+        this.replicaRole = newRole;
+        ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "End change role. New role: {0}.",
+            newRole);
     }
+
+    /// <summary>
+    /// Overrides <see cref="StatefulServiceBase.OnCloseAsync(CancellationToken)"/>.
+    /// </summary>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation performed when the replica is closed.</returns>
+    protected override async Task OnCloseAsync(CancellationToken cancellationToken)
+    {
+        ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Begin close.");
+
+        await this.actorManagerAdapter.CloseAsync(cancellationToken);
+
+        ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "End close.");
+    }
+
+    /// <summary>
+    /// Overrides <see cref="StatefulServiceBase.OnAbort()"/>.
+    /// </summary>
+    protected override void OnAbort()
+    {
+        ActorTrace.Source.WriteInfoWithId(TraceType, this.Context.TraceId, "Abort.");
+
+        this.actorManagerAdapter.Abort();
+    }
+
+    #endregion
+
+    #region Helper Functions
+
+    private ActorBase DefaultActorFactory(ActorService actorService, ActorId actorId)
+    {
+        return (ActorBase)Activator.CreateInstance(
+            this.ActorTypeInformation.ImplementationType,
+            actorService,
+            actorId);
+    }
+
+    private static IActorStateManager DefaultActorStateManagerFactory(ActorBase actorBase,
+        IActorStateProvider actorStateProvider)
+    {
+        return new ActorStateManager(actorBase, actorStateProvider);
+    }
+
+    internal IActorStateManager CreateStateManager(ActorBase actor)
+    {
+        return this.stateManagerFactory.Invoke(actor, this.StateProvider);
+    }
+
+    #endregion
+}
 }

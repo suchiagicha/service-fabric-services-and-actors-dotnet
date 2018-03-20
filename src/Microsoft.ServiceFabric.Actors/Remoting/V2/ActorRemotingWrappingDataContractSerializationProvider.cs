@@ -1,50 +1,51 @@
 // ------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.ServiceFabric.Actors.Remoting.V2
 {
-    using System;
-    using System.Collections.Generic;
     using System.Runtime.Serialization;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Messaging;
-
     /// <summary>
-    ///     This is the default implmentation  for <see cref="IServiceRemotingMessageSerializationProvider" />used by actor
-    ///     remoting.
-    ///     It uses DataContractSerializer for serialization of remoting request and response message bodies.
+    /// TODO : add documentation
     /// </summary>
-    public class ActorRemotingDataContractSerializationProvider : ServiceRemotingDataContractSerializationProvider
+    public class ActorRemotingWrappingDataContractSerializationProvider : WrappingServiceRemotingDataContractSerializationProvider
     {
+
         /// <summary>
-        ///     Creates an ActorRemotingDataContractSerializationProvider with default IBufferPoolManager
+        ///     Creates an ActorRemotingWrappingDataContractSerializationProvider with default IBufferPoolManager
         /// </summary>
-        public ActorRemotingDataContractSerializationProvider()
+        public ActorRemotingWrappingDataContractSerializationProvider()
         {
         }
 
         /// <summary>
-        ///     Creates an ActorRemotingDataContractSerializationProvider with user specified IBufferPoolManager.
+        ///     Creates an ActorRemotingWrappingDataContractSerializationProvider with user specified IBufferPoolManager.
         ///     If the specified buffer pool manager is null, the buffer pooling will be turned off.
         /// </summary>
         /// <param name="bodyBufferPoolManager"></param>
-        public ActorRemotingDataContractSerializationProvider(
+        public ActorRemotingWrappingDataContractSerializationProvider(
             IBufferPoolManager bodyBufferPoolManager)
             : base(bodyBufferPoolManager)
         {
         }
 
         /// <inheritdoc />
-        protected internal override DataContractSerializer CreateRemotingRequestMessageBodyDataContractSerializer(
+        protected  override DataContractSerializer CreateRemotingRequestMessageBodyDataContractSerializer(
             Type remotingRequestType,
             IEnumerable<Type> knownTypes)
         {
 
 #if DotNetCoreClr
-            var serializer =
-                base.CreateRemotingRequestMessageBodyDataContractSerializer(remotingRequestType, knownTypes);
+            var serializer = base.CreateRemotingRequestMessageBodyDataContractSerializer(remotingRequestType, knownTypes);
               
             serializer.SetSerializationSurrogateProvider(new ActorDataContractSurrogate());
             return serializer;
@@ -63,14 +64,13 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
         }
 
         /// <inheritdoc />
-        protected internal override DataContractSerializer CreateRemotingResponseMessageBodyDataContractSerializer(
+        protected  override DataContractSerializer CreateRemotingResponseMessageBodyDataContractSerializer(
             Type remotingResponseType,
             IEnumerable<Type> knownTypes)
-            
         {
 #if DotNetCoreClr
-            var serializer =
-                base.CreateRemotingResponseMessageBodyDataContractSerializer(remotingResponseType, knownTypes);
+            var serializer = base.CreateRemotingResponseMessageBodyDataContractSerializer(remotingResponseType, knownTypes);
+              
             serializer.SetSerializationSurrogateProvider(new ActorDataContractSurrogate());
             return serializer;
 

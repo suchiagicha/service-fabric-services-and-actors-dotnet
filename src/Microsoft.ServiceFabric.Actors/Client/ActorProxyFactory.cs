@@ -19,8 +19,8 @@ namespace Microsoft.ServiceFabric.Actors.Client
         private Remoting.V1.Client.ActorProxyFactory proxyFactoryV1;
 #endif
         private Remoting.V2.Client.ActorProxyFactory proxyFactoryV2;
-        private bool overrideListenerName = false;
-
+        private  bool overrideListenerName =false;
+        private string defaultListenerName;
         /// <summary>
         /// Initializes a new instance of the <see cref="ActorProxyFactory"/> class.
         /// </summary>
@@ -145,7 +145,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
             return proxyFactory.CreateActorServiceProxy<TServiceInterface>(
                 serviceUri,
-                actorId, this.OverrideListenerNameIfConditionMet(listenerName));
+                actorId, listenerName);
         }
 
 
@@ -185,7 +185,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
                     actorInterfaceType,
                     serviceUri,
                     actorId,
-                    listenerName);
+                    this.OverrideListenerNameIfConditionMet(listenerName));
             }
 #endif
 
@@ -208,33 +208,31 @@ namespace Microsoft.ServiceFabric.Actors.Client
             if (this.proxyFactoryV1 == null && this.proxyFactoryV2 == null)
             {
                 var provider = this.GetProviderAttribute(actorInterfaceType);
-                if (provider.RemotingClient.Equals(RemotingClient.V2Client))
+                if (Helper.IsEitherRemotingV2(provider.RemotingClient))
                 {
-                    //We are overriding listenerName since using provider service can have multiple listener configured(Compat Mode).
-                    this.overrideListenerName = true;
+                    //We are overriding listenerName since using provider service can have multiple listener configured for upgrade cases
+                    this.OverrideDefaultListenerName(provider.RemotingClient);
                     this.proxyFactoryV2 =
-                        new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactoryV2);
+                        new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactory);
                     return this.proxyFactoryV2;
                 }
                 this.proxyFactoryV1 =
                     new Remoting.V1.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactory);
                 return this.proxyFactoryV1;
             }
-
             if (this.proxyFactoryV2 != null)
             {
                 return this.proxyFactoryV2;
             }
             return this.proxyFactoryV1;
 
-
 #else
             if (this.proxyFactoryV2 == null)
             {
                 var provider = this.GetProviderAttribute(actorInterfaceType);
-                this.overrideListenerName = true;
+                this.OverrideDefaultListenerName(provider.RemotingClient);
                 this.proxyFactoryV2 =
-                    new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactoryV2);            
+                    new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactory);            
             }
 
             return this.proxyFactoryV2;
@@ -242,11 +240,25 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         }
 
+        private void OverrideDefaultListenerName(RemotingClientVersion remotingClientVersion)
+        {
+            this.overrideListenerName = true;
+            if (Services.Remoting.Helper.IsRemotingV2InterfaceCompatibleVersion(remotingClientVersion))
+            {
+                this.defaultListenerName = ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName;
+            }
+            else
+            {
+                this.defaultListenerName= ServiceRemotingProviderAttribute.DefaultV2listenerName;
+            }
+        }
+
+
         private string OverrideListenerNameIfConditionMet(string listenerName)
         {
-            if (this.overrideListenerName && listenerName == null)
+            if (this.overrideListenerName&& String.IsNullOrEmpty(listenerName))
             {
-                return ServiceRemotingProviderAttribute.DefaultV2listenerName;
+                return this.defaultListenerName;
             }
             return listenerName;
         }

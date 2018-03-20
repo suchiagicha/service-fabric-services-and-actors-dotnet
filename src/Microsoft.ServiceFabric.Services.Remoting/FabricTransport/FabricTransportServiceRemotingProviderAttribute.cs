@@ -14,6 +14,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
     using Microsoft.ServiceFabric.Services.Remoting.V1;
     using Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Client;
     using Microsoft.ServiceFabric.Services.Remoting.V1.FabricTransport.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.V2;
 #endif
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
 
@@ -150,6 +151,13 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             settings.MaxMessageSize = this.GetAndValidateMaxMessageSize(settings.MaxMessageSize);
             settings.OperationTimeout = this.GetAndValidateOperationTimeout(settings.OperationTimeout);
             settings.KeepAliveTimeout = this.GetKeepAliveTimeout(settings.KeepAliveTimeout);
+            if (this.InterfaceCompatible)
+            {
+                return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext: serviceContext,
+                serviceImplementation: serviceImplementation, 
+                remotingListenerSettings: settings,
+                isInterfaceCompatible: this.InterfaceCompatible);
+            }
             return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext: serviceContext,
                 serviceImplementation: serviceImplementation, remotingListenerSettings: settings);
         }

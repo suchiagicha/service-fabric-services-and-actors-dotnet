@@ -23,7 +23,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
     {
         internal static readonly ActorProxyFactory DefaultProxyFactory = new ActorProxyFactory();
         private Remoting.V2.Client.ActorServicePartitionClient servicePartitionClientV2;
-        private RemotingClient remotingClient;
+        private RemotingClientVersion remotingClient;
 
         /// <summary>
         /// Initializes a new instance of the ActorProxy class.
@@ -32,7 +32,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         {
         }
 
-        internal RemotingClient RemotingClient
+        internal RemotingClientVersion RemotingClient
         {
             get { return this.remotingClient; }
         }
@@ -47,7 +47,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
             get
             {
 #if !DotNetCoreClr
-                if (this.remotingClient.Equals(RemotingClient.V1Client))
+                if (!(Helper.IsEitherRemotingV2(this.remotingClient)))
                 {
                     return this.servicePartitionClient.ActorId;
                 }
@@ -147,7 +147,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         {
             this.servicePartitionClientV2 = client;
             this.InitializeV2(serviceRemotingMessageBodyFactory);
-            this.remotingClient = RemotingClient.V2Client;
+            this.remotingClient = RemotingClientVersion.V2;
         }
 
 
@@ -171,7 +171,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
                 ActorId = this.servicePartitionClientV2.ActorId,
                 InterfaceId = interfaceId,
                 MethodId = methodId,
-                CallContext = Helper.GetCallContext()
+                CallContext = Actors.Helper.GetCallContext()
             };
 
             return this.servicePartitionClientV2.InvokeAsync(new ServiceRemotingRequestMessage(headers,
@@ -292,7 +292,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
                 ActorId = this.servicePartitionClient.ActorId,
                 InterfaceId = interfaceId,
                 MethodId = methodId,
-                CallContext = Helper.GetCallContext()
+                CallContext = Actors.Helper.GetCallContext()
             };
 
             return this.servicePartitionClient.InvokeAsync(actorMsgHeaders, requestMsgBodyBytes, cancellationToken);
@@ -313,7 +313,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         {
             this.proxyGeneratorWith = actorProxyGeneratorWith;
             this.servicePartitionClient = actorServicePartitionClient;
-            this.remotingClient = RemotingClient.V1Client;
+            this.remotingClient = RemotingClientVersion.V1;
         }
 #endif
 
@@ -321,7 +321,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
 
         internal async Task SubscribeAsync(Type eventType, object subscriber, TimeSpan resubscriptionInterval)
         {
-            if (this.remotingClient.Equals(RemotingClient.V2Client))
+            if (Helper.IsEitherRemotingV2(this.remotingClient))
             {
                 await this.SubscribeAsyncV2(eventType, subscriber, resubscriptionInterval);
                 return;
@@ -360,10 +360,10 @@ namespace Microsoft.ServiceFabric.Actors.Client
 #endif
         }
 
-
+ 
         internal async Task UnsubscribeAsync(Type eventType, object subscriber)
         {
-            if (this.remotingClient.Equals(RemotingClient.V2Client))
+            if (Helper.IsEitherRemotingV2(this.remotingClient))
             {
                 await this.UnsubscribeAsyncV2(eventType, subscriber);
                 return;

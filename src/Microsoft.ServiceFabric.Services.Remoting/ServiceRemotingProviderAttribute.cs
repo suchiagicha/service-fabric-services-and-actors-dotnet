@@ -60,16 +60,31 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         /// <summary>
         /// RemotingClient is used to determine where  V1 or V2 remoting Client is used.
         /// </summary>
-        public RemotingClient RemotingClient { get; set; }
+        public RemotingClientVersion RemotingClient { get; set; }
 
         /// <summary>
         /// RemotingListener is used to determine where listener is in V1, V2 or Compact Mode.
         /// </summary>
-        public RemotingListener RemotingListener { get; set; }
+        public RemotingListenerVersion RemotingListener { get; set; }
 
         internal static string DefaultV2listenerName
         {
             get { return "V2Listener"; }
+        }
+
+        internal static string DefaultV2InterfaceCompatiblelistenerName
+        {
+            get { return "V2InterfaceCompatibleListener"; }
+        }
+
+
+        /// <summary>
+        /// TODO Add documentation
+        /// </summary>
+        public bool InterfaceCompatible
+        {
+            get;
+            set;
         }
 
 #if !DotNetCoreClr
@@ -144,42 +159,51 @@ namespace Microsoft.ServiceFabric.Services.Remoting
     /// <summary>
     /// Determines the remoting stack for client
     /// </summary>
-    public enum RemotingClient
+    public enum RemotingClientVersion
     {
 #if !DotNetCoreClr
         /// <summary>
         /// This is selected to create V1 Client. V1 is an old(soon to be deprecated) Remoting Stack.
         /// </summary>
-        V1Client = 0,
+        V1 = 1,
+        
 #endif
 
         /// <summary>
         /// This is selected to create V2 Client. V2 is a new Remoting Stack.
         /// </summary>
-        V2Client = 1,
+        V2 = 2,
+
+        /// <summary>
+        /// This is selected to create V3 Client. V3 is a new Remoting Stack.This stack is compatible to V1 interface.
+        /// </summary>
+        V2InterfaceCompatible = 4,
     }
 
     /// <summary>
     /// Determines the remoting stack for server/listener when using remoting provider attribuite to determine the remoting client.
     /// </summary>
-    public enum RemotingListener
+    [Flags]
+    public enum RemotingListenerVersion
     {
 #if !DotNetCoreClr
         /// <summary>
         /// This is selected to create V1 Listener.V1 is an old (soon to be deprecated) Remoting Stack.
         /// </summary>
-        V1Listener = 0,
-
-        /// <summary>
-        /// This is selected to create Listener which creates both V1 and V2 Listener to support both V1 and V2 Clients.
-        /// This is useful in case of upgrade from V1 to V2 Listener.
-        /// </summary>
-        CompatListener = 1,
+        V1 = 1,
+       
+        
 #endif
 
         /// <summary>
         /// This is selected to create V2 Listener.V2 is a new Remoting Stack.
         /// </summary>
-        V2Listener = 2,
+        V2 = 2,
+
+        /// <summary>
+            /// This is selected to create V3 Client. V3 is a new Remoting Stack.This stack is compatible to V1 interface.
+            /// </summary>
+        V2InterfaceCompatible = 4
     }
+  
 }

@@ -12,6 +12,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
     using Microsoft.ServiceFabric.Actors.Remoting.V2.Runtime;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Communication.Client;
+    using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.V2;
     using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
 
@@ -34,6 +35,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Client
             this.ActorId = actorId;
             this.messageBodyFactory = remotingClientFactory.GetRemotingMessageBodyFactory();
         }
+        
 
         /// <summary>
         /// Actor id. Actor id is used to identify the partition of the service that this actor

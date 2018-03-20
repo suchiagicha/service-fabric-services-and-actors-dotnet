@@ -110,7 +110,8 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V1.Builder
                 return this.methodDispatcherBuilder.Build(ActorEventInterfaceDescription.Create(interfaceType));
             }
 
-            protected override MethodBodyTypesBuildResult BuildMethodBodyTypes(Type interfaceType)
+            protected override MethodBodyTypesBuildResult BuildMethodBodyTypes(
+                Type interfaceType)
             {
                 return this.methodBodyTypesBuilder.Build(ActorEventInterfaceDescription.Create(interfaceType));
             }

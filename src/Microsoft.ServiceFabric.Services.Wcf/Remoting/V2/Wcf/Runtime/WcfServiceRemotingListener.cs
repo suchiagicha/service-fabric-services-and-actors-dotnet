@@ -27,7 +27,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
     {
         private IServiceRemotingMessageHandler messageHandler;
         private ICommunicationListener wcfListener;
-
+        //TODO: Add InterfaceCompatible constrictor
         /// <summary>
         /// Constructs a WCF based service remoting listener. 
         /// </summary>
@@ -53,8 +53,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
             {
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
+
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                new BasicDataContractHeaderSerializer());
+                new BasicDataContractHeaderSerializer(),
+                false);
             this.messageHandler = new ServiceRemotingMessageDispatcher(serviceContext, serviceImplementation,
                 serializerManager.GetSerializationProvider().CreateMessageBodyFactory());
             this.wcfListener = new WcfCommunicationListener<IServiceRemotingContract>(
@@ -93,8 +95,11 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
             {
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
+            //TODO : Add IsiNterfaceCompatible constructor
+
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                new BasicDataContractHeaderSerializer());
+                new BasicDataContractHeaderSerializer(),
+                false);
             this.Initialize(serviceContext, messageHandler, listenerBinding, endpointResourceName, serializerManager);
         }
 
@@ -125,7 +130,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                new BasicDataContractHeaderSerializer());
+                new BasicDataContractHeaderSerializer(),false);
             this.Initialize(serviceContext, listenerBinding, address, serializerManager, messageHandler);
         }
 

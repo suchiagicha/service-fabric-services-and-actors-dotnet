@@ -20,6 +20,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         private readonly FabricTransportSettings fabricTransportSettings;
         private int headerBufferSize;
         private int headerMaxBufferCount;
+        private bool isInterfaceComaptible;
         private static readonly string Tracetype = "FabricTransportRemotingSettings";
 
         /// <summary>
@@ -30,6 +31,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             this.fabricTransportSettings = new FabricTransportSettings();
             this.headerBufferSize = Constants.DefaultHeaderBufferSize;
             this.headerMaxBufferCount = Constants.DefaultHeaderMaxBufferCount;
+            this.isInterfaceComaptible = false;
         }
 
         internal FabricTransportRemotingSettings(FabricTransportSettings fabricTransportSettings)
@@ -157,6 +159,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             set { this.fabricTransportSettings.SecurityCredentials = value; }
         }
 
+
+        /// <summary>
+        /// TODO : Add docs
+        /// </summary>
+        public bool IsInterfaceCompatible
+        {
+            get { return this.isInterfaceComaptible; }
+            set { this.isInterfaceComaptible = value; }
+        }
 
         internal FabricTransportSettings GetInternalSettings()
         {
