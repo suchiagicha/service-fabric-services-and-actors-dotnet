@@ -161,7 +161,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Wcf
                 });
 
             }
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingListenerVersion))
+            if (Helper.IsRemotingV2_1(this.RemotingListenerVersion))
             {
 
                 dic.Add(ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName, (
@@ -174,7 +174,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Wcf
                     return new V2.Wcf.Runtime.WcfServiceRemotingListener
                         (serviceContext,
                         serviceImplementation,
-                            bindings);
+                            bindings,
+                            useWrappedMessage:true);
                 });
 
             }

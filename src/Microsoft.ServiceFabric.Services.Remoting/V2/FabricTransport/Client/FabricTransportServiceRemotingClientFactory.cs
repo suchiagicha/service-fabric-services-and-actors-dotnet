@@ -69,6 +69,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             IServiceRemotingCallbackMessageHandler remotingCallbackMessageHandler = null,
             IServicePartitionResolver servicePartitionResolver = null,
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
+
             string traceId = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null)
         {
@@ -113,7 +114,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             }
 
             var serializersManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                headerSerializer, remotingSettings.IsInterfaceCompatible);
+                headerSerializer, remotingSettings.UseWrappedMessage);
 
 
             this.Initialize(remotingSettings,

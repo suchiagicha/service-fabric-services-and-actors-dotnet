@@ -63,7 +63,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
                 return serializationProvider.CreateMessageBodyFactory();
             }
 
-            if (remotingListenerSettings!=null && remotingListenerSettings.IsInterfaceCompatible)
+            if (remotingListenerSettings!=null && remotingListenerSettings.UseWrappedMessage)
             {
                 return new WrappedRequestMessageFactory();
             }
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
                 FabricTransportRemotingListenerSettings.GetDefault();
 
             return new ServiceRemotingMessageSerializersManager(serializationProvider, new ServiceRemotingMessageHeaderSerializer(new BufferPoolManager(listenerSettings.HeaderBufferSize,
-                listenerSettings.HeaderMaxBufferCount)), listenerSettings.IsInterfaceCompatible);
+                listenerSettings.HeaderMaxBufferCount)), listenerSettings.UseWrappedMessage);
         }
 
 
@@ -121,7 +121,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
             if (remotingSettings.EndpointResourceName.Equals(FabricTransportRemotingListenerSettings
                 .DefaultEndpointResourceName))
             {
-                if (remotingSettings.IsInterfaceCompatible)
+                if (remotingSettings.UseWrappedMessage)
                 {
                     remotingSettings.EndpointResourceName = DefaultV3ListenerEndpointResourceName;
                 }

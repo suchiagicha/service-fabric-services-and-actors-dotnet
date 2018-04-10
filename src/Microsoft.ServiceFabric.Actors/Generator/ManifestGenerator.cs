@@ -420,7 +420,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                 generatedNameFunctions.Add(GeneratedServiceEndpointV2Name, GetFabricServiceV2EndpointName);
             }
 
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListenerVersion))
+            if (Helper.IsRemotingV2_1(actorTypeInfo.RemotingListenerVersion))
             {
                 generatedNameFunctions.Add(GeneratedServiceEndpointV2InterfaceCompatibleName, GetFabricServiceV2InterfaceCompatibleEndpointName);
             }
@@ -454,7 +454,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
             }
 
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListenerVersion))
+            if (Helper.IsRemotingV2_1(actorTypeInfo.RemotingListenerVersion))
             {
                 endpoints.Add(
                     new EndpointType()

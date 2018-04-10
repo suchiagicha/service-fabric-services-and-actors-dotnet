@@ -155,13 +155,13 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
                 });
 
             }
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingListenerVersion))
+            if (Helper.IsRemotingV2_1(this.RemotingListenerVersion))
             {
                 dic.Add(ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName, (
                     actorService) =>
                 {
                     var listenerSettings = this.InitializeListenerSettings(actorService);
-                    listenerSettings.IsInterfaceCompatible = true;
+                    listenerSettings.UseWrappedMessage = true;
                     return new V2.FabricTransport.Runtime.FabricTransportActorServiceRemotingListener(actorService,
                         listenerSettings);
                 });
@@ -190,9 +190,9 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
             settings.OperationTimeout = this.GetandValidateOperationTimeout(settings.OperationTimeout);
             settings.KeepAliveTimeout = this.GetandValidateKeepAliveTimeout(settings.KeepAliveTimeout);
             settings.ConnectTimeout = this.GetConnectTimeout(settings.ConnectTimeout);
-            if (Microsoft.ServiceFabric.Services.Remoting.Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingClientVersion))
+            if (Microsoft.ServiceFabric.Services.Remoting.Helper.IsRemotingV2_1(this.RemotingClientVersion))
             {
-                settings.IsInterfaceCompatible = true;
+                settings.UseWrappedMessage = true;
             }
             return new FabricTransportActorRemotingClientFactory(settings, callbackMessageHandler);
         }

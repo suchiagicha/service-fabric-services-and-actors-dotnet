@@ -58,6 +58,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Client
         ///     Id to use in diagnostics traces from this component.
         /// </param>
         /// <param name="serializationProvider"></param>
+        /// <param name="useWrappedMessage"></param>
         /// <remarks>
         ///     This factory uses <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Client.WcfExceptionHandler"/>,
         ///     <see cref="Microsoft.ServiceFabric.Actors.Remoting.Client.ActorRemotingExceptionHandler"/>, in addition to the 
@@ -69,9 +70,10 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.Wcf.Client
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
             IServicePartitionResolver servicePartitionResolver = null,
             string traceId = null,
-            IServiceRemotingMessageSerializationProvider serializationProvider = null) :
+            IServiceRemotingMessageSerializationProvider serializationProvider = null,
+            bool useWrappedMessage =false) :
             base(
-InitializeSerializerManager(serializationProvider),
+InitializeSerializerManager(serializationProvider, useWrappedMessage),
                 clientBinding,
                 callbackClient,
                 GetExceptionHandlers(exceptionHandlers),
@@ -80,12 +82,12 @@ InitializeSerializerManager(serializationProvider),
         {
         }
 
-        //TODO : Add IsiNterfaceCompatible constructor
-        private static ActorRemotingSerializationManager InitializeSerializerManager(IServiceRemotingMessageSerializationProvider serializationProvider)
+        private static ActorRemotingSerializationManager InitializeSerializerManager(IServiceRemotingMessageSerializationProvider serializationProvider,
+            bool useWrappedMessage)
         {
             return new ActorRemotingSerializationManager(serializationProvider ?? new ActorRemotingDataContractSerializationProvider(null),
                                 new BasicDataContractActorHeaderSerializer(),
-                                false);
+                                useWrappedMessage);
         }
 
         private static IEnumerable<IExceptionHandler> GetExceptionHandlers(IEnumerable<IExceptionHandler> exceptionHandlers)

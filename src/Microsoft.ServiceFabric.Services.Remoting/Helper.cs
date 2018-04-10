@@ -15,12 +15,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting
     {
         public static bool IsEitherRemotingV2(RemotingClientVersion remotingClient)
         {
-            return IsRemotingV2(remotingClient) || IsRemotingV2InterfaceCompatibleVersion(remotingClient);
+            return IsRemotingV2(remotingClient) || IsRemotingV2_1(remotingClient);
         }
 
         public static bool IsEitherRemotingV2(RemotingListenerVersion remotingListener)
         {
-            return IsRemotingV2(remotingListener) || IsRemotingV2InterfaceCompatibleVersion(remotingListener);
+            return IsRemotingV2(remotingListener) || IsRemotingV2_1(remotingListener);
         }
 
         public static bool IsRemotingV2(RemotingClientVersion remotingClient)
@@ -32,14 +32,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting
             return remotingListener.HasFlag(RemotingListenerVersion.V2);
         }
 
-        public static bool IsRemotingV2InterfaceCompatibleVersion(RemotingListenerVersion remotingListener)
+        public static bool IsRemotingV2_1(RemotingListenerVersion remotingListener)
         {
-            return remotingListener.HasFlag(RemotingListenerVersion.V2InterfaceCompatible);
+            return remotingListener.HasFlag(RemotingListenerVersion.V2_1);
         }
 
-        public static bool IsRemotingV2InterfaceCompatibleVersion(RemotingClientVersion remotingListener)
+        public static bool IsRemotingV2_1(RemotingClientVersion remotingClient)
         {
-            return remotingListener.HasFlag(RemotingClientVersion.V2InterfaceCompatible);
+            return remotingClient.HasFlag(RemotingClientVersion.V2_1);
         }
 
 #if !DotNetCoreClr

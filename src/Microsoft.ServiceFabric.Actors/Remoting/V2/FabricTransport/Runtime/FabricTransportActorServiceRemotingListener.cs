@@ -103,7 +103,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
             return new ActorRemotingSerializationManager(serializationProvider,
                 new ActorRemotingMessageHeaderSerializer(listenerSettings.HeaderBufferSize,
                     listenerSettings.HeaderMaxBufferCount),
-                listenerSettings.IsInterfaceCompatible);
+                listenerSettings.UseWrappedMessage);
         }
 
         private static ServiceContext GetContext(ActorService actorService)
@@ -123,7 +123,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
             if (listenerSettings.EndpointResourceName.Equals(FabricTransportRemotingListenerSettings
                 .DefaultEndpointResourceName))
             {
-                if (listenerSettings.IsInterfaceCompatible)
+                if (listenerSettings.UseWrappedMessage)
                 {
 
                     listenerSettings.EndpointResourceName = ActorNameFormat.GetFabricServiceV2InterfaceCompatibleEndpointName(
@@ -142,7 +142,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Runtime
         private static ActorServiceRemotingDispatcher CreateActorRemotingDispatcher(ActorService actorService,
             FabricTransportRemotingListenerSettings listenerSettings)
         {
-            if (listenerSettings == null || !listenerSettings.IsInterfaceCompatible)
+            if (listenerSettings == null || !listenerSettings.UseWrappedMessage)
             {
                 return new ActorServiceRemotingDispatcher(actorService, new DataContractRemotingMessageFactory());
             }

@@ -20,7 +20,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         private readonly FabricTransportSettings fabricTransportSettings;
         private int headerBufferSize;
         private int headerMaxBufferCount;
-        private bool isInterfaceComaptible;
+        private bool useWrappedMessage;
         private static readonly string Tracetype = "FabricTransportRemotingSettings";
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             this.fabricTransportSettings = new FabricTransportSettings();
             this.headerBufferSize = Constants.DefaultHeaderBufferSize;
             this.headerMaxBufferCount = Constants.DefaultHeaderMaxBufferCount;
-            this.isInterfaceComaptible = false;
+            this.useWrappedMessage = false;
         }
 
         internal FabricTransportRemotingSettings(FabricTransportSettings fabricTransportSettings)
@@ -163,10 +163,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// <summary>
         /// TODO : Add docs
         /// </summary>
-        public bool IsInterfaceCompatible
+        public bool UseWrappedMessage
         {
-            get { return this.isInterfaceComaptible; }
-            set { this.isInterfaceComaptible = value; }
+            get { return this.useWrappedMessage; }
+            set { this.useWrappedMessage = value; }
         }
 
         internal FabricTransportSettings GetInternalSettings()

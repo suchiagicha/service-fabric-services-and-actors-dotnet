@@ -94,7 +94,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2.FabricTransport.Client
 
             return new ActorRemotingSerializationManager(serializationProvider,
                 new ActorRemotingMessageHeaderSerializer(settings.HeaderBufferSize, settings.HeaderMaxBufferCount),
-                settings.IsInterfaceCompatible);
+                settings.UseWrappedMessage);
 
         }
     }

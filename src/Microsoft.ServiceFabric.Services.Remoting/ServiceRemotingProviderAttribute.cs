@@ -175,7 +175,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         /// <summary>
         /// This is selected to create V3 Client. V3 is a new Remoting Stack.This stack is compatible to V1 interface.
         /// </summary>
-        V2InterfaceCompatible = 4,
+        V2_1 = 4,
     }
 
     /// <summary>
@@ -201,7 +201,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         /// <summary>
             /// This is selected to create V3 Client. V3 is a new Remoting Stack.This stack is compatible to V1 interface.
             /// </summary>
-        V2InterfaceCompatible = 4
+        V2_1 = 4
     }
   
 }

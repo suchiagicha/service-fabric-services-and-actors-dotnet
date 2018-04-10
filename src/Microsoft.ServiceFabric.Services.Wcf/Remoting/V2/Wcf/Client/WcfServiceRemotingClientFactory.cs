@@ -67,8 +67,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Client
         ///     Delegate function that creates <see cref="Microsoft.ServiceFabric.Services.Communication.Wcf.Client.WcfCommunicationClientFactory{TServiceContract}"/> using the 
         ///     <see cref="Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.IServiceRemotingContract"/>.
         /// </param>
-        /// <param name="isInterfaceCompatible">TODO : Add Docs</param>
         /// <param name="serializationProvider"></param>
+        /// <param name="useWrappedMessage">TODO: Add docs</param>
         /// <remarks>
         ///     This factory uses <see cref="WcfExceptionHandler"/> and <see cref="ServiceRemotingExceptionHandler"/> in addition to the 
         ///     exception handlers supplied to the constructor. 
@@ -86,9 +86,8 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Client
                 string,
                 IServiceRemotingCallbackContract,
                 WcfCommunicationClientFactory<IServiceRemotingContract>> createWcfClientFactory = null,
-                bool isInterfaceCompatible=false,
-                IServiceRemotingMessageSerializationProvider serializationProvider = null)
-
+                IServiceRemotingMessageSerializationProvider serializationProvider = null,
+                bool useWrappedMessage=false)
         {
             if (serializationProvider == null)
             {
@@ -97,7 +96,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Client
 
             var serializersManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer(),
-                isInterfaceCompatible);
+                useWrappedMessage);
 
             this.Initialize(serializersManager,
                 clientBinding,

@@ -243,7 +243,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
         private void OverrideDefaultListenerName(RemotingClientVersion remotingClientVersion)
         {
             this.overrideListenerName = true;
-            if (Services.Remoting.Helper.IsRemotingV2InterfaceCompatibleVersion(remotingClientVersion))
+            if (Services.Remoting.Helper.IsRemotingV2_1(remotingClientVersion))
             {
                 this.defaultListenerName = ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName;
             }

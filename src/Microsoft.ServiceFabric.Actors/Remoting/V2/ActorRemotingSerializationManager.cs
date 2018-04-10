@@ -15,7 +15,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.V2
     {
         public ActorRemotingSerializationManager(IServiceRemotingMessageSerializationProvider serializationProvider,
             IServiceRemotingMessageHeaderSerializer headerSerializer,
-            bool isInterfaceCompatible) : base(serializationProvider, headerSerializer,isInterfaceCompatible)
+            bool  useWrappedMessage) : base(serializationProvider, headerSerializer, useWrappedMessage)
         {
         }
 

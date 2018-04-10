@@ -19,7 +19,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         private readonly FabricTransportListenerSettings listenerSettings;
         private int headerBufferSize;
         private int headerMaxBufferCount;
-        private bool isInterfaceComaptible;
+        private bool useWrappedMessage;
         private static readonly string Tracetype = "FabricTransportRemotingListenerSettings";
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
             this.listenerSettings = new FabricTransportListenerSettings();
             this.headerBufferSize = Constants.DefaultHeaderBufferSize;
             this.headerMaxBufferCount = Constants.DefaultHeaderMaxBufferCount;
-            this.isInterfaceComaptible = false;
+            this.useWrappedMessage = false;
         }
 
         private FabricTransportRemotingListenerSettings(FabricTransportListenerSettings listenerSettings)
@@ -171,10 +171,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime
         /// <summary>
         /// TODO : Add docs
         /// </summary>
-        public bool IsInterfaceCompatible
+        public bool UseWrappedMessage
         {
-            get { return this.isInterfaceComaptible; }
-            set { this.isInterfaceComaptible = value; }
+            get { return this.useWrappedMessage; }
+            set { this.useWrappedMessage = value; }
         }
 
         internal static object DefaultEndpointResourceName

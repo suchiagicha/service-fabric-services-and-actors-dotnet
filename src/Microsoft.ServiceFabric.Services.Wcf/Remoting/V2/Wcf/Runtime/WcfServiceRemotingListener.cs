@@ -27,7 +27,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
     {
         private IServiceRemotingMessageHandler messageHandler;
         private ICommunicationListener wcfListener;
-        //TODO: Add InterfaceCompatible constrictor
+
         /// <summary>
         /// Constructs a WCF based service remoting listener. 
         /// </summary>
@@ -42,12 +42,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         /// should be used to create the address for the listener. If the endpointResourceName is not specified or null,
         /// the default value "ServiceEndpointV2" is used.
         /// </param>
+        /// <param name="useWrappedMessage">TODO</param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
             IService serviceImplementation,
             Binding listenerBinding = null,
             IServiceRemotingMessageSerializationProvider serializationProvider = null,
-            string endpointResourceName = "ServiceEndpointV2")
+            string endpointResourceName = "ServiceEndpointV2",
+            bool useWrappedMessage=false)
         {
             if (serializationProvider == null)
             {
@@ -56,7 +58,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
 
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer(),
-                false);
+                useWrappedMessage);
             this.messageHandler = new ServiceRemotingMessageDispatcher(serviceContext, serviceImplementation,
                 serializerManager.GetSerializationProvider().CreateMessageBodyFactory());
             this.wcfListener = new WcfCommunicationListener<IServiceRemotingContract>(
@@ -84,22 +86,23 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         /// should be used to create the address for the listener. If the endpointResourceName is not specified or it is null,
         /// the default value "ServiceEndpointV2" is used.
         /// </param>
+        /// <param name="useWrappedMessage">TODO : Add docs</param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
             IServiceRemotingMessageHandler messageHandler,
             IServiceRemotingMessageSerializationProvider serializationProvider = null,
             Binding listenerBinding = null,
-            string endpointResourceName = "ServiceEndpointV2")
+            string endpointResourceName = "ServiceEndpointV2",
+            bool useWrappedMessage=false)
         {
             if (serializationProvider == null)
             {
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
-            //TODO : Add IsiNterfaceCompatible constructor
 
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
                 new BasicDataContractHeaderSerializer(),
-                false);
+                useWrappedMessage);
             this.Initialize(serviceContext, messageHandler, listenerBinding, endpointResourceName, serializerManager);
         }
 
@@ -118,19 +121,21 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Wcf.Runtime
         /// <param name="address">The endpoint address to use for the WCF listener. If not specified or null, the endpoint
         /// address is created using the default endpoint resource named "ServiceEndpointV2" defined in the service manifest. 
         /// </param>
+        /// <param name="useWrappedMessage">TODO : Add docs</param>
         public WcfServiceRemotingListener(
             ServiceContext serviceContext,
             IServiceRemotingMessageHandler messageHandler,
             IServiceRemotingMessageSerializationProvider serializationProvider = null,
             Binding listenerBinding = null,
-            EndpointAddress address = null)
+            EndpointAddress address = null,
+            bool useWrappedMessage=false)
         {
             if (serializationProvider == null)
             {
                 serializationProvider = new ServiceRemotingDataContractSerializationProvider(null);
             }
             var serializerManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                new BasicDataContractHeaderSerializer(),false);
+                new BasicDataContractHeaderSerializer(), useWrappedMessage);
             this.Initialize(serviceContext, listenerBinding, address, serializerManager, messageHandler);
         }
 
