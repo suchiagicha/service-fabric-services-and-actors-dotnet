@@ -68,7 +68,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
         /// <value>The <see cref="Microsoft.ServiceFabric.Actors.Runtime.StatePersistence"/> representing type of state persistence for the actor.</value>
         public StatePersistence StatePersistence { get; private set; }
 
-        internal RemotingListenerVersion RemotingListener { get; private set; }
+        internal RemotingListenerVersion RemotingListenerVersion { get; private set; }
 
         /// <summary>
         /// Creates the <see cref="ActorTypeInformation"/> from actorType.
@@ -186,7 +186,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
             var remotingserverAttribuite = ActorRemotingProviderAttribute.GetProvider(types);
             if (remotingserverAttribuite != null)
             {
-                remotingserver = remotingserverAttribuite.RemotingListener;
+                remotingserver = remotingserverAttribuite.RemotingListenerVersion;
             }
 
 
@@ -199,7 +199,7 @@ namespace Microsoft.ServiceFabric.Actors.Runtime
                 IsRemindable = actorType.IsRemindableActor(),
                 EventInterfaceTypes = eventInterfaces,
                 StatePersistence = StatePersistenceAttribute.Get(actorType).StatePersistence,
-                RemotingListener = remotingserver
+                RemotingListenerVersion = remotingserver
             };
         }
 

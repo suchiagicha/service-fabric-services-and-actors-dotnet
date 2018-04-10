@@ -410,17 +410,17 @@ namespace Microsoft.ServiceFabric.Actors.Generator
         {
             var generatedNameFunctions = new Dictionary<string, Func<ActorTypeInformation, string>>();
 #if !DotNetCoreClr
-            if(Helper.IsRemotingV1(actorTypeInfo.RemotingListener))
+            if(Helper.IsRemotingV1(actorTypeInfo.RemotingListenerVersion))
             {
                 generatedNameFunctions.Add(GeneratedServiceEndpointName, GetFabricServiceEndpointName);
             }
 #endif
-            if (Helper.IsRemotingV2(actorTypeInfo.RemotingListener))
+            if (Helper.IsRemotingV2(actorTypeInfo.RemotingListenerVersion))
             {
                 generatedNameFunctions.Add(GeneratedServiceEndpointV2Name, GetFabricServiceV2EndpointName);
             }
 
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListener))
+            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListenerVersion))
             {
                 generatedNameFunctions.Add(GeneratedServiceEndpointV2InterfaceCompatibleName, GetFabricServiceV2InterfaceCompatibleEndpointName);
             }
@@ -432,7 +432,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
         {
             var endpoints = new List<EndpointType>();
 #if !DotNetCoreClr
-            if(Helper.IsRemotingV1(actorTypeInfo.RemotingListener))
+            if(Helper.IsRemotingV1(actorTypeInfo.RemotingListenerVersion))
             {
                     endpoints.Add(
                         new EndpointType()
@@ -442,7 +442,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
                     );
             }
 #endif
-            if (Helper.IsRemotingV2(actorTypeInfo.RemotingListener))
+            if (Helper.IsRemotingV2(actorTypeInfo.RemotingListenerVersion))
             {
 
 
@@ -454,7 +454,7 @@ namespace Microsoft.ServiceFabric.Actors.Generator
 
             }
 
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListener))
+            if (Helper.IsRemotingV2InterfaceCompatibleVersion(actorTypeInfo.RemotingListenerVersion))
             {
                 endpoints.Add(
                     new EndpointType()

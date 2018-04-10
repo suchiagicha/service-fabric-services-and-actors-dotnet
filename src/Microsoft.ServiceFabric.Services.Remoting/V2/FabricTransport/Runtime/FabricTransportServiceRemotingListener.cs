@@ -28,7 +28,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
         private readonly FabricTransportMessageHandler transportMessageHandler;
         private string listenAddress;
         private string publishAddress;
-        //TODO : Move isInterfaceCompatible to Listener Settings
 
         /// <summary>
         ///     Constructs a fabric transport based service remoting listener .
@@ -41,35 +40,30 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
         ///     for message processing.
         /// </param>
         /// <param name="serializationProvider">It is used to serialize deserialize request and response body </param>
-        /// <param name="isInterfaceCompatible">TODO : Add docs</param>
         /// <param name="remotingListenerSettings">The settings for the listener</param>
         public FabricTransportServiceRemotingListener(
             ServiceContext serviceContext,
             IService serviceImplementation,
             FabricTransportRemotingListenerSettings remotingListenerSettings = null,
-            bool isInterfaceCompatible = false,
-            IServiceRemotingMessageSerializationProvider serializationProvider = null
-            )
+            IServiceRemotingMessageSerializationProvider serializationProvider = null)
             : this(serviceContext,
                 new ServiceRemotingMessageDispatcher(
                     serviceContext,
                     serviceImplementation,
-                    GetMessageBodyFactory(serializationProvider,isInterfaceCompatible)),
+                    GetMessageBodyFactory(serializationProvider, remotingListenerSettings)),
                 remotingListenerSettings,
-                serializationProvider,
-                isInterfaceCompatible
-                )
+                serializationProvider)
         {
         }
 
-        private static IServiceRemotingMessageBodyFactory GetMessageBodyFactory(IServiceRemotingMessageSerializationProvider serializationProvider, bool IsV1InterfaceCompatible)
+        private static IServiceRemotingMessageBodyFactory GetMessageBodyFactory(IServiceRemotingMessageSerializationProvider serializationProvider, FabricTransportRemotingListenerSettings remotingListenerSettings)
         {
             if (serializationProvider!=null)
             {
                 return serializationProvider.CreateMessageBodyFactory();
             }
 
-            if (IsV1InterfaceCompatible)
+            if (remotingListenerSettings!=null && remotingListenerSettings.IsInterfaceCompatible)
             {
                 return new WrappedRequestMessageFactory();
             }
@@ -87,30 +81,27 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
         ///     the listener delivers them to this handler.
         /// </param>
         /// <param name="serializationProvider">It is used to serialize deserialize request and response body </param>
-        /// <param name="IsV1InterfaceCompatible">TODO : Add docs</param>
         /// <param name="remotingListenerSettings">The settings for the listener</param>
         public FabricTransportServiceRemotingListener(
             ServiceContext serviceContext,
             IServiceRemotingMessageHandler serviceRemotingMessageHandler,
             FabricTransportRemotingListenerSettings remotingListenerSettings = null,
-            IServiceRemotingMessageSerializationProvider serializationProvider = null,
-            bool IsV1InterfaceCompatible = false) : this(serviceContext,
+            IServiceRemotingMessageSerializationProvider serializationProvider = null
+            ) : this(serviceContext,
                 serviceRemotingMessageHandler,
-                InitializeSerializersManager(serializationProvider, remotingListenerSettings, IsV1InterfaceCompatible),
-                remotingListenerSettings,
-                IsV1InterfaceCompatible)
+                InitializeSerializersManager(serializationProvider, remotingListenerSettings),
+                remotingListenerSettings)
         {
         }
 
         private static ServiceRemotingMessageSerializersManager InitializeSerializersManager(IServiceRemotingMessageSerializationProvider serializationProvider,
-            FabricTransportRemotingListenerSettings listenerSettings,
-            bool IsV1InterfaceCompatible)
+            FabricTransportRemotingListenerSettings listenerSettings)
         {
             listenerSettings = listenerSettings ??
                 FabricTransportRemotingListenerSettings.GetDefault();
 
             return new ServiceRemotingMessageSerializersManager(serializationProvider, new ServiceRemotingMessageHeaderSerializer(new BufferPoolManager(listenerSettings.HeaderBufferSize,
-                listenerSettings.HeaderMaxBufferCount)), IsV1InterfaceCompatible);
+                listenerSettings.HeaderMaxBufferCount)), listenerSettings.IsInterfaceCompatible);
         }
 
 
@@ -118,9 +109,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
             ServiceContext serviceContext,
             IServiceRemotingMessageHandler serviceRemotingMessageHandler,
             ServiceRemotingMessageSerializersManager serializersManager,
-            FabricTransportRemotingListenerSettings remotingListenerSettings = null,
-           bool IsV1InterfaceCompatible = false
-        )
+            FabricTransportRemotingListenerSettings remotingListenerSettings = null)
         {
             Requires.ThrowIfNull(serviceContext, "serviceContext");
 
@@ -132,7 +121,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Runtime
             if (remotingSettings.EndpointResourceName.Equals(FabricTransportRemotingListenerSettings
                 .DefaultEndpointResourceName))
             {
-                if (IsV1InterfaceCompatible)
+                if (remotingSettings.IsInterfaceCompatible)
                 {
                     remotingSettings.EndpointResourceName = DefaultV3ListenerEndpointResourceName;
                 }

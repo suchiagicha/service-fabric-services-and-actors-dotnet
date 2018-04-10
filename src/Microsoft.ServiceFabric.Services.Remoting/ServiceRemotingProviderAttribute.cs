@@ -58,14 +58,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting
         {
         }
         /// <summary>
-        /// RemotingClient is used to determine where  V1 or V2 remoting Client is used.
+        /// RemotingClientVersion is used to determine where  V1 or V2 remoting Client is used.
         /// </summary>
-        public RemotingClientVersion RemotingClient { get; set; }
+        public RemotingClientVersion RemotingClientVersion { get; set; }
 
         /// <summary>
-        /// RemotingListener is used to determine where listener is in V1, V2 or Compact Mode.
+        /// RemotingListenerVersion is used to determine where listener is in V1, V2 or Compact Mode.
         /// </summary>
-        public RemotingListenerVersion RemotingListener { get; set; }
+        public RemotingListenerVersion RemotingListenerVersion { get; set; }
 
         internal static string DefaultV2listenerName
         {
@@ -110,14 +110,12 @@ namespace Microsoft.ServiceFabric.Services.Remoting
 
 #endif
         /// <summary>
+        /// TODO: Add docs for params
         /// Creates a V2 service remoting listener for remoting the service interface.
         /// </summary>
-        /// <param name="serviceContext">The context of the service for which the remoting listener is being constructed.</param>
-        /// <param name="serviceImplementation">The service implementation object.</param>
         /// <returns>An <see cref="IServiceRemotingListener"/> for the specified service.</returns>
-        public abstract IServiceRemotingListener CreateServiceRemotingListenerV2(
-            ServiceContext serviceContext,
-            IService serviceImplementation);
+        public abstract Dictionary<string, Func<ServiceContext, IService, IServiceRemotingListener>>
+            CreateServiceRemotingListeners();
 
         /// <summary>
         /// Creates a V2 service remoting client factory that can be used by the 

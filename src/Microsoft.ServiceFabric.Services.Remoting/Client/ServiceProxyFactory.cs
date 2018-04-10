@@ -16,7 +16,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
     public class ServiceProxyFactory : IServiceProxyFactory
     {
         private readonly OperationRetrySettings retrySettings;
-
 #if !DotNetCoreClr
         private Remoting.V1.Client.ServiceProxyFactory proxyFactoryV1;
 #endif
@@ -97,8 +96,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
             if (this.proxyFactoryV1 == null && this.proxyFactoryV2 == null)
             {
                 var provider = this.GetProviderAttribute(serviceInterfaceType);
-                if (Helper.IsEitherRemotingV2(provider.RemotingClient))
+                if (Helper.IsEitherRemotingV2(provider.RemotingClientVersion))
                 {
+                    //We are overriding listenerName since using provider we can have multiple listener configured.
+                    listenerName= this.GetDefaultListenerName(listenerName,provider.RemotingClientVersion);
                     this.proxyFactoryV2 =
                         new V2.Client.ServiceProxyFactory(provider.CreateServiceRemotingClientFactoryV2, this.retrySettings);
                 }
@@ -124,7 +125,9 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
 #else
             if (this.proxyFactoryV2 == null)
             {
-                var provider = this.GetProviderAttribute(serviceInterfaceType);                
+                var provider = this.GetProviderAttribute(serviceInterfaceType);
+                //We are overriding listenerName since using provider we can have multiple listener configured.
+                listenerName = this.GetDefaultListenerName(listenerName,provider.RemotingClientVersion);
                    this.proxyFactoryV2 =
                     new V2.Client.ServiceProxyFactory(provider.CreateServiceRemotingClientFactoryV2, this.retrySettings);
             }           
@@ -173,5 +176,21 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Client
 
         }
 
+        private string GetDefaultListenerName(
+            string listenerName,
+            RemotingClientVersion remotingClientVersion)
+        {
+            if (String.IsNullOrEmpty(listenerName))
+            {
+                if (Helper.IsRemotingV2(remotingClientVersion))
+                {
+                    return ServiceRemotingProviderAttribute.DefaultV2listenerName;
+                }
+
+                return ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName;
+            }
+
+            return listenerName;
+        }
     }
 }

@@ -59,7 +59,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
         /// </param>
         /// <param name="serializationProvider">
         /// Serialization Provider to serialize and deserialize request and response.</param>
-        /// <param name="IsV1InterfaceCompatible">TODO : Add docs</param>
         /// <remarks>
         ///     This factory uses an internal fabric transport exception handler to handle exceptions at the fabric TCP transport 
         ///     level and a <see cref="ServiceRemotingExceptionHandler"/>, in addition to the exception handlers supplied to the 
@@ -71,16 +70,14 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             IServicePartitionResolver servicePartitionResolver = null,
             IEnumerable<IExceptionHandler> exceptionHandlers = null,
             string traceId = null,
-            IServiceRemotingMessageSerializationProvider serializationProvider = null,
-            bool IsV1InterfaceCompatible=false)
+            IServiceRemotingMessageSerializationProvider serializationProvider = null)
         {
             this.Initialize(remotingSettings,
                 remotingCallbackMessageHandler,
                 servicePartitionResolver,
                 exceptionHandlers,
                 traceId,
-                serializationProvider,
-                IsV1InterfaceCompatible);
+                serializationProvider);
         }
 
         internal FabricTransportServiceRemotingClientFactory(
@@ -106,7 +103,6 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             IEnumerable<IExceptionHandler> exceptionHandlers,
             string traceId,
             IServiceRemotingMessageSerializationProvider serializationProvider,
-            bool IsV1InterfaceCompatible,
             IServiceRemotingMessageHeaderSerializer headerSerializer = null)
         {
             remotingSettings = remotingSettings ?? FabricTransportRemotingSettings.GetDefault();
@@ -117,7 +113,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.FabricTransport.Client
             }
 
             var serializersManager = new ServiceRemotingMessageSerializersManager(serializationProvider,
-                headerSerializer, IsV1InterfaceCompatible);
+                headerSerializer, remotingSettings.IsInterfaceCompatible);
 
 
             this.Initialize(remotingSettings,

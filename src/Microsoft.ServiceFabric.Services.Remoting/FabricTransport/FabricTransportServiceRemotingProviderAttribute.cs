@@ -6,6 +6,7 @@
 namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
 {
     using System;
+    using System.Collections.Generic;
     using System.Fabric;
     using Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
@@ -134,32 +135,42 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
         /// <summary>
         ///     Creates a V2 service remoting listener for remoting the service interface.
         /// </summary>
-        /// <param name="serviceContext">
-        ///     The context of the service for which the remoting listener is being constructed.
-        /// </param>
-        /// <param name="serviceImplementation">
-        ///     The service implementation object.
-        /// </param>
         /// <returns>
         ///     A <see cref="FabricTransportServiceRemotingListener"/>
         ///     as <see cref="IServiceRemotingListener"/> 
         ///     for the specified service implementation.
         /// </returns>
-        public override IServiceRemotingListener CreateServiceRemotingListenerV2(ServiceContext serviceContext, IService serviceImplementation)
+        public override Dictionary<string, Func<ServiceContext, IService,IServiceRemotingListener>>
+            CreateServiceRemotingListeners()
         {
-            var settings = FabricTransportRemotingListenerSettings.GetDefault();
-            settings.MaxMessageSize = this.GetAndValidateMaxMessageSize(settings.MaxMessageSize);
-            settings.OperationTimeout = this.GetAndValidateOperationTimeout(settings.OperationTimeout);
-            settings.KeepAliveTimeout = this.GetKeepAliveTimeout(settings.KeepAliveTimeout);
-            if (this.InterfaceCompatible)
+            var dic = new Dictionary<string, Func<ServiceContext, IService,IServiceRemotingListener>>();
+
+            if ((Helper.IsRemotingV2(this.RemotingListenerVersion)))
             {
-                return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext: serviceContext,
-                serviceImplementation: serviceImplementation, 
-                remotingListenerSettings: settings,
-                isInterfaceCompatible: this.InterfaceCompatible);
+                dic.Add(ServiceRemotingProviderAttribute.DefaultV2listenerName, (serviceContext, serviceImplementation)
+                    =>
+                {
+                    var listenerSettings = this.GetListenerSettings(serviceContext);
+                    return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext: serviceContext, serviceImplementation: serviceImplementation,
+                        remotingListenerSettings: listenerSettings);
+                });
+
             }
-            return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext: serviceContext,
-                serviceImplementation: serviceImplementation, remotingListenerSettings: settings);
+            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingListenerVersion))
+            {
+                dic.Add(ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName, (
+                    serviceContext, serviceImplementation) =>
+                {
+                    var listenerSettings = this.GetListenerSettings(serviceContext);
+                    listenerSettings.IsInterfaceCompatible = true;
+                    return new V2.FabricTransport.Runtime.FabricTransportServiceRemotingListener(serviceContext,
+                        serviceImplementation,
+                        listenerSettings);
+                });
+
+            }
+
+            return dic;
         }
 
         /// <summary>
@@ -183,6 +194,10 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             settings.OperationTimeout = this.GetAndValidateOperationTimeout(settings.OperationTimeout);
             settings.KeepAliveTimeout = this.GetKeepAliveTimeout(settings.KeepAliveTimeout);
             settings.ConnectTimeout = this.GetConnectTimeout(settings.ConnectTimeout);
+            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingClientVersion))
+            {
+                settings.IsInterfaceCompatible = true;
+            }
             return new V2.FabricTransport.Client.FabricTransportServiceRemotingClientFactory(remotingSettings: settings,
                 remotingCallbackMessageHandler: callbackMessageHandler);
         }
@@ -211,6 +226,15 @@ namespace Microsoft.ServiceFabric.Services.Remoting.FabricTransport
             return (this.ConnectTimeoutInMilliseconds > 0)
                 ? TimeSpan.FromMilliseconds(this.ConnectTimeoutInMilliseconds)
                 : connectTimeout;
+        }
+
+        internal  FabricTransportRemotingListenerSettings GetListenerSettings(ServiceContext serviceContext)
+        {
+            var settings = FabricTransportRemotingListenerSettings.GetDefault();
+            settings.MaxMessageSize = this.GetAndValidateMaxMessageSize(settings.MaxMessageSize);
+            settings.OperationTimeout = this.GetAndValidateOperationTimeout(settings.OperationTimeout);
+            settings.KeepAliveTimeout = this.GetKeepAliveTimeout(settings.KeepAliveTimeout);
+            return settings;
         }
     }
 }

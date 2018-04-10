@@ -78,7 +78,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
             var serviceReplicaListeners = new List<ServiceReplicaListener>();
 #if !DotNetCoreClr
 
-            if (Helper.IsRemotingV1(provider.RemotingListener))
+            if (Helper.IsRemotingV1(provider.RemotingListenerVersion))
             {
                 serviceReplicaListeners.Add(new ServiceReplicaListener((t) =>
                 {
@@ -86,16 +86,20 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
                 }));
             }
 #endif
-            if (Helper.IsRemotingV2(provider.RemotingListener))
+            if (Helper.IsEitherRemotingV2(provider.RemotingListenerVersion))
             {
-                serviceReplicaListeners.Add(
-                    new ServiceReplicaListener(
-                        (t) =>
+                if (Helper.IsEitherRemotingV2(provider.RemotingListenerVersion))
+                {
+                    var listeners = provider.CreateServiceRemotingListeners();
+                    foreach (var kvp in listeners)
+                    {
+                        serviceReplicaListeners.Add(new ServiceReplicaListener(t =>
                         {
-                            return provider.CreateServiceRemotingListenerV2(serviceImplementation.Context, impl);
-                        }, ServiceRemotingProviderAttribute.DefaultV2listenerName
-                    ));
+                            return kvp.Value(serviceImplementation.Context, impl);
+                        }, kvp.Key));
+                    }
                 }
+            }
             return serviceReplicaListeners;
         }
 
@@ -122,7 +126,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
 
 #if !DotNetCoreClr
 
-            if (Helper.IsRemotingV1(provider.RemotingListener))
+            if (Helper.IsRemotingV1(provider.RemotingListenerVersion))
             {
                 serviceInstanceListeners.Add(new ServiceInstanceListener((t) =>
                 {
@@ -130,17 +134,16 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
                 }));
             }
 #endif
-            if (Helper.IsRemotingV2(provider.RemotingListener))
+            if (Helper.IsEitherRemotingV2(provider.RemotingListenerVersion))
             {
-                serviceInstanceListeners.Add
-                (
-                    new ServiceInstanceListener(
-                        (t) =>
-                        {
-                            return provider.CreateServiceRemotingListenerV2(serviceImplementation.Context, impl);
-                        }, ServiceRemotingProviderAttribute.DefaultV2listenerName
-                    )
-                );
+                var listeners = provider.CreateServiceRemotingListeners();
+                foreach (var kvp in listeners)
+                {
+                    serviceInstanceListeners.Add(new ServiceInstanceListener(t =>
+                    {
+                        return kvp.Value(serviceImplementation.Context,impl);
+                    }, kvp.Key));
+                }
             }
 
             return serviceInstanceListeners;
@@ -154,7 +157,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.Runtime
             var interfaceTypes = serviceTypeInformation.InterfaceTypes;
 
             var provider = ServiceRemotingProviderAttribute.GetProvider(interfaceTypes);
-            if (Helper.IsEitherRemotingV2(provider.RemotingListener))
+            if (Helper.IsEitherRemotingV2(provider.RemotingListenerVersion))
             {
                 throw new NotSupportedException(
                     "This extension method doesnt support V2Listener or CompatListener. Use CreateServiceRemotingReplicaListeners for using V2Stack ");

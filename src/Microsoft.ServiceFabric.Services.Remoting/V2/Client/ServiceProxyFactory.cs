@@ -16,9 +16,7 @@ namespace Microsoft.ServiceFabric.Services.Remoting.V2.Client
     /// </summary>
     internal class ServiceProxyFactory : IServiceProxyFactory
     {
-        //TODO : Override  listenerName for V2 interface
         private readonly object thisLock;
-
         private readonly Func<IServiceRemotingCallbackMessageHandler, IServiceRemotingClientFactory>
             createServiceRemotingClientFactory;
 

@@ -208,10 +208,10 @@ namespace Microsoft.ServiceFabric.Actors.Client
             if (this.proxyFactoryV1 == null && this.proxyFactoryV2 == null)
             {
                 var provider = this.GetProviderAttribute(actorInterfaceType);
-                if (Helper.IsEitherRemotingV2(provider.RemotingClient))
+                if (Helper.IsEitherRemotingV2(provider.RemotingClientVersion))
                 {
                     //We are overriding listenerName since using provider service can have multiple listener configured for upgrade cases
-                    this.OverrideDefaultListenerName(provider.RemotingClient);
+                    this.OverrideDefaultListenerName(provider.RemotingClientVersion);
                     this.proxyFactoryV2 =
                         new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactory);
                     return this.proxyFactoryV2;
@@ -230,7 +230,7 @@ namespace Microsoft.ServiceFabric.Actors.Client
             if (this.proxyFactoryV2 == null)
             {
                 var provider = this.GetProviderAttribute(actorInterfaceType);
-                this.OverrideDefaultListenerName(provider.RemotingClient);
+                this.OverrideDefaultListenerName(provider.RemotingClientVersion);
                 this.proxyFactoryV2 =
                     new Remoting.V2.Client.ActorProxyFactory(provider.CreateServiceRemotingClientFactory);            
             }

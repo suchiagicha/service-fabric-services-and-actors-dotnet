@@ -32,11 +32,11 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
         {
             
 #if !DotNetCoreClr
-            this.RemotingClient = RemotingClientVersion.V1;
-            this.RemotingListener = RemotingListenerVersion.V1;
+            this.RemotingClientVersion = RemotingClientVersion.V1;
+            this.RemotingListenerVersion = RemotingListenerVersion.V1;
 #else
-            this.RemotingClient = RemotingClientVersion.V2;
-            this.RemotingListener = RemotingListenerVersion.V2;
+            this.RemotingClientVersion = RemotingClientVersion.V2;
+            this.RemotingListenerVersion = RemotingListenerVersion.V2;
 #endif
         }
 
@@ -144,7 +144,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
         {
             var dic = new Dictionary<string, Func<ActorService,IServiceRemotingListener>>();
         
-            if ((Helper.IsRemotingV2(this.RemotingListener)))
+            if ((Helper.IsRemotingV2(this.RemotingListenerVersion)))
             {
                 dic.Add(ServiceRemotingProviderAttribute.DefaultV2listenerName, (a)
                     =>
@@ -155,7 +155,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
                 });
 
             }
-            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingListener))
+            if (Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingListenerVersion))
             {
                 dic.Add(ServiceRemotingProviderAttribute.DefaultV2InterfaceCompatiblelistenerName, (
                     actorService) =>
@@ -190,7 +190,7 @@ namespace Microsoft.ServiceFabric.Actors.Remoting.FabricTransport
             settings.OperationTimeout = this.GetandValidateOperationTimeout(settings.OperationTimeout);
             settings.KeepAliveTimeout = this.GetandValidateKeepAliveTimeout(settings.KeepAliveTimeout);
             settings.ConnectTimeout = this.GetConnectTimeout(settings.ConnectTimeout);
-            if (Microsoft.ServiceFabric.Services.Remoting.Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingClient))
+            if (Microsoft.ServiceFabric.Services.Remoting.Helper.IsRemotingV2InterfaceCompatibleVersion(this.RemotingClientVersion))
             {
                 settings.IsInterfaceCompatible = true;
             }
